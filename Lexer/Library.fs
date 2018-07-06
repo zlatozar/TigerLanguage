@@ -1,4 +1,4 @@
-namespace Compiler
+namespace Lexer
 
 module Say =
     let hello name =
