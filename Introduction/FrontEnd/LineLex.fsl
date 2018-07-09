@@ -1,0 +1,39 @@
+{
+
+(* Lexer for a simple straight-line language *)
+
+module LineLex
+
+open Microsoft.FSharp.Text.Lexing
+open LinePar
+
+let lexemeAsString lexbuf = LexBuffer<char>.LexemeString lexbuf
+
+// Distinguish keywords from identifiers
+let keyword s =
+    match s with
+    | "print" -> PRINT
+    | _       -> ID s
+}
+
+rule Token = parse
+(* Blank *)
+  | [' ' '\t' '\r'] { Token lexbuf }
+  | '\n'            { lexbuf.EndPos <- lexbuf.EndPos.NextLine; Token lexbuf }
+
+(* <Integer-Literal> | <Identifier/Keyword> | <Punctuation> | <Operator> *)
+  | ['0'-'9']+      { NUM (System.Int32.Parse (lexemeAsString lexbuf)) }
+  | ['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9']*
+                    { keyword (lexemeAsString lexbuf) }
+  | ';'             { SEMI }
+  | ','             { COMMA }
+  | '('             { LPAR }
+  | ')'             { RPAR }
+  | ":="            { ASSIGN }
+  | '+'             { PLUS }
+  | '-'             { MINUS }
+  | '*'             { TIMES }
+  | '/'             { DIV }
+
+  | eof             { EOF }
+  | _               { failwith "Lexer error: illegal symbol" }

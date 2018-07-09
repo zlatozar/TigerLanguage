@@ -9,8 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Library.fs" />
-    <None Include="Readme.md" />
+    <Compile Include="Absyn.fs" />
+    <Compile Include="LinePar.fs" />
+    <Compile Include="LineLex.fs" />
+    <Compile Include="LexParse.fs" />
   </ItemGroup>
 
   <ItemGroup>

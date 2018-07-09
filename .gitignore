@@ -25,6 +25,7 @@ build/
 *.log
 .builds
 *.log
+*.output
 
 # ReSharper is a .NET coding add-in
 _ReSharper*/

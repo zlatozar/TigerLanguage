@@ -1,0 +1,57 @@
+%{
+
+ (* Parser for Straight-line language *)
+
+ open Absyn
+
+%}
+
+%token <string> ID
+%token <int> NUM
+
+%token PRINT
+%token LPAR RPAR COMMA SEMI ASSIGN
+%token PLUS MINUS TIMES DIV
+%token EOF
+
+%right ASSIGN SEMI COMMA
+%nonassoc PRINT
+%left PLUS MINUS
+%left TIMES DIV
+
+%start Main
+
+%type <Absyn.Stmt> Main
+
+%%
+
+Main:
+    Stmt EOF                            { $1 }
+;
+
+/* NOTE: Follow type definitions in Absyn.fs */
+
+Stmt:
+  | Stmt SEMI Stmt                      { CompoundStmt($1, $3) }
+  | ID ASSIGN Exp                       { AssignStmt($1, $3)   }
+  | PRINT LPAR ExpList RPAR             { PrintStmt $3         }
+;
+
+ExpList:
+  | Exp                                 { [$1]                 }
+  | Exp COMMA ExpList                   { $1::$3               }
+;
+
+Exp:
+  | ID                                  { IdExp $1             }
+  | NUM                                 { NumExp $1            }
+  | Exp BinOp Exp                       { OpExp($1, $2, $3)    }
+  | LPAR Stmt COMMA Exp RPAR            { SeqExp($2, $4)       }
+;
+
+BinOp:
+  | PLUS                                { Plus                 }
+  | MINUS                               { Minus                }
+  | TIMES                               { Times                }
+  | DIV                                 { Div                  }
+;
