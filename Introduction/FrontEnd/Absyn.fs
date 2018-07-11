@@ -1,11 +1,11 @@
 (* Abstract syntax for Straight-line language *)
 
-// NOTE: Punctuation should be eliminated
+// NOTE: Punctuation used in language should be eliminated
 
 module Absyn
 
 type Stmt =
-    | CompoundStmt of Stmt * Stmt
+    | CompoundStmt of Stmt * Stmt   // Tip: CONS of statements. Tree represented with CONS
     | AssignStmt of Id * Exp
     | PrintStmt of Exp list
 

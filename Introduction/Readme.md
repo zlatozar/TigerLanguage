@@ -50,3 +50,11 @@ BinOp   ::= `+`                   // Plus
 BinOp   ::= `-`                   // Minus
 BinOp   ::= `*`                   // Times
 BinOp   ::= `/`                   // Divide
+
+### Example
+
+Note: Assume that re-assign is forbidden
+
+```
+a := 5 + 3 ; b := ( print ( a , a - 1 ) , 10 * a ) ; print ( b )
+```

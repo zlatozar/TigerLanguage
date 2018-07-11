@@ -6,8 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="LexerTest.fs" />
-    <Compile Include="ParserTest.fs" />
+    <Compile Include="StraightLineTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
@@ -20,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FrontEnd\FrontEnd.fsproj" />
+    <ProjectReference Include="..\Interpret\Interpret.fsproj" />
   </ItemGroup>
 
 </Project>

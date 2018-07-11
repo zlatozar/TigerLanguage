@@ -9,7 +9,7 @@ open LinePar
 open FrontEnd
 
 // _________________________________________________________________________
-//                                                               Test lexer
+//                                                              Test parser
 
 let bookExample =
   CompoundStmt
