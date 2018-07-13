@@ -2,30 +2,47 @@
 
 ### Lexer
 
+Program from Lexer point of view
+
 ```
-Program ::= (Token | Blank)*
+Program ::= (Token | Blank)* EOF
 ```
 
-\<Token\> **::=** \<Integer-Literal\> | \<Identifier\> | \<Operator\> | <br/>
-&nbsp;&nbsp;&nbsp;&nbsp;`print` | `(` | `)` | `,` | `;` | `:=`<br/>
+```
+<Token> ::= <Integer-Literal> | <Identifier> | <Operator> |
+            print | ( | ) | , | ; | :=
+```
 
-\<Integer-Literal\> **::=** \<Digit\> \<Digit\>*
+```
+<Integer-Literal> ::= <Digit> <Digit>*
+```
 
-\<Identifier\>      **::=** \<Letter\> (\<Letter\> | \<Digit\>)*
+```
+<Identifier> ::= <Letter> (<Letter> | <Digit>)*
+```
 
-\<Blank\>           **::=** space | tab | EOF
+```
+<Blank> ::= space | tab | EOF
+```
 
-\<Letter\>          **::=**   `A` | `B` | `C` | `D` | `E` | `F` | `G` | `H` | `I` | `J` | `K` | `L` | `M` | <br/>
-&nbsp;&nbsp;&nbsp;&nbsp;`N` | `O` | `P` | `Q` | `R` | `S` | `T` | `U` | `V` | `W` | `X` | `Y` | `Z` | <br/>
-&nbsp;&nbsp;&nbsp;&nbsp;`a` | `b` | `c` | `d` | `e` | `f` | `g` | `h` | `i` | `j` | `k` | `l` | `m` | <br/>
-&nbsp;&nbsp;&nbsp;&nbsp;`n` | `o` | `p` | `q` | `r` | `s` | `t` | `u` | `v` | `w` | `x` | `y` | `z` <br/>
+```
+<Letter> ::= A | B | C | D | E | F | G | H | I | J | K | L | M |
+             N | O | P | Q | R | S | T | U | V | W | X | Y | Z |
+             a | b | c | d | e | f | g | h | i | j | k | l | m |
+             n | o | p | q | r | s | t | u | v | w | x | y | z
+```
 
-\<Digit\>        **::=**  `0` | `1` | `2` | `3` | `4` | `5` | `6` | `7` | `8` | `9` <br/>
-\<Operator\>     **::=**  `+` | `-` | `x` | `/`
+```
+<Digit> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+```
 
+```
+<Operator> ::= + | - | * | /
+```
 
 ### Parser
 
+```
 Stmt ::=
       | Stmt `;` Stmt             // Compound Statement
 
@@ -50,10 +67,9 @@ BinOp   ::= `+`                   // Plus
 BinOp   ::= `-`                   // Minus
 BinOp   ::= `*`                   // Times
 BinOp   ::= `/`                   // Divide
+```
 
 ### Example
-
-Note: Assume that re-assign is forbidden
 
 ```
 a := 5 + 3 ; b := ( print ( a , a - 1 ) , 10 * a ) ; print ( b )

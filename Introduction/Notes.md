@@ -8,5 +8,5 @@
 
 ####  Recursion
 
-_When recursion winds you create an operations that should be executed
+_When recursion winds you trace the path and create an operations that should be executed
 when recursion unwinds. It start unwinding when concrete(terminal) value is found_
