@@ -22,11 +22,11 @@ Program ::= (Token | Whitespace | Comment)* EOF
 ```
 
 ```
-<Punctuation> ::= ( | ) | [ | ] | { | } | : | := | . | , | ;
+<Punctuation> ::= := | . | ( | ) | [ | ] | { | } | ; | : | ,
 ```
 
 ```
-<Operator> ::= * | / | + | - | = | <> | > | < | >= | <= | & | |
+<Operator> ::= & | | | * | / | + | - | = | <> | > | >= | < | <=
 ```
 
 An integer literal is a sequence of one or more digits form `0-9`
@@ -44,8 +44,8 @@ and stands for a character sequence.
 ```
 
 ```
-<Escape> ::= \n | \t | \^a | \^b | \^v | \^f | \^r | \ddd | \" |
-             \\ | \uxxxx | \s...s\
+<Escape> ::= \n | \t | \r | \\ | \" | \^a | \^b | \^v | \^f |
+             \ddd | \s...s\
 ```
 
 **NOTE:** `\s..s..s\` ignores spaces or newlines between `\` (`s` is spaces or newlines)
