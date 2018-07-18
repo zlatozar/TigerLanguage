@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Tests.fs" />
+    <Compile Include="TigerLexTest.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
