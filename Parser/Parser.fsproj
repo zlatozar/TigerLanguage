@@ -9,7 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Library.fs" />
+    <Compile Include="TigerParse.fs" />
+    <Compile Include="Parser.fs" />
     <None Include="Readme.md" />
   </ItemGroup>
 

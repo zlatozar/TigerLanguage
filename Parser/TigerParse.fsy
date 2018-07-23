@@ -1,0 +1,192 @@
+%{
+
+(* Parser specification for Tiger Language *)
+
+// Helper functions could be defined here
+
+%}
+
+%token <int> INT
+%token <string> STRING
+%token <string> ID
+
+%token ARRAY BREAK DO ELSE END FOR
+%token FUNCTION IF IN LET NIL OF
+%token THEN TO TYPE VAR WHILE
+
+%token ASSIGN DOT LPAREN RPAREN LBRACK RBRACK
+%token LBRACE RBRACE SEMICOLON COLON COMMA
+
+%token AND OR TIMES DIVIDE PLUS MINUS
+%token EQ NEQ GT GE LT LE
+
+/* Precedence */
+
+%right ASSIGN
+%left ELSE
+%left OR
+%left AND
+%nonassoc EQ NEQ GT GE LT LE
+%left PLUS MINUS
+%left TIMES DIVIDE
+%nonassoc Negation
+%nonassoc LBRACK
+
+/* Start symbol and its type */
+
+%start Main
+%type <unit> Main
+
+%%
+
+Main:
+    Exp                { printfn "Main: Exp" }
+;
+
+/* Expression */
+
+Exp:
+    | INT              { () }
+    | STRING           { () }
+    | NIL              { () }
+    | BREAK            { () }
+
+    | IfThenElse       { () }
+    | WhileExp         { () }
+    | ForExp           { () }
+    | LetExp           { () }
+    | SeqExp           { () }
+    | Assign           { () }
+    | LValue           { () }
+    | FunCall          { () }
+    | InfixExp         { () }
+    | Negation         { () }
+    | RecCreate        { () }
+    | ArrCreate        { () }
+;
+
+IfThenElse:
+    | IF Exp THEN Exp                 { () }
+    | IF Exp THEN Exp ELSE Exp        { () }
+;
+
+WhileExp:
+    | WHILE Exp DO Exp      { () }
+;
+
+ForExp:
+    | FOR ID ASSIGN Exp TO Exp DO Exp { () }
+;
+
+LetExp:
+    | LET DecSeq IN ExpSeq END         { () }
+;
+
+DecSeq:
+    | /* empty */                     { () }
+    | Dec DecSeq                      { () }
+;
+
+ExpSeq:
+    | /* empty */                     { () }
+    | Exp                             { () }
+    | Exp SEMICOLON ExpSeq            { () }
+;
+
+SeqExp:
+    | LPAREN TwoOrMoreExp RPAREN      { () }
+;
+
+TwoOrMoreExp:
+    | Exp SEMICOLON Exp                    { () }
+    | Exp SEMICOLON Exp SEMICOLON  ExpSeq  { () }
+;
+
+/* Declartion */
+
+Dec:
+    | TyDec                 { () }
+    | VarDec                { () }
+    | FunDec                { () }
+;
+
+TyDec:
+    | TYPE ID EQ Ty         { () }
+;
+
+VarDec:
+    | VAR ID ASSIGN Exp                    { () }
+    | VAR ID COLON ID ASSIGN Exp           { () }
+;
+
+FunDec:
+    | FUNCTION ID LPAREN FieldDec RPAREN EQ Exp            { () }
+    | FUNCTION ID LPAREN FieldDec RPAREN COLON ID EQ Exp   { () }
+;
+
+/* Data types */
+
+Ty:
+    | ID                                   { () }
+    | LBRACE FieldDec RBRACE               { () }
+    | ARRAY OF ID                          { () }
+;
+
+FieldDec:
+    | /* empty */                          { () }
+    | ID COLON                             { () }
+    | ID COLON COMMA FieldDec              { () }
+;
+
+/* Variables and expressions */
+
+Assign:
+    | LValue ASSIGN Exp     { () }
+;
+
+LValue:
+    | ID                                   { () }
+    | LValue DOT ID                        { () }
+    | LValue LBRACK Exp RBRACK             { () }
+;
+
+FunCall:
+    | ID LPAREN ExpSeq RPAREN              { () }
+;
+
+InfixExp:
+    | Exp Op Exp            { () }
+;
+
+Negation:
+    | MINUS Exp             { () }
+;
+
+/* Creation */
+
+RecCreate:
+    | ID LBRACE RecFieldSeq RBRACE         { () }
+;
+
+ArrCreate:
+    | ID LBRACK Exp RBRACK OF Exp          { () }
+;
+
+RecFieldSeq:
+    | /* empty */                          { () }
+    | ID EQ Exp                            { () }
+    | ID EQ Exp COMMA RecFieldSeq          { () }
+;
+
+Op:
+    | PLUS                  { () }
+    | MINUS                 { () }
+    | TIMES                 { () }
+    | DIVIDE                { () }
+    | EQ                    { () }
+    | NEQ                   { () }
+    | GT                    { () }
+    | GE                    { () }
+    | LT                    { () }
+    | LE                    { () }
+;
