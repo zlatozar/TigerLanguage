@@ -12,6 +12,7 @@
     <Compile Include="Tokens.fs" />
     <Compile Include="TigerLex.fs" />
     <Compile Include="Lexer.fs" />
+    <None Include="TigerLex.fsl" />
     <None Include="Readme.md" />
   </ItemGroup>
 

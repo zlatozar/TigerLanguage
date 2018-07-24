@@ -1,0 +1,170 @@
+{
+
+(* Lexer for a Tiger language *)
+
+module TigerLex
+
+open System
+open Microsoft.FSharp.Text.Lexing
+
+open TigerParse
+
+// _____________________________________________________________________________
+//                                                                     Comments
+
+// Tip: Nested comments could not be matched by regular expressions
+
+// Start of outermost comment currently being scanned
+let commentStart = ref Position.Empty
+
+// Current comment nesting
+let commentDepth = ref 0
+
+// _____________________________________________________________________________
+//                                                             Helper functions
+
+let lexicalError errorMsg (lexbuf: LexBuffer<_>) =
+    let message = "Lexical Error: " + errorMsg +
+                             (sprintf "\nLine: %d Column: %d\n" (lexbuf.StartPos.Line + 1) lexbuf.StartPos.Column)
+    failwith message
+
+let lexemeAsString lexbuf = LexBuffer<char>.LexemeString lexbuf
+
+let asciiToChar lexbuf =
+    let txt = lexemeAsString lexbuf
+    txt.Substring 1 |> int |> char
+
+let newLine (lexbuf: LexBuffer<_>) = lexbuf.EndPos <- lexbuf.EndPos.NextLine
+
+let escape s (lexbuf: LexBuffer<_>) =
+    match s with
+    | "\\n"  -> '\n'
+    | "\\t"  -> '\t'
+    | "\\r"  -> '\r'
+    | "\\\\" -> '\\'
+    | "\\\"" -> '\"'
+    | "\\^a" -> '\007'
+    | "\\^b" -> '\008'
+    | "\\^v" -> '\011'
+    | "\\^f" -> '\012'
+    | _      -> lexicalError "Impossible escape." lexbuf
+
+let keywords = [("array", ARRAY);
+                ("break", BREAK);
+                ("do", DO);
+                ("else", ELSE);
+                ("end", END);
+                ("for", FOR);
+                ("function", FUNCTION);
+                ("if", IF);
+                ("in", IN);
+                ("let", LET);
+                ("nil", NIL);
+                ("of", OF);
+                ("then", THEN);
+                ("to", TO);
+                ("type", TYPE);
+                ("var", VAR);
+                ("while", WHILE)] |> Map.ofList
+
+let keywordOrId token =
+    match keywords.TryFind token with
+    | Some k  -> k
+    | _       -> ID (token)
+
+}
+
+// _____________________________________________________________________________
+//                                                          Regular expressions
+
+let whitespace = [' ' '\t' ]
+let newline = ('\n' | '\r' '\n')
+let digit = ['0'-'9']
+let alpha = ['a'-'z' 'A'-'Z']
+let treeDigits = digit digit digit
+
+let integer = digit+
+let identifier = alpha (alpha | '_' | digit)*
+let contLine = '\\' (whitespace | newline)+ '\\'
+
+// _____________________________________________________________________________
+//                         Token Rules (always pass 'lexbuf' as last parameter)
+
+// Tip: Look at the string and comments as separate cases
+
+rule Read = parse
+  | whitespace      { Read lexbuf }
+  | newline         { newLine lexbuf; Read lexbuf }
+  | contLine        { Read lexbuf }
+  | integer         { INT (Int32.Parse (lexemeAsString lexbuf)) }
+  | identifier      {
+                      keywordOrId (lexemeAsString lexbuf)
+                    }
+
+  | '"'             { // starts a string
+                      STRING (StringDef [] lexbuf)
+                    }
+
+  | "/*"            { // starts a comment
+                      commentStart := lexbuf.StartPos; commentDepth := 1;
+                      SkipComment lexbuf; Read lexbuf
+                    }
+
+  | ":="            { ASSIGN    }
+  | '.'             { DOT       }
+  | '('             { LPAREN    }
+  | ')'             { RPAREN    }
+  | '['             { LBRACK    }
+  | ']'             { RBRACK    }
+  | '{'             { LBRACE    }
+  | '}'             { RBRACE    }
+  | ';'             { SEMICOLON }
+  | ':'             { COLON     }
+  | ','             { COMMA     }
+
+  | '&'             { AND       }
+  | '|'             { OR        }
+  | '*'             { TIMES     }
+  | '/'             { DIVIDE    }
+  | '+'             { PLUS      }
+  | '-'             { MINUS     }
+  | '='             { EQ        }
+  | "<>"            { NEQ       }
+  | '>'             { GT        }
+  | ">="            { GE        }
+  | '<'             { LT        }
+  | "<="            { LE        }
+
+  | eof             { EOF       }
+  | _               {
+                      lexicalError (sprintf "Unexpected char: '%s'." (lexemeAsString lexbuf)) lexbuf
+                    }
+
+and SkipComment = parse
+    "*/"            { // comment ends
+                      commentDepth := !commentDepth - 1
+                      if !commentDepth = 0 then ()
+                      else SkipComment lexbuf
+                    }
+   | "/*"           { // inner comment starts
+                      commentDepth := !commentDepth + 1
+                      SkipComment lexbuf
+                    }
+   | eof            {
+                      lexicalError "Unterminated comment." lexbuf
+                    }
+   | _              { SkipComment lexbuf }
+
+// Tip: Final result is the reverse of the collected chars
+
+and StringDef chars = parse
+  | '"'                              { // string ends
+                                       String.concat "" (List.map string (List.rev chars))
+                                     }
+  | '\\' ['n' 't' 'r' '\\' '"']      { StringDef ((escape (lexemeAsString lexbuf) lexbuf) :: chars) lexbuf }
+  | "\\^" ['a' 'b' 'v' 'f']          { StringDef ((escape (lexemeAsString lexbuf) lexbuf) :: chars) lexbuf }
+  | '\\' treeDigits                  { StringDef ((asciiToChar lexbuf) :: chars) lexbuf }
+  | ['\n' '\r']                      { lexicalError "Newline in string." lexbuf }
+  | '\\'                             { lexicalError "Illegal escape sequence." lexbuf }
+  | eof                              { lexicalError "Unterminated string." lexbuf }
+  | _                                { StringDef (char (lexbuf.LexemeChar 0) :: chars) lexbuf }

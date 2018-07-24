@@ -4,26 +4,107 @@ _Most shift-reduce conflicts, and probably all reduce-reduce conflicts, should n
 resolved by fiddling with the parsing table. They are symptoms of an ill-specified
 grammar, and they should be resolved by eliminating ambiguities._
 
-### How to read parser output file
+
+- `Dangling ELSE` is not a problem for LALR(1) parsers
+
+### FsYaccLex
+
+When the rule and token have equal priority, then a `%left` precedence
+favors **reducing**, `%right` favors **shifting**, and `%nonassoc` yields an error
+action.
+
+
+#### How to deal with shift/reduce conflicts
+
+**Existing**
+
+- `state 20` on terminal LBRACK between {[explicit right 9999] shift(60)} and {noprec reduce(LValue:'ID')}
 
 ```
-    state 0:
-    items:
-    _startstartProduction -> . startProduction
+immediate action:   reduce Exp --> LetExp  gotos:state 20:  items:    LValue -> 'ID' .
+    FunCall -> 'ID' . 'LPAREN' ActualParams 'RPAREN'
+    RecCreate -> 'ID' . 'LBRACE' RecAggregate 'RBRACE'
+    ArrCreate -> 'ID' . 'LBRACK' Exp 'RBRACK' 'OF' Exp
+  actions:    action 'EOF' (noprec):   reduce LValue --> 'ID'
+    action 'EQ' (noprec):   reduce LValue --> 'ID'
+```
 
-    actions:
-    action ‘PLUS’ (noprec): error
+- `state 28` on terminal EQ between {[explicit nonassoc 9997] shift(138)} and {noprec reduce(InfixOp:Exp Op Exp)}
+
+```
+state 28:  items:    InfixOp -> Exp . Op Exp
+    InfixOp -> Exp Op Exp .
+  actions:    action 'EOF' (noprec):   reduce InfixOp --> Exp Op Exp
+    action 'EQ' (explicit nonassoc 9997):   shift 138
 	....
-    action ‘POW’ (noprec): error
-    action ‘IF’ (noprec): shift 6
-    action ‘THEN’ (noprec): error
-	...
-	action ‘INT’ (noprec): shift 2
-    action ‘error’ (noprec): error
-    action ‘#’ (noprec): error
-    action ‘$$’ (noprec): error
-
-    immediate action:
-    gotos:
-    goto startProduction: 1
 ```
+
+**Solved**
+
+- `state 33` on terminal EQ between {[explicit nonassoc 9997] shift(138)} and {noprec reduce(ArrCreate:'ID' 'LBRACK' Exp 'RBRACK' 'OF' Exp)}
+
+```
+state 33:  items:    InfixOp -> Exp . Op Exp
+    ArrCreate -> 'ID' 'LBRACK' Exp 'RBRACK' 'OF' Exp .
+  actions:    action 'EOF' (noprec):   reduce ArrCreate --> 'ID' 'LBRACK' Exp 'RBRACK' 'OF' Exp
+    action 'EQ' (explicit nonassoc 9997):   shift 138
+    action 'NEQ' (explicit nonassoc 9997):   shift 139
+    ...
+```
+
+Solved by adding `%left OF`
+
+- `state 41` on terminal EQ between {[explicit nonassoc 9997] shift(138)} and {noprec reduce(IfExp:'IF' Exp 'THEN' Exp)}
+
+```
+state 41:  items:    InfixOp -> Exp . Op Exp
+    IfExp -> 'IF' Exp 'THEN' Exp .
+    IfExp -> 'IF' Exp 'THEN' Exp . 'ELSE' Exp
+  actions:    action 'EOF' (noprec):   reduce IfExp --> 'IF' Exp 'THEN' Exp
+    action 'EQ' (explicit nonassoc 9997):   shift 138
+    action 'NEQ' (explicit nonassoc 9997):   shift 139
+    ...
+```
+
+Not harmful but solved by adding `%left THEN` with lest priority than `%left ELSE`.
+
+- `state 42` on terminal EQ between {[explicit nonassoc 9997] shift(138)} and {noprec reduce(IfExp:'IF' Exp 'THEN' Exp 'ELSE' Exp)}
+
+```
+state 42:  items:    InfixOp -> Exp . Op Exp
+    IfExp -> 'IF' Exp 'THEN' Exp 'ELSE' Exp .
+  actions:    action 'EOF' (noprec):   reduce IfExp --> 'IF' Exp 'THEN' Exp 'ELSE' Exp
+    action 'EQ' (explicit nonassoc 9997):   shift 138
+    ...
+```
+
+- `state 44` on terminal EQ between {[explicit nonassoc 9997] shift(138)} and {noprec reduce(WhileExp:'WHILE' Exp 'DO' Exp)}
+
+```
+state 42:  items:    InfixOp -> Exp . Op Exp
+    IfExp -> 'IF' Exp 'THEN' Exp 'ELSE' Exp .
+  actions:    action 'EOF' (noprec):   reduce IfExp --> 'IF' Exp 'THEN' Exp 'ELSE' Exp
+    action 'EQ' (explicit nonassoc 9997):   shift 138
+	...
+```
+
+- `state 47` on terminal EQ between {[explicit nonassoc 9997] shift(138)} and {noprec reduce(ForExp:'FOR' 'ID' 'ASSIGN' Exp 'TO' Exp 'DO' Exp)}
+
+```
+state 47:  items:    InfixOp -> Exp . Op Exp
+    ForExp -> 'FOR' 'ID' 'ASSIGN' Exp 'TO' Exp 'DO' Exp .
+  actions:    action 'EOF' (noprec):   reduce ForExp --> 'FOR' 'ID' 'ASSIGN' Exp 'TO' Exp 'DO' Exp
+    action 'EQ' (explicit nonassoc 9997):   shift 138
+	...
+```
+Solved by adding `%left DO`
+
+**Guide line**
+
+`%left` to prefer **shift** but how to order priority?
+Let's say that `if..then..else` should be parsed. `then` should be with less
+priority because we want to continue for possible `else`. Same for `for..to..do` and
+`while..do`.
+
+
+### How to read parser output file

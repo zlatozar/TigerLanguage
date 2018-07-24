@@ -1,6 +1,9 @@
 module Tokens
 
-(* A "scaffold" structure for debugging lexer *)
+(*
+   A "scaffold" structure for debugging lexer.
+   Using it start and end positions of tokens could be checked.
+*)
 
 type LineNum = int
 type Token = string

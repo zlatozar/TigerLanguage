@@ -11,20 +11,18 @@ module Parser =
     let fromString (str: string) =
         let lexbuf = LexBuffer<char>.FromString(str)
         try
-          TigerParse.Main (TigerLex.Read lexbuf)
+          TigerParse.Main TigerLex.Read lexbuf
 
         with
           | exn -> let pos = lexbuf.EndPos
                    failwithf "%s near line %d, column %d\n"
                       (exn.Message) (pos.Line + 1) pos.Column
 
-    (* Parsing from a file *)
-
     let fromFile (filename: string) =
         use reader = new StreamReader(filename)
         let lexbuf = LexBuffer<char>.FromTextReader reader
         try
-          TigerParse.Main (TigerLex.Read lexbuf)
+          TigerParse.Main TigerLex.Read lexbuf
 
         with
           | exn -> let pos = lexbuf.EndPos

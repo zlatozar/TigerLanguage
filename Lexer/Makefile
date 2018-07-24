@@ -1,5 +1,5 @@
 lex:
-	@ echo -e "\nGenerate Tiger lexer using 'TigerLex.fsl...'\n"
+	@ echo -e "\nGenerate Tiger lexer using 'TigerLex.fsl'...\n"
 	@ mono ../packages/FsLexYacc/build/fslex.exe --unicode TigerLex.fsl
 
 build: lex

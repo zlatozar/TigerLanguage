@@ -14,6 +14,7 @@ type token =
   | DIVIDE
   | PLUS
   | MINUS
+  | UMINUS
   | LBRACE
   | RBRACE
   | SEMICOLON
@@ -59,6 +60,7 @@ type tokenId =
     | TOKEN_DIVIDE
     | TOKEN_PLUS
     | TOKEN_MINUS
+    | TOKEN_UMINUS
     | TOKEN_LBRACE
     | TOKEN_RBRACE
     | TOKEN_SEMICOLON
@@ -104,11 +106,11 @@ type nonTerminalId =
     | NONTERM_ActualParams
     | NONTERM_ExpList
     | NONTERM_RecCreate
-    | NONTERM_ArrCreate
     | NONTERM_RecAggregate
     | NONTERM_FieldList
+    | NONTERM_ArrCreate
     | NONTERM_SeqExp
-    | NONTERM_TwoOrMoreExp
+    | NONTERM_ZeroOrMoreExp
     | NONTERM_ExpSeq
     | NONTERM_IfExp
     | NONTERM_WhileExp
@@ -136,4 +138,4 @@ val prodIdxToNonTerminal: int -> nonTerminalId
 
 /// This function gets the name of a token as a string
 val token_to_string: token -> string
-val Main : (Microsoft.FSharp.Text.Lexing.LexBuffer<'cty> -> token) -> Microsoft.FSharp.Text.Lexing.LexBuffer<'cty> -> (unit) 
+val Main : (Microsoft.FSharp.Text.Lexing.LexBuffer<'cty> -> token) -> Microsoft.FSharp.Text.Lexing.LexBuffer<'cty> -> (Absyn.TExp) 

@@ -74,11 +74,11 @@ Tiger programs do not have arguments: a program is just an expression.
 #### Expressions
 
 ```
-<SeqExp> ::= ( <TwoOrMoreExp> )
+<SeqExp> ::= ( <ZeroOrMoreExp> )
 
-<TwoOrMoreExp> ::=
-                | <Exp> ; <Exp>
-				| <TwoOrMoreExp> ; <ExpSeq>
+<ZeroOrMoreExp> ::=
+                | <empty>
+				| <ExpSeq>
 
 <ExpSeq> ::=
           | <Exp>

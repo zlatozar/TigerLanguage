@@ -2,7 +2,7 @@
 
 (* Parser specification for Tiger Language *)
 
-open Tokens
+open Absyn
 
 // Helper functions could be defined here
 
@@ -19,195 +19,198 @@ open Tokens
 %token ASSIGN DOT LPAREN RPAREN LBRACK RBRACK
 %token LBRACE RBRACE SEMICOLON COLON COMMA
 
-%token AND OR TIMES DIVIDE PLUS MINUS
+%token AND OR TIMES DIVIDE PLUS MINUS UMINUS
 %token EQ NEQ GT GE LT LE
 
 %token EOF
 
 /* Precedence */
 
-%right ASSIGN
-%left OR
-%left AND
+%left THEN
+%left DO OF ELSE
+%nonassoc ASSIGN
+%left AND OR
 %nonassoc EQ NEQ GT GE LT LE
 %left PLUS MINUS
 %left TIMES DIVIDE
-%nonassoc Negation
-%nonassoc LBRACK
+%left UMINUS
 
 /* Start symbol and its type */
 
 %start Main
-%type <unit> Main
+%type <Absyn.TExp> Main
 
 %%
 
+/* A Tiger program is a single Exp */
+
 Main:
-    Exp EOF            { printfn "Main: Exp" }
+    Exp EOF            { $1 }
 ;
 
-/* Expression */
-
 Exp:
-    | INT              { () }
-    | STRING           { () }
-    | NIL              { () }
-    | BREAK            { () }
+    | INT              { IntExp $1    }
+    | STRING           { StringExp $1 }
+    | NIL              { NilExp       }
+    | BREAK            { BreakExp     }
 
-    | LValue           { () }
-    | Negation         { () }
-    | InfixOp          { () }
-    | Assign           { () }
-    | FunCall          { () }
-    | RecCreate        { () }
-    | ArrCreate        { () }
-    | SeqExp           { () }
-    | IfExp            { () }
-    | WhileExp         { () }
-    | ForExp           { () }
-    | LetExp           { () }
+/* Non terminals as place holders */
+
+    | LValue           { VarExp $1 }
+    | Negation         { $1 }
+    | InfixOp          { $1 }
+    | Assign           { $1 }
+    | FunCall          { $1 }
+    | RecCreate        { $1 }
+    | ArrCreate        { $1 }
+    | SeqExp           { $1 }
+    | IfExp            { $1 }
+    | WhileExp         { $1 }
+    | ForExp           { $1 }
+    | LetExp           { $1 }
 ;
 
 LValue:
-    | ID                          { () }
-    | LValue DOT ID               { () }
-    | LValue LBRACK Exp RBRACK    { () }
+    | ID                          { SimpleVar $1          }
+    | LValue DOT ID               { FieldVar ($1, $3)     }
+    | LValue LBRACK Exp RBRACK    { SubscriptVar ($1, $3) }
 ;
 
+/* In p. 99 is suggested negative numbers to be infix operation 0 - exp */
 Negation:
-    | MINUS Exp             { () }
+    | MINUS Exp %prec UMINUS      { OpExp {left=(IntExp 0); oper=MinusOp; right=$2} }
 ;
 
 InfixOp:
-    | Exp Op Exp            { () }
+    | Exp Op Exp                  { OpExp {left=$1; oper=$2; right=$3} }
 ;
 
 Assign:
-    | LValue ASSIGN Exp     { () }
+    | LValue ASSIGN Exp           { AssignExp {var=$1; exp=$3} }
 ;
 
 FunCall:
-    | ID LPAREN ActualParams RPAREN    { () }
+    | ID LPAREN ActualParams RPAREN    { CallExp {func=$1; args=$3} }
 ;
 
 ActualParams:
-    | /* empty */          { () }
-    | ExpList              { () }
+    | /* empty */          { [] }
+    | ExpList              { $1 }
 
 ExpList:
-    | Exp                  { () }
-    | ExpList COMMA Exp    { () }
+    | Exp                  { [$1] }
+    | ExpList COMMA Exp    { List.append [$3] $1 }
 
 RecCreate:
-    | ID LBRACE RecAggregate RBRACE   { () }
-;
-
-ArrCreate:
-    | ID LBRACK Exp RBRACK OF Exp     { () }
+    | ID LBRACE RecAggregate RBRACE   { RecordExp {typ=$1; fields=$3} }
 ;
 
 RecAggregate:
-    | /* empty */          { () }
-    | FieldList            { () }
+    | /* empty */          { [] }
+    | FieldList            { $1 }
 ;
 
 FieldList:
-    | ID ASSIGN Exp                   { () }
-    | FieldList COMMA ID ASSIGN Exp   { () }
+    | ID ASSIGN Exp                   { [($1, $3)] }
+    | FieldList COMMA ID ASSIGN Exp   { List.append [($3, $5)] $1 }
+;
+
+ArrCreate:
+    | ID LBRACK Exp RBRACK OF Exp     { ArrayExp {typ=$1; size=$3; init=$6} }
 ;
 
 SeqExp:
-    | LPAREN TwoOrMoreExp RPAREN      { () }
+    | LPAREN ZeroOrMoreExp RPAREN     { $2 }
 ;
 
-TwoOrMoreExp:
-    | Exp SEMICOLON Exp               { () }
-    | TwoOrMoreExp SEMICOLON ExpSeq   { () }
+ZeroOrMoreExp:
+    | /* empty */                     { SeqExp [] }
+    | ExpSeq                          { SeqExp $1 }
 ;
 
 ExpSeq:
-    | Exp                             { () }
-    | ExpSeq SEMICOLON Exp            { () }
+    | Exp                             { [$1] }
+    | ExpSeq SEMICOLON Exp            { List.append [$3] $1 }
 ;
 
 IfExp:
-    | IF Exp THEN Exp                 { () }
-    | IF Exp THEN Exp ELSE Exp        { () }
+    | IF Exp THEN Exp                 { IfExp {test=$2; then'=$4; else'=None}    }
+    | IF Exp THEN Exp ELSE Exp        { IfExp {test=$2; then'=$4; else'=(Some $6)} }
 ;
 
 WhileExp:
-    | WHILE Exp DO Exp  { () }
+    | WHILE Exp DO Exp                { WhileExp {test=$2; body=$4} }
 ;
 
 ForExp:
-    | FOR ID ASSIGN Exp TO Exp DO Exp { () }
+    | FOR ID ASSIGN Exp TO Exp DO Exp { ForExp {var=$2; escape=ref true; lo=$4; hi=$6; body=$8} }
 ;
 
 LetExp:
-    | LET Declarations IN Stmts END   { () }
+    | LET Declarations IN Stmts END   { LetExp {decs=$2; body=$4} }
 ;
 
 Declarations:
-    | /* empty */           { () }
-    | DecList               { () }
+    | /* empty */           { [] }
+    | DecList               { $1 }
 ;
 
 DecList:
-    | Dec                   { () }
-    | DecList Dec           { () }
+    | Dec                   { [$1] }
+    | DecList Dec           { List.append [$2] $1 }
 ;
 
 Stmts:
-    | /* empty */           { () }
-    | ExpSeq                { () }
+    | /* empty */           { NilExp }
+    | ExpSeq                { SeqExp $1 (* that was tricky *) }
 
 Dec:
-    | TyDec                 { () }
-    | VarDec                { () }
-    | FunDec                { () }
+    | TyDec                 { $1 }
+    | VarDec                { $1 }
+    | FunDec                { $1 }
 ;
 
 TyDec:
-    | TYPE ID EQ Ty         { () }
+    | TYPE ID EQ Ty         { TypeDec [{name=$2; ty=$4}] }
 ;
 
 VarDec:
-    | VAR ID ASSIGN Exp                    { () }
-    | VAR ID COLON ID ASSIGN Exp           { () }
+    | VAR ID ASSIGN Exp               { VarDec {name=$2; escape=ref true; typ=None; init=$4} }
+    | VAR ID COLON ID ASSIGN Exp      { VarDec {name=$2; escape=ref true; typ=(Some $4); init=$6} }
 ;
 
 FunDec:
-    | FUNCTION ID LPAREN FieldDec RPAREN EQ Exp            { () }
-    | FUNCTION ID LPAREN FieldDec RPAREN COLON ID EQ Exp   { () }
+    | FUNCTION ID LPAREN FieldDec RPAREN EQ Exp            { FunctionDec [{name=$2; param=$4; result=None; body=$7}] }
+    | FUNCTION ID LPAREN FieldDec RPAREN COLON ID EQ Exp   { FunctionDec [{name=$2; param=$4; result=(Some $7); body=$9}] }
 ;
 
 /* Data types */
 
 Ty:
-    | ID                                   { () }
-    | LBRACE FieldDec RBRACE               { () }
-    | ARRAY OF ID                          { () }
+    | ID                              { NameTy $1   }
+    | LBRACE FieldDec RBRACE          { RecordTy $2 }
+    | ARRAY OF ID                     { ArrayTy $3  }
 ;
 
 FieldDec:
-    | /* empty */                          { () }
-    | TypeFieldList                        { () }
+    | /* empty */                     { [] }
+    | TypeFieldList                   { $1 }
 ;
 
 TypeFieldList:
-    | ID COLON ID                          { () }
-    | TypeFieldList COMMA ID COLON ID      { () }
+    | ID COLON ID                          { [{name=$1; escape=ref true; typ=$3}] }
+    | TypeFieldList COMMA ID COLON ID      { List.append [{name=$3; escape=ref true; typ=$5}] $1 }
 ;
 
 Op:
-    | PLUS                  { () }
-    | MINUS                 { () }
-    | TIMES                 { () }
-    | DIVIDE                { () }
-    | EQ                    { () }
-    | NEQ                   { () }
-    | GT                    { () }
-    | GE                    { () }
-    | LT                    { () }
-    | LE                    { () }
+    | PLUS                  { PlusOp   }
+    | MINUS                 { MinusOp  }
+    | TIMES                 { TimesOp  }
+    | DIVIDE                { DivideOp }
+    | EQ                    { EqOp     }
+    | NEQ                   { NeqOp    }
+    | GT                    { GtOp     }
+    | GE                    { GeOp     }
+    | LT                    { LtOp     }
+    | LE                    { LeOp     }
 ;

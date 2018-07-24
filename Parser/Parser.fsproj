@@ -9,13 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Absyn.fs" />
     <Compile Include="TigerParse.fs" />
+    <Compile Include="TigerLex.fs" />
     <Compile Include="Parser.fs" />
-    <None Include="Readme.md" />
-  </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Lexer\Lexer.fsproj" />
+    <None Include="TigerLex.fsl" />
+    <None Include="TigerParse.fsy" />
+    <None Include="Readme.md" />
   </ItemGroup>
 
   <ItemGroup>
