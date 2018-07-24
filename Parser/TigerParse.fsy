@@ -2,6 +2,8 @@
 
 (* Parser specification for Tiger Language *)
 
+open Tokens
+
 // Helper functions could be defined here
 
 %}
@@ -20,10 +22,11 @@
 %token AND OR TIMES DIVIDE PLUS MINUS
 %token EQ NEQ GT GE LT LE
 
+%token EOF
+
 /* Precedence */
 
 %right ASSIGN
-%left ELSE
 %left OR
 %left AND
 %nonassoc EQ NEQ GT GE LT LE
@@ -40,7 +43,7 @@
 %%
 
 Main:
-    Exp                { printfn "Main: Exp" }
+    Exp EOF            { printfn "Main: Exp" }
 ;
 
 /* Expression */
@@ -51,46 +54,66 @@ Exp:
     | NIL              { () }
     | BREAK            { () }
 
-    | IfThenElse       { () }
+    | LValue           { () }
+    | Negation         { () }
+    | InfixOp          { () }
+    | Assign           { () }
+    | FunCall          { () }
+    | RecCreate        { () }
+    | ArrCreate        { () }
+    | SeqExp           { () }
+    | IfExp            { () }
     | WhileExp         { () }
     | ForExp           { () }
     | LetExp           { () }
-    | SeqExp           { () }
-    | Assign           { () }
-    | LValue           { () }
-    | FunCall          { () }
-    | InfixExp         { () }
-    | Negation         { () }
-    | RecCreate        { () }
-    | ArrCreate        { () }
 ;
 
-IfThenElse:
-    | IF Exp THEN Exp                 { () }
-    | IF Exp THEN Exp ELSE Exp        { () }
+LValue:
+    | ID                          { () }
+    | LValue DOT ID               { () }
+    | LValue LBRACK Exp RBRACK    { () }
 ;
 
-WhileExp:
-    | WHILE Exp DO Exp      { () }
+Negation:
+    | MINUS Exp             { () }
 ;
 
-ForExp:
-    | FOR ID ASSIGN Exp TO Exp DO Exp { () }
+InfixOp:
+    | Exp Op Exp            { () }
 ;
 
-LetExp:
-    | LET DecSeq IN ExpSeq END         { () }
+Assign:
+    | LValue ASSIGN Exp     { () }
 ;
 
-DecSeq:
-    | /* empty */                     { () }
-    | Dec DecSeq                      { () }
+FunCall:
+    | ID LPAREN ActualParams RPAREN    { () }
 ;
 
-ExpSeq:
-    | /* empty */                     { () }
-    | Exp                             { () }
-    | Exp SEMICOLON ExpSeq            { () }
+ActualParams:
+    | /* empty */          { () }
+    | ExpList              { () }
+
+ExpList:
+    | Exp                  { () }
+    | ExpList COMMA Exp    { () }
+
+RecCreate:
+    | ID LBRACE RecAggregate RBRACE   { () }
+;
+
+ArrCreate:
+    | ID LBRACK Exp RBRACK OF Exp     { () }
+;
+
+RecAggregate:
+    | /* empty */          { () }
+    | FieldList            { () }
+;
+
+FieldList:
+    | ID ASSIGN Exp                   { () }
+    | FieldList COMMA ID ASSIGN Exp   { () }
 ;
 
 SeqExp:
@@ -98,11 +121,45 @@ SeqExp:
 ;
 
 TwoOrMoreExp:
-    | Exp SEMICOLON Exp                    { () }
-    | Exp SEMICOLON Exp SEMICOLON  ExpSeq  { () }
+    | Exp SEMICOLON Exp               { () }
+    | TwoOrMoreExp SEMICOLON ExpSeq   { () }
 ;
 
-/* Declartion */
+ExpSeq:
+    | Exp                             { () }
+    | ExpSeq SEMICOLON Exp            { () }
+;
+
+IfExp:
+    | IF Exp THEN Exp                 { () }
+    | IF Exp THEN Exp ELSE Exp        { () }
+;
+
+WhileExp:
+    | WHILE Exp DO Exp  { () }
+;
+
+ForExp:
+    | FOR ID ASSIGN Exp TO Exp DO Exp { () }
+;
+
+LetExp:
+    | LET Declarations IN Stmts END   { () }
+;
+
+Declarations:
+    | /* empty */           { () }
+    | DecList               { () }
+;
+
+DecList:
+    | Dec                   { () }
+    | DecList Dec           { () }
+;
+
+Stmts:
+    | /* empty */           { () }
+    | ExpSeq                { () }
 
 Dec:
     | TyDec                 { () }
@@ -134,48 +191,12 @@ Ty:
 
 FieldDec:
     | /* empty */                          { () }
-    | ID COLON                             { () }
-    | ID COLON COMMA FieldDec              { () }
+    | TypeFieldList                        { () }
 ;
 
-/* Variables and expressions */
-
-Assign:
-    | LValue ASSIGN Exp     { () }
-;
-
-LValue:
-    | ID                                   { () }
-    | LValue DOT ID                        { () }
-    | LValue LBRACK Exp RBRACK             { () }
-;
-
-FunCall:
-    | ID LPAREN ExpSeq RPAREN              { () }
-;
-
-InfixExp:
-    | Exp Op Exp            { () }
-;
-
-Negation:
-    | MINUS Exp             { () }
-;
-
-/* Creation */
-
-RecCreate:
-    | ID LBRACE RecFieldSeq RBRACE         { () }
-;
-
-ArrCreate:
-    | ID LBRACK Exp RBRACK OF Exp          { () }
-;
-
-RecFieldSeq:
-    | /* empty */                          { () }
-    | ID EQ Exp                            { () }
-    | ID EQ Exp COMMA RecFieldSeq          { () }
+TypeFieldList:
+    | ID COLON ID                          { () }
+    | TypeFieldList COMMA ID COLON ID      { () }
 ;
 
 Op:

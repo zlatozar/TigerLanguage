@@ -1,9 +1,18 @@
 ## Tiger Parser
 
+Use to use language specification. If you create EBNF half of the work is done.
+
 ### EBNF
 
-Tip: Be careful with <...>* definitions when translate specification to parser definition!
-     As you know <Dec>+ is <Dec> [<Dec>]*.
+-  Be careful with <...>* definitions when translate specification to parser definition!
+   As you know <Dec>+ is <Dec> [<Dec>]*.
+
+- `if..then` and `if..then..else` is the signal of **dangling else** problem.
+
+- When use parser generator `left recursion` shouldn't be eliminated.
+
+- Remember that the output of the lexer is the input for the parser so careful study the
+  lexer tokens. `STRING`, `INT`, `NIL` and `BREAK`.
 
 #### Program
 
@@ -12,39 +21,91 @@ Tiger programs do not have arguments: a program is just an expression.
 ```
 <Program> ::= <Exp> EOF
 
-<Exp>     ::= <IfThenElse> | <WhileExp> | <ForExp> | <LetExp> | <SeqExp> |
-              <Assign> | <LValue> | <FunCall> | <InfixExp> | <Negation> |
-              <RecCreate> | <ArrCreate> | INT | STRING | nil | break
-```
-
-#### Expression
+<Exp>     ::= STRING | INT | NIL | BREAK | <LValue> | <Negation> |
+              <InfixOp> | <Assign> | <FunCall> | <RecCreate> |
+			  <ArrCreate> | <SeqExp> | <IfExp> | <WhileExp> |
+			  <ForExp> | <LetExp>
 
 ```
-<IfThenElse> ::=
-              | if <Exp> then <Exp>
-			  | if <Exp> then <Exp> else <Exp>
 
-<WhileExp>   ::= while <Exp> do <Exp>
+#### Variables and Expressions
+
+```
+<LValue> ::=
+          | ID
+          | <LValue> . ID
+          | <LValue> [ <Exp> ]
+
+<Negation> ::= - <Exp>
+
+<InfixOp> ::= <Exp> <Op> <Exp>
+
+<Assign> ::=
+          | <LValue> := <Exp>
+
+<FunCall> ::= ID ( <ActualParams> )
+
+<ActualParams> ::=
+                | empty
+		        | <ExpList>
+
+<ExpList> ::=
+           | <Exp>
+		   | <ExpList> , <Exp>
+```
+
+#### Record and Array Literals
+
+```
+<RecCreate> ::= TYID { <RecAggregate> }
+
+<ArrCreate> ::= TYID [ <Exp> ] of <Exp>
+
+<RecAggregate> ::=
+                | <empty>
+			    | <FieldList>
+
+<FieldList> ::=
+             | ID := <Exp>
+			 | <FieldList> , ID := <Exp>
+```
+
+
+#### Expressions
+
+```
+<SeqExp> ::= ( <TwoOrMoreExp> )
+
+<TwoOrMoreExp> ::=
+                | <Exp> ; <Exp>
+				| <TwoOrMoreExp> ; <ExpSeq>
+
+<ExpSeq> ::=
+          | <Exp>
+		  | <ExpSeq> ; <Exp>
+
+<IfExp> ::=
+         | if <Exp> then <Exp>
+		 | if <Exp> then <Exp> else <Exp>
+
+<WhileExp> ::= while <Exp> do <Exp>
 
 <ForExp> ::=
           | for ID := <Exp> to <Exp> do <Exp>
 
-<LetExp> ::= let <DecSeq> in <ExpSeq> end
+<LetExp> ::= let <Declarations> in <Stmts> end
 
-<SeqExp> ::= ( TwoOrMoreExp )
+<Declarations> ::=
+                | <empty>
+				| <DecList>
 
-<DecSeq> ::=
-          | <empty>
-		  | <Dec> <DecSeq>
+<DecList> ::=
+           | <Dec>
+		   | <DecList> <Dec>
 
-<ExpSeq> ::=
-          | <empty>
-		  | <Exp>
-		  | <Exp> ; ExpSeq
-
-<TwoOrMoreExp> ::=
-                | <Exp> ; <Exp>
-				| <Exp> ; <Exp> ; ExpSeq
+<Stmts> ::=
+         | <empty>
+		 | <ExpSeq>
 ```
 
 #### Declaration
@@ -54,12 +115,12 @@ punctuation separates or terminates individual declarations.
 
 ```
 <Dec> ::=
-       | <TyDec>
+       | <TypeDec>
        | <VarDec>
        | <FunDec>
 
-<TyDec>  ::=
-          | type TYID = <Ty>
+<TypeDec>  ::=
+            | type TYID = <Type>
 
 <VarDec> ::=
           | var ID := <Exp>
@@ -76,48 +137,23 @@ Note: TYID is an identifier defined by a type declaration. Lexer could recognize
 #### Data types
 
 ```
-<Ty> ::=
-      | TYID
-      | { <FieldDec> }
-      | array of ID
+<Type> ::=
+        | TYID
+        | { <FieldDec> }
+        | array of TYID
 
 <FieldDec> ::=
             | <empty>
-            | ID : TYID
-			| ID : TYID , FieldDec
-```
+            | <TypeFieldList>
 
-#### Variables and expressions
-
-```
-<Assign> ::=
-          | <LValue> := <Exp>
-
-<LValue> ::=
-          | ID
-          | <LValue> . ID
-          | <LValue> [ <Exp> ]
-
-<FunCall>  ::= ID ( ExpSeq )
-
-<InfixExp> ::= <Exp> <Op> <Exp>
-
-<Negation> ::= - <Exp>
-```
-
-#### Creation
+<TypeFieldList> ::=
+                 | ID : TYID
+			     | <TypeFieldList> , ID : TYID
 
 ```
-<RecCreate> ::= TYID { RecFieldSeq }
-<ArrCreate> ::= TYID [ <Exp> ] of <Exp>
-
-RecFieldSeq ::=
-             | <empty>
-			 | ID = <Exp>
-			 | ID = <Exp> , RecFieldSeq
-```
-
 #### Terminals
+
+Tip: This definition could be inlined.
 
 ```
 <Op> ::= + | - | * | / |
@@ -125,9 +161,9 @@ RecFieldSeq ::=
          & | |
 ```
 
-### Precedence and associativity
+### Precedence and Associativity
 
-Tip: This is only preliminary. Analyze shift/reduce errors from FsYaccLex.
+Tip: This is only preliminary. Analyze **shift/reduce** errors from `FsYaccLex`.
 
 Here is the order, from lower to highest:
 
