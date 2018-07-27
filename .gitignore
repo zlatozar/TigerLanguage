@@ -19,6 +19,9 @@ build/
 \#*\#
 .#*
 
+# Original book files
+*.sml
+
 # Other
 *.obj
 *.tmp
