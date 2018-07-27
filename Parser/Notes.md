@@ -11,7 +11,7 @@ grammar, and they should be resolved by eliminating ambiguities._
 
 When the rule and token have equal priority, then a `%left` precedence
 favors **reducing**, `%right` favors **shifting**, and `%nonassoc` yields an error
-action.
+action (do not allow same tokens to be repeated at the same level).
 
 
 #### How to deal with shift/reduce conflicts
@@ -29,6 +29,10 @@ immediate action:   reduce Exp --> LetExp  gotos:state 20:  items:    LValue -> 
     action 'EQ' (noprec):   reduce LValue --> 'ID'
 ```
 
+Is it `ID` or `ID` is a part of something "bigger"? So **shifting** will not help for:
+`arr1[2]` - **reduce** should be used. `LValue` can't be solved without looking 2 symbols
+ahead but that is impossible. So it should be transformed. See Notes.md file.
+
 - `state 28` on terminal EQ between {[explicit nonassoc 9997] shift(138)} and {noprec reduce(InfixOp:Exp Op Exp)}
 
 ```
@@ -38,6 +42,8 @@ state 28:  items:    InfixOp -> Exp . Op Exp
     action 'EQ' (explicit nonassoc 9997):   shift 138
 	....
 ```
+
+`%nonassoc` forbid to have sequence of mathematical operations at the same level. Not harmful.
 
 **Solved**
 
@@ -102,9 +108,10 @@ Solved by adding `%left DO`
 **Guide line**
 
 `%left` to prefer **shift** but how to order priority?
+
 Let's say that `if..then..else` should be parsed. `then` should be with less
 priority because we want to continue for possible `else`. Same for `for..to..do` and
-`while..do`.
+`while..do`. Indicate with `%left` that the construction continues.
 
 
-### How to read parser output file
+### How to read parser output file?

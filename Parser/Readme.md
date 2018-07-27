@@ -14,6 +14,17 @@ Use to use language specification. If you create EBNF half of the work is done.
 - Remember that the output of the lexer is the input for the parser so careful study the
   lexer tokens. `STRING`, `INT`, `NIL` and `BREAK`.
 
+- Remember that parser looks only one symbol ahead so for example:
+
+```
+<LValue> ::=
+          | ID
+          | <LValue> . ID
+          | <LValue> [ <Exp> ]
+```
+
+is **shift/reduce** error but it is dangerous one. Should be eliminated.
+
 #### Program
 
 Tiger programs do not have arguments: a program is just an expression.
@@ -35,7 +46,25 @@ Tiger programs do not have arguments: a program is just an expression.
           | ID
           | <LValue> . ID
           | <LValue> [ <Exp> ]
+```
 
+Should be transformed because parser can't decide what to do. Looking one symbol ahead
+is not enough. In our case second one(`.` or `[`) should be know to decide how to dispatch.
+
+Tip: Remember that tick it is common for a lot of programming languages.
+
+```
+<LValue> ::=
+          | ID
+		  | <LValueNotID>
+
+<LValueNotID> ::=
+               | <LValue> . ID
+               | ID [ <Exp> ]
+			   | <LValueNotID> [ <Exp> ]
+```
+
+```
 <Negation> ::= - <Exp>
 
 <InfixOp> ::= <Exp> <Op> <Exp>
@@ -66,8 +95,8 @@ Tiger programs do not have arguments: a program is just an expression.
 			    | <FieldList>
 
 <FieldList> ::=
-             | ID := <Exp>
-			 | <FieldList> , ID := <Exp>
+             | ID = <Exp>
+			 | <FieldList> , ID = <Exp>
 ```
 
 
@@ -175,5 +204,5 @@ Here is the order, from lower to highest:
 + -                add, subtract (left)
 * /                multiply, divide (left)
 -                  Negation (do not associate)
-(                  LPAREN (do not associate)
+[                  LPAREN (do not associate)
 ```

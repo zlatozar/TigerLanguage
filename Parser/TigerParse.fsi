@@ -99,6 +99,7 @@ type nonTerminalId =
     | NONTERM_Main
     | NONTERM_Exp
     | NONTERM_LValue
+    | NONTERM_LValueNotID
     | NONTERM_Negation
     | NONTERM_InfixOp
     | NONTERM_Assign

@@ -15,5 +15,5 @@ full: parse
 	@ dotnet build
 
 repl:
-	@ echo -e "\nStart lexer interactive session. Modules: open Tiger.Parser;;\n"
+	@ echo -e "\nStart parser interactive session. Modules: open Tiger.Parser;;\n"
 	@ fsharpi -r ../FsLexYacc.Runtime.dll Absyn.fs TigerParse.fs TigerLex.fs Parser.fs

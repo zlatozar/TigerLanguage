@@ -1,4 +1,4 @@
-module Tests
+module TigerParseTest
 
 open System
 open FsUnit.Xunit
@@ -64,6 +64,33 @@ let badExamples = ["../../../../testcases/bad/test09.tig";
                    "../../../../testcases/bad/test40.tig";
                    "../../../../testcases/bad/test45.tig";
                    "../../../../testcases/bad/test49.tig"]
+
+// _____________________________________________________________________________
+//                                                       Test during bug fixing
+
+[<Fact>]
+let ``Parsing record definition and creation`` () =
+    fromString """ /* empty */
+let
+    type rectype = {name:string, age:int}
+    var rec1:rectype := rectype {name="Nobody", age=1000}
+in
+    rec1.name := "Somebody";
+    rec1
+end
+""" |> should not' (be Empty)
+
+[<Fact>]
+let ``Assign array`` () =
+    fromString """ /* empty */
+let
+    type a = array of int
+    type b = a
+    var arr1:a := b[10] of 0
+in
+    arr1[2]
+end
+""" |> should not' (be Empty)
 
 // _____________________________________________________________________________
 //                                                                  Tests Cases

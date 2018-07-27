@@ -26,10 +26,12 @@ open Absyn
 
 /* Precedence */
 
+%right SEMICOLON
 %left THEN
 %left DO OF ELSE
 %nonassoc ASSIGN
-%left AND OR
+%left OR
+%left AND
 %nonassoc EQ NEQ GT GE LT LE
 %left PLUS MINUS
 %left TIMES DIVIDE
@@ -71,18 +73,25 @@ Exp:
 ;
 
 LValue:
-    | ID                          { SimpleVar $1          }
-    | LValue DOT ID               { FieldVar ($1, $3)     }
-    | LValue LBRACK Exp RBRACK    { SubscriptVar ($1, $3) }
+    | ID               { SimpleVar $1 }
+    | LValueNotID      { $1           }
+
+LValueNotID:
+    | LValue DOT ID                    { FieldVar ($1, $3)     }
+    | ID LBRACK Exp RBRACK             { SubscriptVar (SimpleVar $1, $3) }
+    | LValueNotID LBRACK Exp RBRACK    { SubscriptVar ($1, $3) }
 ;
 
-/* In p. 99 is suggested negative numbers to be infix operation 0 - exp */
+/* In p. 99 is suggested negative numbers to be infix operation '0 - exp' */
 Negation:
     | MINUS Exp %prec UMINUS      { OpExp {left=(IntExp 0); oper=MinusOp; right=$2} }
 ;
 
 InfixOp:
     | Exp Op Exp                  { OpExp {left=$1; oper=$2; right=$3} }
+/* See again p. 99 */
+    | Exp AND Exp                 { IfExp {test=$1; then'=$3; else'=(Some (IntExp 0))} }
+    | Exp OR Exp                  { IfExp {test=$1; then'=(IntExp 1); else'=(Some $3)} }
 ;
 
 Assign:
@@ -111,8 +120,8 @@ RecAggregate:
 ;
 
 FieldList:
-    | ID ASSIGN Exp                   { [($1, $3)] }
-    | FieldList COMMA ID ASSIGN Exp   { List.append [($3, $5)] $1 }
+    | ID EQ Exp                       { [($1, $3)] }
+    | FieldList COMMA ID EQ Exp       { List.append [($3, $5)] $1 }
 ;
 
 ArrCreate:
@@ -151,27 +160,27 @@ LetExp:
 ;
 
 Declarations:
-    | /* empty */           { [] }
-    | DecList               { $1 }
+    | /* empty */          { [] }
+    | DecList              { $1 }
 ;
 
 DecList:
-    | Dec                   { [$1] }
-    | DecList Dec           { List.append [$2] $1 }
+    | Dec                  { [$1] }
+    | DecList Dec          { List.append [$2] $1 }
 ;
 
 Stmts:
-    | /* empty */           { NilExp }
-    | ExpSeq                { SeqExp $1 (* that was tricky *) }
+    | /* empty */          { NilExp }
+    | ExpSeq               { SeqExp $1 (* that was tricky *) }
 
 Dec:
-    | TyDec                 { $1 }
-    | VarDec                { $1 }
-    | FunDec                { $1 }
+    | TyDec                { $1 }
+    | VarDec               { $1 }
+    | FunDec               { $1 }
 ;
 
 TyDec:
-    | TYPE ID EQ Ty         { TypeDec [{name=$2; ty=$4}] }
+    | TYPE ID EQ Ty        { TypeDec [{name=$2; ty=$4}] }
 ;
 
 VarDec:
@@ -193,8 +202,8 @@ Ty:
 ;
 
 FieldDec:
-    | /* empty */                     { [] }
-    | TypeFieldList                   { $1 }
+    | /* empty */          { [] }
+    | TypeFieldList        { $1 }
 ;
 
 TypeFieldList:
@@ -203,14 +212,14 @@ TypeFieldList:
 ;
 
 Op:
-    | PLUS                  { PlusOp   }
-    | MINUS                 { MinusOp  }
-    | TIMES                 { TimesOp  }
-    | DIVIDE                { DivideOp }
-    | EQ                    { EqOp     }
-    | NEQ                   { NeqOp    }
-    | GT                    { GtOp     }
-    | GE                    { GeOp     }
-    | LT                    { LtOp     }
-    | LE                    { LeOp     }
+    | PLUS                 { PlusOp   }
+    | MINUS                { MinusOp  }
+    | TIMES                { TimesOp  }
+    | DIVIDE               { DivideOp }
+    | EQ                   { EqOp     }
+    | NEQ                  { NeqOp    }
+    | GT                   { GtOp     }
+    | GE                   { GeOp     }
+    | LT                   { LtOp     }
+    | LE                   { LeOp     }
 ;
