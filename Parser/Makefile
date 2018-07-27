@@ -1,6 +1,6 @@
 parse: lex
 	@ echo -e "\nGenerate Tiger parser using 'TigerParse.fsy'...\n"
-	@ mono ../packages/FsLexYacc/build/fsyacc.exe -v --module TigerParse TigerParse.fsy
+	@ mono ../packages/FsLexYacc/build/fsyacc.exe --module TigerParse TigerParse.fsy
 
 lex:
 	@ echo -e "\nGenerate Tiger lexer using 'TigerLex.fsl'...\n"

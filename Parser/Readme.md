@@ -16,6 +16,11 @@ Use to use language specification. If you create EBNF half of the work is done.
 
 - Remember that parser looks only one symbol ahead so for example:
 
+- Watch out for order in lists
+
+- Test very careful with the generated tree. Every time read the resulted output
+
+- As test use books examples. Is the output the same?
 ```
 <LValue> ::=
           | ID
@@ -56,12 +61,12 @@ Tip: Remember that tick it is common for a lot of programming languages.
 ```
 <LValue> ::=
           | ID
-		  | <LValueNotID>
+          | <LValueNotID>
 
 <LValueNotID> ::=
                | <LValue> . ID
                | ID [ <Exp> ]
-			   | <LValueNotID> [ <Exp> ]
+               | <LValueNotID> [ <Exp> ]
 ```
 
 ```
@@ -76,11 +81,11 @@ Tip: Remember that tick it is common for a lot of programming languages.
 
 <ActualParams> ::=
                 | empty
-		        | <ExpList>
+                | <ExpList>
 
 <ExpList> ::=
            | <Exp>
-		   | <ExpList> , <Exp>
+           | <ExpList> , <Exp>
 ```
 
 #### Record and Array Literals
@@ -92,11 +97,11 @@ Tip: Remember that tick it is common for a lot of programming languages.
 
 <RecAggregate> ::=
                 | <empty>
-			    | <FieldList>
+                | <FieldList>
 
 <FieldList> ::=
              | ID = <Exp>
-			 | <FieldList> , ID = <Exp>
+             | <FieldList> , ID = <Exp>
 ```
 
 
@@ -107,15 +112,15 @@ Tip: Remember that tick it is common for a lot of programming languages.
 
 <ZeroOrMoreExp> ::=
                 | <empty>
-				| <ExpSeq>
+                | <ExpSeq>
 
 <ExpSeq> ::=
           | <Exp>
-		  | <ExpSeq> ; <Exp>
+          | <ExpSeq> ; <Exp>
 
 <IfExp> ::=
          | if <Exp> then <Exp>
-		 | if <Exp> then <Exp> else <Exp>
+         | if <Exp> then <Exp> else <Exp>
 
 <WhileExp> ::= while <Exp> do <Exp>
 
@@ -126,15 +131,15 @@ Tip: Remember that tick it is common for a lot of programming languages.
 
 <Declarations> ::=
                 | <empty>
-				| <DecList>
+                | <DecList>
 
 <DecList> ::=
            | <Dec>
-		   | <DecList> <Dec>
+           | <DecList> <Dec>
 
 <Stmts> ::=
          | <empty>
-		 | <ExpSeq>
+         | <ExpSeq>
 ```
 
 #### Declaration
@@ -177,7 +182,7 @@ Note: TYID is an identifier defined by a type declaration. Lexer could recognize
 
 <TypeFieldList> ::=
                  | ID : TYID
-			     | <TypeFieldList> , ID : TYID
+                 | <TypeFieldList> , ID : TYID
 
 ```
 #### Terminals
@@ -197,12 +202,11 @@ Tip: This is only preliminary. Analyze **shift/reduce** errors from `FsYaccLex`.
 Here is the order, from lower to highest:
 
 ```
-:=                 assignment (right)
+:=                 assignment (nonassoc)
 |                  logical OR (left)
 &                  logical AND (left)
 = < > <> >= <=     comparison (do not associate)
 + -                add, subtract (left)
 * /                multiply, divide (left)
--                  Negation (do not associate)
-[                  LPAREN (do not associate)
+-                  Negation (left)
 ```

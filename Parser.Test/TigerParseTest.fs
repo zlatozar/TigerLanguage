@@ -68,6 +68,8 @@ let badExamples = ["../../../../testcases/bad/test09.tig";
 // _____________________________________________________________________________
 //                                                       Test during bug fixing
 
+// Fix grammar
+
 [<Fact>]
 let ``Parsing record definition and creation`` () =
     fromString """ /* empty */
@@ -91,6 +93,35 @@ in
     arr1[2]
 end
 """ |> should not' (be Empty)
+
+// Fix the order
+
+[<Fact>]
+let ``First book example`` () =
+    fromString "(a := 5; a+1)" |> should not' (be Empty)
+
+// Fix grouping of FunctionDec and TypeDec
+
+[<Fact>]
+let ``Second book example`` () =
+    fromString """ /* empty */
+let var a := 5
+    function f() : int = g(a)
+    function g(i: int) = f()
+    in f()
+end
+""" |> should not' (be Empty)
+
+[<Fact>]
+let ``Third book example`` () =
+    fromString """ /* empty */
+let
+    type tree = {key: int, children: treelist}
+    type treelist = {head: tree, tail: treelist}
+in
+end
+""" |> should not' (be Empty)
+
 
 // _____________________________________________________________________________
 //                                                                  Tests Cases

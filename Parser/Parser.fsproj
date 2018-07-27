@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Store.fs" />
     <Compile Include="Absyn.fs" />
     <Compile Include="TigerParse.fs" />
     <Compile Include="TigerLex.fs" />
