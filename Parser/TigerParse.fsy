@@ -108,7 +108,7 @@ ActualParams:
 
 ExpList:
     | Exp                  { [$1] }
-    | ExpList COMMA Exp    { List.append [$3] $1 }
+    | ExpList COMMA Exp    { List.append $1 [$3] }
 
 RecCreate:
     | ID LBRACE RecAggregate RBRACE   { RecordExp {typ=$1; fields=$3} }
@@ -121,7 +121,7 @@ RecAggregate:
 
 FieldList:
     | ID EQ Exp                       { [($1, $3)] }
-    | FieldList COMMA ID EQ Exp       { List.append [($3, $5)] $1 }
+    | FieldList COMMA ID EQ Exp       { List.append $1 [($3, $5)] }
 ;
 
 ArrCreate:
@@ -133,13 +133,17 @@ SeqExp:
 ;
 
 ZeroOrMoreExp:
-    | /* empty */                     { SeqExp [] }
-    | ExpSeq                          { SeqExp $1 }
+    | /* empty */                     { NilExp    }
+    | ExpSeq                          {
+                                        if (List.length $1) =1
+                                            then $1.[0]
+                                            else SeqExp $1
+                                      }
 ;
 
 ExpSeq:
     | Exp                             { [$1] }
-    | ExpSeq SEMICOLON Exp            { List.append [$3] $1 }
+    | ExpSeq SEMICOLON Exp            { List.append $1 [$3] }
 ;
 
 IfExp:
@@ -156,7 +160,7 @@ ForExp:
 ;
 
 LetExp:
-    | LET Declarations IN Stmts END   { LetExp {decs=$2; body=$4} }
+    | LET Declarations IN ZeroOrMoreExp END   { LetExp {decs=$2; body=$4} }
 ;
 
 Declarations:
@@ -166,12 +170,8 @@ Declarations:
 
 DecList:
     | Dec                  { [$1] }
-    | DecList Dec          { List.append [$2] $1 }
+    | DecList Dec          { List.append $1 [$2] }
 ;
-
-Stmts:
-    | /* empty */          { NilExp }
-    | ExpSeq               { SeqExp $1 (* that was tricky *) }
 
 Dec:
     | TyDec                { $1 }
@@ -208,7 +208,7 @@ FieldDec:
 
 TypeFieldList:
     | ID COLON ID                          { [{name=$1; escape=ref true; typ=$3}] }
-    | TypeFieldList COMMA ID COLON ID      { List.append [{name=$3; escape=ref true; typ=$5}] $1 }
+    | TypeFieldList COMMA ID COLON ID      { List.append $1 [{name=$3; escape=ref true; typ=$5}]}
 ;
 
 Op:

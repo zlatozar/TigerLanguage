@@ -119,7 +119,6 @@ type nonTerminalId =
     | NONTERM_LetExp
     | NONTERM_Declarations
     | NONTERM_DecList
-    | NONTERM_Stmts
     | NONTERM_Dec
     | NONTERM_TyDec
     | NONTERM_VarDec
