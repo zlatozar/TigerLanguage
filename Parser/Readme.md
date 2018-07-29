@@ -128,7 +128,12 @@ Tip: Remember that tick it is common for a lot of programming languages.
           | for ID := <Exp> to <Exp> do <Exp>
 
 <LetExp> ::= let <Declarations> in <Stmts> end
+```
 
+Because of recursion this should be reorganized.
+See `.fsy` file how it is done.
+
+```
 <Declarations> ::=
                 | <empty>
                 | <DecList>

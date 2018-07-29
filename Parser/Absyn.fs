@@ -2,12 +2,14 @@ module Absyn
 
 (* Definition of Tiger Abstract Syntax Types *)
 
+open Store
+
 // _____________________________________________________________________________
 //                                                         Abstract Syntax Tree
 
 type TVar =
-    | SimpleVar of string              (*   x              *)
-    | FieldVar of TVar * string        (*   x.all          *)
+    | SimpleVar of Symbol              (*   x              *)
+    | FieldVar of TVar * Symbol        (*   x.all          *)
     | SubscriptVar of TVar * TExp      (*   row[5];VarExp(SubscriptVar(SimpleVar(row).. *)
 
 and TExp =
@@ -15,7 +17,7 @@ and TExp =
     | StringExp of string              (*   "\n Enter: "   *)
     | NilExp                           (*   nil or represent absence of expressions     *)
     | BreakExp                         (*   break          *)
-    | VarExp of TVar                   (*   double(x); x is VarExp(SimpleVar(x)         *)
+    | VarExp of TVar                   (*   double(x); x is VarExp(SimpleVar(x)...      *)
 
     | AssignExp of AssignRec           (*   a := 5         *)
     | OpExp of OpRec                   (*   a + 4          *)
@@ -40,9 +42,9 @@ and TDec =
     | FunctionDec of FunDecRec list    (*   function double(a: int) = a*2              *)
 
 and TType =
-    | NameTy of string                 (*   int           *)
+    | NameTy of Symbol                 (*   int           *)
     | RecordTy of FieldRec list        (*   {name: string, id: int}      *)
-    | ArrayTy of string                (*   array of int  *)
+    | ArrayTy of Symbol                (*   array of int  *)
 
 and TOper =
     | PlusOp
@@ -66,13 +68,13 @@ and OpRec = { left: TExp;
               oper: TOper;
               right: TExp }
 
-and CallRec = { func: string;
+and CallRec = { func: Symbol;
                 args: TExp list }
 
-and RecordRec = { typ: string;
-                  fields: (string * TExp) list }
+and RecordRec = { typ: Symbol;
+                  fields: (Symbol * TExp) list }
 
-and ArrayRec = { typ: string;
+and ArrayRec = { typ: Symbol;
                  size: TExp;
                  init: TExp }
 
@@ -83,7 +85,7 @@ and IfRec = { test: TExp;
 and WhileRec = { test: TExp;
                  body: TExp }
 
-and ForRec = { var: string;
+and ForRec = { var: Symbol;
                escape: bool ref;
                lo: TExp;
                hi: TExp;
@@ -92,19 +94,19 @@ and ForRec = { var: string;
 and LetRec = { decs: TDec list;
                body: TExp }      // It is an 'Exp' not list of expressions p. 519
 
-and TypeRec = { name: string;
+and TypeRec = { name: Symbol;
                 ty: TType }
 
-and VarRec = { name: string;
+and VarRec = { name: Symbol;
                escape: bool ref;
-               typ: string option;
+               typ: Symbol option;
                init: TExp }
 
-and FunDecRec = { name: string;
+and FunDecRec = { name: Symbol;
                   param: FieldRec list;
-                  result: string option;
+                  result: Symbol option;
                   body: TExp }
 
-and FieldRec = { name: string;
+and FieldRec = { name: Symbol;
                  escape: bool ref;
-                 typ: string }
+                 typ: Symbol }

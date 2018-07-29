@@ -9,11 +9,10 @@ open Microsoft.FSharp.Text.Parsing.ParseHelpers
 (* Parser specification for Tiger Language *)
 
 open Absyn
+open Store
 
-// Helper functions could be defined here
 
-
-# 16 "TigerParse.fs"
+# 15 "TigerParse.fs"
 // This type is the type of tokens accepted by the parser
 type token = 
   | EOF
@@ -446,7 +445,7 @@ let _fsyacc_reductionSymbolCounts = [|1us; 2us; 1us; 1us; 1us; 1us; 1us; 1us; 1u
 let _fsyacc_productionToNonTerminalTable = [|0us; 1us; 2us; 2us; 2us; 2us; 2us; 2us; 2us; 2us; 2us; 2us; 2us; 2us; 2us; 2us; 2us; 2us; 3us; 3us; 4us; 4us; 4us; 5us; 6us; 6us; 6us; 7us; 8us; 9us; 9us; 10us; 10us; 11us; 12us; 12us; 13us; 13us; 14us; 15us; 16us; 16us; 17us; 17us; 18us; 18us; 19us; 20us; 21us; 22us; 22us; 23us; 23us; 24us; 24us; 24us; 25us; 25us; 26us; 27us; 27us; 28us; 28us; 29us; 29us; 30us; 30us; 30us; 31us; 31us; 32us; 32us; 33us; 33us; 33us; 33us; 33us; 33us; 33us; 33us; 33us; 33us; |]
 let _fsyacc_immediateActions = [|65535us; 49152us; 65535us; 16385us; 16386us; 16387us; 16388us; 16389us; 65535us; 16391us; 16392us; 16393us; 16394us; 16395us; 16396us; 16397us; 16398us; 16399us; 16400us; 16401us; 65535us; 65535us; 65535us; 16404us; 65535us; 65535us; 65535us; 65535us; 65535us; 16406us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 16412us; 65535us; 65535us; 65535us; 65535us; 16417us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 16423us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 16432us; 65535us; 16435us; 16436us; 65535us; 16438us; 65535us; 16440us; 16441us; 65535us; 65535us; 65535us; 16442us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 16445us; 16446us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 65535us; 16449us; 65535us; 65535us; 16450us; 65535us; 65535us; 16451us; 65535us; 65535us; 65535us; 16454us; 65535us; 65535us; 65535us; 16455us; 16456us; 16457us; 16458us; 16459us; 16460us; 16461us; 16462us; 16463us; 16464us; 16465us; |]
 let _fsyacc_reductions ()  =    [| 
-# 449 "TigerParse.fs"
+# 448 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : Absyn.TExp)) in
             Microsoft.FSharp.Core.Operators.box
@@ -455,261 +454,261 @@ let _fsyacc_reductions ()  =    [|
                       raise (Microsoft.FSharp.Text.Parsing.Accept(Microsoft.FSharp.Core.Operators.box _1))
                    )
                  : '_startMain));
-# 458 "TigerParse.fs"
+# 457 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 50 "TigerParse.fsy"
+# 49 "TigerParse.fsy"
                                               _1 
                    )
-# 50 "TigerParse.fsy"
+# 49 "TigerParse.fsy"
                  : Absyn.TExp));
-# 469 "TigerParse.fs"
+# 468 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : int)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 54 "TigerParse.fsy"
+# 53 "TigerParse.fsy"
                                               IntExp _1    
                    )
-# 54 "TigerParse.fsy"
+# 53 "TigerParse.fsy"
                  : 'Exp));
-# 480 "TigerParse.fs"
+# 479 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 55 "TigerParse.fsy"
+# 54 "TigerParse.fsy"
                                               StringExp _1 
                    )
-# 55 "TigerParse.fsy"
+# 54 "TigerParse.fsy"
                  : 'Exp));
-# 491 "TigerParse.fs"
+# 490 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 56 "TigerParse.fsy"
+# 55 "TigerParse.fsy"
                                               NilExp       
                    )
-# 56 "TigerParse.fsy"
+# 55 "TigerParse.fsy"
                  : 'Exp));
-# 501 "TigerParse.fs"
+# 500 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 57 "TigerParse.fsy"
+# 56 "TigerParse.fsy"
                                               BreakExp     
                    )
-# 57 "TigerParse.fsy"
+# 56 "TigerParse.fsy"
                  : 'Exp));
-# 511 "TigerParse.fs"
+# 510 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'LValue)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 61 "TigerParse.fsy"
+# 60 "TigerParse.fsy"
                                               VarExp _1 
                    )
-# 61 "TigerParse.fsy"
+# 60 "TigerParse.fsy"
                  : 'Exp));
-# 522 "TigerParse.fs"
+# 521 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'Negation)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 62 "TigerParse.fsy"
+# 61 "TigerParse.fsy"
                                               _1 
                    )
-# 62 "TigerParse.fsy"
+# 61 "TigerParse.fsy"
                  : 'Exp));
-# 533 "TigerParse.fs"
+# 532 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'InfixOp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 63 "TigerParse.fsy"
+# 62 "TigerParse.fsy"
                                               _1 
                    )
-# 63 "TigerParse.fsy"
+# 62 "TigerParse.fsy"
                  : 'Exp));
-# 544 "TigerParse.fs"
+# 543 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'Assign)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 64 "TigerParse.fsy"
+# 63 "TigerParse.fsy"
                                               _1 
                    )
-# 64 "TigerParse.fsy"
+# 63 "TigerParse.fsy"
                  : 'Exp));
-# 555 "TigerParse.fs"
+# 554 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'FunCall)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 65 "TigerParse.fsy"
+# 64 "TigerParse.fsy"
                                               _1 
                    )
-# 65 "TigerParse.fsy"
+# 64 "TigerParse.fsy"
                  : 'Exp));
-# 566 "TigerParse.fs"
+# 565 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'RecCreate)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 66 "TigerParse.fsy"
+# 65 "TigerParse.fsy"
                                               _1 
                    )
-# 66 "TigerParse.fsy"
+# 65 "TigerParse.fsy"
                  : 'Exp));
-# 577 "TigerParse.fs"
+# 576 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'ArrCreate)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 67 "TigerParse.fsy"
+# 66 "TigerParse.fsy"
                                               _1 
                    )
-# 67 "TigerParse.fsy"
+# 66 "TigerParse.fsy"
                  : 'Exp));
-# 588 "TigerParse.fs"
+# 587 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'SeqExp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 68 "TigerParse.fsy"
+# 67 "TigerParse.fsy"
                                               _1 
                    )
-# 68 "TigerParse.fsy"
+# 67 "TigerParse.fsy"
                  : 'Exp));
-# 599 "TigerParse.fs"
+# 598 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'IfExp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 69 "TigerParse.fsy"
+# 68 "TigerParse.fsy"
                                               _1 
                    )
-# 69 "TigerParse.fsy"
+# 68 "TigerParse.fsy"
                  : 'Exp));
-# 610 "TigerParse.fs"
+# 609 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'WhileExp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 70 "TigerParse.fsy"
+# 69 "TigerParse.fsy"
                                               _1 
                    )
-# 70 "TigerParse.fsy"
+# 69 "TigerParse.fsy"
                  : 'Exp));
-# 621 "TigerParse.fs"
+# 620 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'ForExp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 71 "TigerParse.fsy"
+# 70 "TigerParse.fsy"
                                               _1 
                    )
-# 71 "TigerParse.fsy"
+# 70 "TigerParse.fsy"
                  : 'Exp));
-# 632 "TigerParse.fs"
+# 631 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'LetExp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 72 "TigerParse.fsy"
+# 71 "TigerParse.fsy"
                                               _1 
                    )
-# 72 "TigerParse.fsy"
+# 71 "TigerParse.fsy"
                  : 'Exp));
-# 643 "TigerParse.fs"
+# 642 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 76 "TigerParse.fsy"
-                                              SimpleVar _1 
+# 75 "TigerParse.fsy"
+                                              SimpleVar (symbol _1) 
                    )
-# 76 "TigerParse.fsy"
+# 75 "TigerParse.fsy"
                  : 'LValue));
-# 654 "TigerParse.fs"
+# 653 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'LValueNotID)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 77 "TigerParse.fsy"
-                                              _1           
+# 76 "TigerParse.fsy"
+                                              _1 
                    )
-# 77 "TigerParse.fsy"
+# 76 "TigerParse.fsy"
                  : 'LValue));
-# 665 "TigerParse.fs"
+# 664 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'LValue)) in
             let _3 = (let data = parseState.GetInput(3) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 80 "TigerParse.fsy"
-                                                              FieldVar (_1, _3)     
+# 79 "TigerParse.fsy"
+                                                              FieldVar (_1, symbol _3)     
                    )
-# 80 "TigerParse.fsy"
+# 79 "TigerParse.fsy"
                  : 'LValueNotID));
-# 677 "TigerParse.fs"
+# 676 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             let _3 = (let data = parseState.GetInput(3) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 81 "TigerParse.fsy"
-                                                              SubscriptVar (SimpleVar _1, _3) 
+# 80 "TigerParse.fsy"
+                                                              SubscriptVar (SimpleVar (symbol _1), _3) 
                    )
-# 81 "TigerParse.fsy"
+# 80 "TigerParse.fsy"
                  : 'LValueNotID));
-# 689 "TigerParse.fs"
+# 688 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'LValueNotID)) in
             let _3 = (let data = parseState.GetInput(3) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 82 "TigerParse.fsy"
+# 81 "TigerParse.fsy"
                                                               SubscriptVar (_1, _3) 
                    )
-# 82 "TigerParse.fsy"
+# 81 "TigerParse.fsy"
                  : 'LValueNotID));
-# 701 "TigerParse.fs"
+# 700 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 87 "TigerParse.fsy"
+# 86 "TigerParse.fsy"
                                                          OpExp {left=(IntExp 0); oper=MinusOp; right=_2} 
                    )
-# 87 "TigerParse.fsy"
+# 86 "TigerParse.fsy"
                  : 'Negation));
-# 712 "TigerParse.fs"
+# 711 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : 'Op)) in
@@ -717,149 +716,149 @@ let _fsyacc_reductions ()  =    [|
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 91 "TigerParse.fsy"
+# 90 "TigerParse.fsy"
                                                          OpExp {left=_1; oper=_2; right=_3} 
                    )
-# 91 "TigerParse.fsy"
+# 90 "TigerParse.fsy"
                  : 'InfixOp));
-# 725 "TigerParse.fs"
+# 724 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             let _3 = (let data = parseState.GetInput(3) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 93 "TigerParse.fsy"
+# 92 "TigerParse.fsy"
                                                          IfExp {test=_1; then'=_3; else'=(Some (IntExp 0))} 
                    )
-# 93 "TigerParse.fsy"
+# 92 "TigerParse.fsy"
                  : 'InfixOp));
-# 737 "TigerParse.fs"
+# 736 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             let _3 = (let data = parseState.GetInput(3) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 94 "TigerParse.fsy"
+# 93 "TigerParse.fsy"
                                                          IfExp {test=_1; then'=(IntExp 1); else'=(Some _3)} 
                    )
-# 94 "TigerParse.fsy"
+# 93 "TigerParse.fsy"
                  : 'InfixOp));
-# 749 "TigerParse.fs"
+# 748 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'LValue)) in
             let _3 = (let data = parseState.GetInput(3) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 98 "TigerParse.fsy"
+# 97 "TigerParse.fsy"
                                                          AssignExp {var=_1; exp=_3} 
                    )
-# 98 "TigerParse.fsy"
+# 97 "TigerParse.fsy"
                  : 'Assign));
-# 761 "TigerParse.fs"
+# 760 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             let _3 = (let data = parseState.GetInput(3) in (Microsoft.FSharp.Core.Operators.unbox data : 'ActualParams)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 102 "TigerParse.fsy"
-                                                              CallExp {func=_1; args=_3} 
+# 101 "TigerParse.fsy"
+                                                              CallExp {func=(symbol _1); args=_3} 
                    )
-# 102 "TigerParse.fsy"
+# 101 "TigerParse.fsy"
                  : 'FunCall));
-# 773 "TigerParse.fs"
+# 772 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 106 "TigerParse.fsy"
+# 105 "TigerParse.fsy"
                                                   [] 
                    )
-# 106 "TigerParse.fsy"
+# 105 "TigerParse.fsy"
                  : 'ActualParams));
-# 783 "TigerParse.fs"
+# 782 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'ExpList)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 107 "TigerParse.fsy"
+# 106 "TigerParse.fsy"
                                                   _1 
                    )
-# 107 "TigerParse.fsy"
+# 106 "TigerParse.fsy"
                  : 'ActualParams));
-# 794 "TigerParse.fs"
+# 793 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 110 "TigerParse.fsy"
+# 109 "TigerParse.fsy"
                                                   [_1] 
                    )
-# 110 "TigerParse.fsy"
+# 109 "TigerParse.fsy"
                  : 'ExpList));
-# 805 "TigerParse.fs"
+# 804 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'ExpList)) in
             let _3 = (let data = parseState.GetInput(3) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 111 "TigerParse.fsy"
+# 110 "TigerParse.fsy"
                                                   List.append _1 [_3] 
                    )
-# 111 "TigerParse.fsy"
+# 110 "TigerParse.fsy"
                  : 'ExpList));
-# 817 "TigerParse.fs"
+# 816 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             let _3 = (let data = parseState.GetInput(3) in (Microsoft.FSharp.Core.Operators.unbox data : 'RecAggregate)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 114 "TigerParse.fsy"
-                                                             RecordExp {typ=_1; fields=_3} 
+# 113 "TigerParse.fsy"
+                                                             RecordExp {typ=(symbol _1); fields=_3} 
                    )
-# 114 "TigerParse.fsy"
+# 113 "TigerParse.fsy"
                  : 'RecCreate));
-# 829 "TigerParse.fs"
+# 828 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 118 "TigerParse.fsy"
+# 117 "TigerParse.fsy"
                                                   [] 
                    )
-# 118 "TigerParse.fsy"
+# 117 "TigerParse.fsy"
                  : 'RecAggregate));
-# 839 "TigerParse.fs"
+# 838 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'FieldList)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 119 "TigerParse.fsy"
+# 118 "TigerParse.fsy"
                                                   _1 
                    )
-# 119 "TigerParse.fsy"
+# 118 "TigerParse.fsy"
                  : 'RecAggregate));
-# 850 "TigerParse.fs"
+# 849 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             let _3 = (let data = parseState.GetInput(3) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 123 "TigerParse.fsy"
-                                                             [(_1, _3)] 
+# 122 "TigerParse.fsy"
+                                                             [(symbol _1, _3)] 
                    )
-# 123 "TigerParse.fsy"
+# 122 "TigerParse.fsy"
                  : 'FieldList));
-# 862 "TigerParse.fs"
+# 861 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'FieldList)) in
             let _3 = (let data = parseState.GetInput(3) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
@@ -867,12 +866,12 @@ let _fsyacc_reductions ()  =    [|
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 124 "TigerParse.fsy"
-                                                             List.append _1 [(_3, _5)] 
+# 123 "TigerParse.fsy"
+                                                             List.append _1 [(symbol _3, _5)] 
                    )
-# 124 "TigerParse.fsy"
+# 123 "TigerParse.fsy"
                  : 'FieldList));
-# 875 "TigerParse.fs"
+# 874 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             let _3 = (let data = parseState.GetInput(3) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
@@ -880,83 +879,83 @@ let _fsyacc_reductions ()  =    [|
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 128 "TigerParse.fsy"
-                                                             ArrayExp {typ=_1; size=_3; init=_6} 
+# 127 "TigerParse.fsy"
+                                                             ArrayExp {typ=(symbol _1); size=_3; init=_6} 
                    )
-# 128 "TigerParse.fsy"
+# 127 "TigerParse.fsy"
                  : 'ArrCreate));
-# 888 "TigerParse.fs"
+# 887 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : 'ZeroOrMoreExp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 132 "TigerParse.fsy"
+# 131 "TigerParse.fsy"
                                                              _2 
                    )
-# 132 "TigerParse.fsy"
+# 131 "TigerParse.fsy"
                  : 'SeqExp));
-# 899 "TigerParse.fs"
+# 898 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 136 "TigerParse.fsy"
+# 135 "TigerParse.fsy"
                                                              NilExp    
                    )
-# 136 "TigerParse.fsy"
+# 135 "TigerParse.fsy"
                  : 'ZeroOrMoreExp));
-# 909 "TigerParse.fs"
+# 908 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'ExpSeq)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 137 "TigerParse.fsy"
+# 136 "TigerParse.fsy"
                                                             
-                                                             if (List.length _1) =1
+                                                             if (List.length _1) = 1
                                                                  then _1.[0]
                                                                  else SeqExp _1
                                                            
                    )
-# 137 "TigerParse.fsy"
+# 136 "TigerParse.fsy"
                  : 'ZeroOrMoreExp));
-# 924 "TigerParse.fs"
+# 923 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 145 "TigerParse.fsy"
+# 144 "TigerParse.fsy"
                                                              [_1] 
                    )
-# 145 "TigerParse.fsy"
+# 144 "TigerParse.fsy"
                  : 'ExpSeq));
-# 935 "TigerParse.fs"
+# 934 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'ExpSeq)) in
             let _3 = (let data = parseState.GetInput(3) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 146 "TigerParse.fsy"
+# 145 "TigerParse.fsy"
                                                              List.append _1 [_3] 
                    )
-# 146 "TigerParse.fsy"
+# 145 "TigerParse.fsy"
                  : 'ExpSeq));
-# 947 "TigerParse.fs"
+# 946 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             let _4 = (let data = parseState.GetInput(4) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 150 "TigerParse.fsy"
+# 149 "TigerParse.fsy"
                                                              IfExp {test=_2; then'=_4; else'=None}    
                    )
-# 150 "TigerParse.fsy"
+# 149 "TigerParse.fsy"
                  : 'IfExp));
-# 959 "TigerParse.fs"
+# 958 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             let _4 = (let data = parseState.GetInput(4) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
@@ -964,24 +963,24 @@ let _fsyacc_reductions ()  =    [|
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 151 "TigerParse.fsy"
+# 150 "TigerParse.fsy"
                                                              IfExp {test=_2; then'=_4; else'=(Some _6)} 
                    )
-# 151 "TigerParse.fsy"
+# 150 "TigerParse.fsy"
                  : 'IfExp));
-# 972 "TigerParse.fs"
+# 971 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             let _4 = (let data = parseState.GetInput(4) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 155 "TigerParse.fsy"
+# 154 "TigerParse.fsy"
                                                              WhileExp {test=_2; body=_4} 
                    )
-# 155 "TigerParse.fsy"
+# 154 "TigerParse.fsy"
                  : 'WhileExp));
-# 984 "TigerParse.fs"
+# 983 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             let _4 = (let data = parseState.GetInput(4) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
@@ -990,148 +989,148 @@ let _fsyacc_reductions ()  =    [|
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 159 "TigerParse.fsy"
-                                                             ForExp {var=_2; escape=ref true; lo=_4; hi=_6; body=_8} 
+# 158 "TigerParse.fsy"
+                                                             ForExp {var=symbol _2; escape=ref true; lo=_4; hi=_6; body=_8} 
                    )
-# 159 "TigerParse.fsy"
+# 158 "TigerParse.fsy"
                  : 'ForExp));
-# 998 "TigerParse.fs"
+# 997 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : 'Declarations)) in
             let _4 = (let data = parseState.GetInput(4) in (Microsoft.FSharp.Core.Operators.unbox data : 'ZeroOrMoreExp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 163 "TigerParse.fsy"
+# 162 "TigerParse.fsy"
                                                                      LetExp {decs=_2; body=_4} 
                    )
-# 163 "TigerParse.fsy"
+# 162 "TigerParse.fsy"
                  : 'LetExp));
-# 1010 "TigerParse.fs"
+# 1009 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 167 "TigerParse.fsy"
+# 166 "TigerParse.fsy"
                                                   [] 
                    )
-# 167 "TigerParse.fsy"
+# 166 "TigerParse.fsy"
                  : 'Declarations));
-# 1020 "TigerParse.fs"
+# 1019 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'DecList)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 168 "TigerParse.fsy"
+# 167 "TigerParse.fsy"
                                                   _1 
                    )
-# 168 "TigerParse.fsy"
+# 167 "TigerParse.fsy"
                  : 'Declarations));
-# 1031 "TigerParse.fs"
+# 1030 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'Dec)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 172 "TigerParse.fsy"
+# 171 "TigerParse.fsy"
                                                   [_1] 
                    )
-# 172 "TigerParse.fsy"
+# 171 "TigerParse.fsy"
                  : 'DecList));
-# 1042 "TigerParse.fs"
+# 1041 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'DecList)) in
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : 'Dec)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 173 "TigerParse.fsy"
+# 172 "TigerParse.fsy"
                                                   List.append _1 [_2] 
                    )
-# 173 "TigerParse.fsy"
+# 172 "TigerParse.fsy"
                  : 'DecList));
-# 1054 "TigerParse.fs"
+# 1053 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'TyDecList)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 177 "TigerParse.fsy"
+# 176 "TigerParse.fsy"
                                                   TypeDec _1 
                    )
-# 177 "TigerParse.fsy"
+# 176 "TigerParse.fsy"
                  : 'Dec));
-# 1065 "TigerParse.fs"
+# 1064 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'VarDec)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 178 "TigerParse.fsy"
+# 177 "TigerParse.fsy"
                                                   _1 
                    )
-# 178 "TigerParse.fsy"
+# 177 "TigerParse.fsy"
                  : 'Dec));
-# 1076 "TigerParse.fs"
+# 1075 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'FunDecList)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 179 "TigerParse.fsy"
+# 178 "TigerParse.fsy"
                                                   FunctionDec _1 
                    )
-# 179 "TigerParse.fsy"
+# 178 "TigerParse.fsy"
                  : 'Dec));
-# 1087 "TigerParse.fs"
+# 1086 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'TyDec)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 185 "TigerParse.fsy"
+# 184 "TigerParse.fsy"
                                                   [_1] 
                    )
-# 185 "TigerParse.fsy"
+# 184 "TigerParse.fsy"
                  : 'TyDecList));
-# 1098 "TigerParse.fs"
+# 1097 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'TyDecList)) in
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : 'TyDec)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 186 "TigerParse.fsy"
+# 185 "TigerParse.fsy"
                                                   List.append _1 [_2] 
                    )
-# 186 "TigerParse.fsy"
+# 185 "TigerParse.fsy"
                  : 'TyDecList));
-# 1110 "TigerParse.fs"
+# 1109 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             let _4 = (let data = parseState.GetInput(4) in (Microsoft.FSharp.Core.Operators.unbox data : 'Ty)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 190 "TigerParse.fsy"
-                                                  {name=_2; ty=_4} 
+# 189 "TigerParse.fsy"
+                                                  {name=symbol _2; ty=_4} 
                    )
-# 190 "TigerParse.fsy"
+# 189 "TigerParse.fsy"
                  : 'TyDec));
-# 1122 "TigerParse.fs"
+# 1121 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             let _4 = (let data = parseState.GetInput(4) in (Microsoft.FSharp.Core.Operators.unbox data : 'Exp)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 194 "TigerParse.fsy"
-                                                             VarDec {name=_2; escape=ref true; typ=None; init=_4} 
+# 193 "TigerParse.fsy"
+                                                             VarDec {name=symbol _2; escape=ref true; typ=None; init=_4} 
                    )
-# 194 "TigerParse.fsy"
+# 193 "TigerParse.fsy"
                  : 'VarDec));
-# 1134 "TigerParse.fs"
+# 1133 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             let _4 = (let data = parseState.GetInput(4) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
@@ -1139,35 +1138,35 @@ let _fsyacc_reductions ()  =    [|
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 195 "TigerParse.fsy"
-                                                             VarDec {name=_2; escape=ref true; typ=(Some _4); init=_6} 
+# 194 "TigerParse.fsy"
+                                                             VarDec {name=symbol _2; escape=ref true; typ=(Some (symbol _4)); init=_6} 
                    )
-# 195 "TigerParse.fsy"
+# 194 "TigerParse.fsy"
                  : 'VarDec));
-# 1147 "TigerParse.fs"
+# 1146 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'FunDec)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 199 "TigerParse.fsy"
+# 198 "TigerParse.fsy"
                                                    [_1] 
                    )
-# 199 "TigerParse.fsy"
+# 198 "TigerParse.fsy"
                  : 'FunDecList));
-# 1158 "TigerParse.fs"
+# 1157 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'FunDecList)) in
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : 'FunDec)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 200 "TigerParse.fsy"
+# 199 "TigerParse.fsy"
                                                    List.append _1 [_2] 
                    )
-# 200 "TigerParse.fsy"
+# 199 "TigerParse.fsy"
                  : 'FunDecList));
-# 1170 "TigerParse.fs"
+# 1169 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             let _4 = (let data = parseState.GetInput(4) in (Microsoft.FSharp.Core.Operators.unbox data : 'FieldDec)) in
@@ -1175,12 +1174,12 @@ let _fsyacc_reductions ()  =    [|
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 204 "TigerParse.fsy"
-                                                                                  {name=_2; param=_4; result=None; body=_7} 
+# 203 "TigerParse.fsy"
+                                                                                  {name=symbol _2; param=_4; result=None; body=_7} 
                    )
-# 204 "TigerParse.fsy"
+# 203 "TigerParse.fsy"
                  : 'FunDec));
-# 1183 "TigerParse.fs"
+# 1182 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             let _4 = (let data = parseState.GetInput(4) in (Microsoft.FSharp.Core.Operators.unbox data : 'FieldDec)) in
@@ -1189,78 +1188,78 @@ let _fsyacc_reductions ()  =    [|
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 205 "TigerParse.fsy"
-                                                                                  {name=_2; param=_4; result=(Some _7); body=_9} 
+# 204 "TigerParse.fsy"
+                                                                                  {name=symbol _2; param=_4; result=(Some (symbol _7)); body=_9} 
                    )
-# 205 "TigerParse.fsy"
+# 204 "TigerParse.fsy"
                  : 'FunDec));
-# 1197 "TigerParse.fs"
+# 1196 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 211 "TigerParse.fsy"
-                                                             NameTy _1   
+# 210 "TigerParse.fsy"
+                                                             NameTy (symbol _1)  
                    )
-# 211 "TigerParse.fsy"
+# 210 "TigerParse.fsy"
                  : 'Ty));
-# 1208 "TigerParse.fs"
+# 1207 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _2 = (let data = parseState.GetInput(2) in (Microsoft.FSharp.Core.Operators.unbox data : 'FieldDec)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 212 "TigerParse.fsy"
+# 211 "TigerParse.fsy"
                                                              RecordTy _2 
                    )
-# 212 "TigerParse.fsy"
+# 211 "TigerParse.fsy"
                  : 'Ty));
-# 1219 "TigerParse.fs"
+# 1218 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _3 = (let data = parseState.GetInput(3) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 213 "TigerParse.fsy"
-                                                             ArrayTy _3  
+# 212 "TigerParse.fsy"
+                                                             ArrayTy (symbol _3) 
                    )
-# 213 "TigerParse.fsy"
+# 212 "TigerParse.fsy"
                  : 'Ty));
-# 1230 "TigerParse.fs"
+# 1229 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 217 "TigerParse.fsy"
+# 216 "TigerParse.fsy"
                                                   [] 
                    )
-# 217 "TigerParse.fsy"
+# 216 "TigerParse.fsy"
                  : 'FieldDec));
-# 1240 "TigerParse.fs"
+# 1239 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'TypeFieldList)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 218 "TigerParse.fsy"
+# 217 "TigerParse.fsy"
                                                   _1 
                    )
-# 218 "TigerParse.fsy"
+# 217 "TigerParse.fsy"
                  : 'FieldDec));
-# 1251 "TigerParse.fs"
+# 1250 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             let _3 = (let data = parseState.GetInput(3) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 222 "TigerParse.fsy"
-                                                                  [{name=_1; escape=ref true; typ=_3}] 
+# 221 "TigerParse.fsy"
+                                                                  [{name=symbol _1; escape=ref true; typ=symbol _3}] 
                    )
-# 222 "TigerParse.fsy"
+# 221 "TigerParse.fsy"
                  : 'TypeFieldList));
-# 1263 "TigerParse.fs"
+# 1262 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             let _1 = (let data = parseState.GetInput(1) in (Microsoft.FSharp.Core.Operators.unbox data : 'TypeFieldList)) in
             let _3 = (let data = parseState.GetInput(3) in (Microsoft.FSharp.Core.Operators.unbox data : string)) in
@@ -1268,113 +1267,113 @@ let _fsyacc_reductions ()  =    [|
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 223 "TigerParse.fsy"
-                                                                  List.append _1 [{name=_3; escape=ref true; typ=_5}]
+# 222 "TigerParse.fsy"
+                                                                  List.append _1 [{name=symbol _3; escape=ref true; typ=symbol _5}]
                    )
-# 223 "TigerParse.fsy"
+# 222 "TigerParse.fsy"
                  : 'TypeFieldList));
-# 1276 "TigerParse.fs"
+# 1275 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 227 "TigerParse.fsy"
+# 226 "TigerParse.fsy"
                                                   PlusOp   
                    )
-# 227 "TigerParse.fsy"
+# 226 "TigerParse.fsy"
                  : 'Op));
-# 1286 "TigerParse.fs"
+# 1285 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 228 "TigerParse.fsy"
+# 227 "TigerParse.fsy"
                                                   MinusOp  
                    )
-# 228 "TigerParse.fsy"
+# 227 "TigerParse.fsy"
                  : 'Op));
-# 1296 "TigerParse.fs"
+# 1295 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 229 "TigerParse.fsy"
+# 228 "TigerParse.fsy"
                                                   TimesOp  
                    )
-# 229 "TigerParse.fsy"
+# 228 "TigerParse.fsy"
                  : 'Op));
-# 1306 "TigerParse.fs"
+# 1305 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 230 "TigerParse.fsy"
+# 229 "TigerParse.fsy"
                                                   DivideOp 
                    )
-# 230 "TigerParse.fsy"
+# 229 "TigerParse.fsy"
                  : 'Op));
-# 1316 "TigerParse.fs"
+# 1315 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 231 "TigerParse.fsy"
+# 230 "TigerParse.fsy"
                                                   EqOp     
                    )
-# 231 "TigerParse.fsy"
+# 230 "TigerParse.fsy"
                  : 'Op));
-# 1326 "TigerParse.fs"
+# 1325 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 232 "TigerParse.fsy"
+# 231 "TigerParse.fsy"
                                                   NeqOp    
                    )
-# 232 "TigerParse.fsy"
+# 231 "TigerParse.fsy"
                  : 'Op));
-# 1336 "TigerParse.fs"
+# 1335 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 233 "TigerParse.fsy"
+# 232 "TigerParse.fsy"
                                                   GtOp     
                    )
-# 233 "TigerParse.fsy"
+# 232 "TigerParse.fsy"
                  : 'Op));
-# 1346 "TigerParse.fs"
+# 1345 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 234 "TigerParse.fsy"
+# 233 "TigerParse.fsy"
                                                   GeOp     
                    )
-# 234 "TigerParse.fsy"
+# 233 "TigerParse.fsy"
                  : 'Op));
-# 1356 "TigerParse.fs"
+# 1355 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 235 "TigerParse.fsy"
+# 234 "TigerParse.fsy"
                                                   LtOp     
                    )
-# 235 "TigerParse.fsy"
+# 234 "TigerParse.fsy"
                  : 'Op));
-# 1366 "TigerParse.fs"
+# 1365 "TigerParse.fs"
         (fun (parseState : Microsoft.FSharp.Text.Parsing.IParseState) ->
             Microsoft.FSharp.Core.Operators.box
                 (
                    (
-# 236 "TigerParse.fsy"
+# 235 "TigerParse.fsy"
                                                   LeOp     
                    )
-# 236 "TigerParse.fsy"
+# 235 "TigerParse.fsy"
                  : 'Op));
 |]
-# 1377 "TigerParse.fs"
+# 1376 "TigerParse.fs"
 let tables () : Microsoft.FSharp.Text.Parsing.Tables<_> = 
   { reductions= _fsyacc_reductions ();
     endOfInputTag = _fsyacc_endOfInputTag;

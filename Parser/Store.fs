@@ -9,7 +9,7 @@ type Symbol = string * int
 
 let private nextSym = ref 0
 
-let private vars = new Dictionary<string, int>()
+let vars = new Dictionary<string, int>()
 
 let symbol name =
     let found, value = vars.TryGetValue name

@@ -3,8 +3,7 @@
 (* Parser specification for Tiger Language *)
 
 open Absyn
-
-// Helper functions could be defined here
+open Store
 
 %}
 
@@ -73,12 +72,12 @@ Exp:
 ;
 
 LValue:
-    | ID               { SimpleVar $1 }
-    | LValueNotID      { $1           }
+    | ID               { SimpleVar (symbol $1) }
+    | LValueNotID      { $1 }
 
 LValueNotID:
-    | LValue DOT ID                    { FieldVar ($1, $3)     }
-    | ID LBRACK Exp RBRACK             { SubscriptVar (SimpleVar $1, $3) }
+    | LValue DOT ID                    { FieldVar ($1, symbol $3)     }
+    | ID LBRACK Exp RBRACK             { SubscriptVar (SimpleVar (symbol $1), $3) }
     | LValueNotID LBRACK Exp RBRACK    { SubscriptVar ($1, $3) }
 ;
 
@@ -99,7 +98,7 @@ Assign:
 ;
 
 FunCall:
-    | ID LPAREN ActualParams RPAREN    { CallExp {func=$1; args=$3} }
+    | ID LPAREN ActualParams RPAREN    { CallExp {func=(symbol $1); args=$3} }
 ;
 
 ActualParams:
@@ -111,7 +110,7 @@ ExpList:
     | ExpList COMMA Exp    { List.append $1 [$3] }
 
 RecCreate:
-    | ID LBRACE RecAggregate RBRACE   { RecordExp {typ=$1; fields=$3} }
+    | ID LBRACE RecAggregate RBRACE   { RecordExp {typ=(symbol $1); fields=$3} }
 ;
 
 RecAggregate:
@@ -120,12 +119,12 @@ RecAggregate:
 ;
 
 FieldList:
-    | ID EQ Exp                       { [($1, $3)] }
-    | FieldList COMMA ID EQ Exp       { List.append $1 [($3, $5)] }
+    | ID EQ Exp                       { [(symbol $1, $3)] }
+    | FieldList COMMA ID EQ Exp       { List.append $1 [(symbol $3, $5)] }
 ;
 
 ArrCreate:
-    | ID LBRACK Exp RBRACK OF Exp     { ArrayExp {typ=$1; size=$3; init=$6} }
+    | ID LBRACK Exp RBRACK OF Exp     { ArrayExp {typ=(symbol $1); size=$3; init=$6} }
 ;
 
 SeqExp:
@@ -135,7 +134,7 @@ SeqExp:
 ZeroOrMoreExp:
     | /* empty */                     { NilExp    }
     | ExpSeq                          {
-                                        if (List.length $1) =1
+                                        if (List.length $1) = 1
                                             then $1.[0]
                                             else SeqExp $1
                                       }
@@ -156,7 +155,7 @@ WhileExp:
 ;
 
 ForExp:
-    | FOR ID ASSIGN Exp TO Exp DO Exp { ForExp {var=$2; escape=ref true; lo=$4; hi=$6; body=$8} }
+    | FOR ID ASSIGN Exp TO Exp DO Exp { ForExp {var=symbol $2; escape=ref true; lo=$4; hi=$6; body=$8} }
 ;
 
 LetExp:
@@ -187,12 +186,12 @@ TyDecList:
 ;
 
 TyDec:
-    | TYPE ID EQ Ty        { {name=$2; ty=$4} }
+    | TYPE ID EQ Ty        { {name=symbol $2; ty=$4} }
 ;
 
 VarDec:
-    | VAR ID ASSIGN Exp               { VarDec {name=$2; escape=ref true; typ=None; init=$4} }
-    | VAR ID COLON ID ASSIGN Exp      { VarDec {name=$2; escape=ref true; typ=(Some $4); init=$6} }
+    | VAR ID ASSIGN Exp               { VarDec {name=symbol $2; escape=ref true; typ=None; init=$4} }
+    | VAR ID COLON ID ASSIGN Exp      { VarDec {name=symbol $2; escape=ref true; typ=(Some (symbol $4)); init=$6} }
 ;
 
 FunDecList:
@@ -201,16 +200,16 @@ FunDecList:
 ;
 
 FunDec:
-    | FUNCTION ID LPAREN FieldDec RPAREN EQ Exp            { {name=$2; param=$4; result=None; body=$7} }
-    | FUNCTION ID LPAREN FieldDec RPAREN COLON ID EQ Exp   { {name=$2; param=$4; result=(Some $7); body=$9} }
+    | FUNCTION ID LPAREN FieldDec RPAREN EQ Exp            { {name=symbol $2; param=$4; result=None; body=$7} }
+    | FUNCTION ID LPAREN FieldDec RPAREN COLON ID EQ Exp   { {name=symbol $2; param=$4; result=(Some (symbol $7)); body=$9} }
 ;
 
 /* Data types */
 
 Ty:
-    | ID                              { NameTy $1   }
+    | ID                              { NameTy (symbol $1)  }
     | LBRACE FieldDec RBRACE          { RecordTy $2 }
-    | ARRAY OF ID                     { ArrayTy $3  }
+    | ARRAY OF ID                     { ArrayTy (symbol $3) }
 ;
 
 FieldDec:
@@ -219,8 +218,8 @@ FieldDec:
 ;
 
 TypeFieldList:
-    | ID COLON ID                          { [{name=$1; escape=ref true; typ=$3}] }
-    | TypeFieldList COMMA ID COLON ID      { List.append $1 [{name=$3; escape=ref true; typ=$5}]}
+    | ID COLON ID                          { [{name=symbol $1; escape=ref true; typ=symbol $3}] }
+    | TypeFieldList COMMA ID COLON ID      { List.append $1 [{name=symbol $3; escape=ref true; typ=symbol $5}]}
 ;
 
 Op:
