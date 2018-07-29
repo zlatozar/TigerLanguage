@@ -120,8 +120,10 @@ type nonTerminalId =
     | NONTERM_Declarations
     | NONTERM_DecList
     | NONTERM_Dec
+    | NONTERM_TyDecList
     | NONTERM_TyDec
     | NONTERM_VarDec
+    | NONTERM_FunDecList
     | NONTERM_FunDec
     | NONTERM_Ty
     | NONTERM_FieldDec

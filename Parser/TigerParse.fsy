@@ -174,13 +174,20 @@ DecList:
 ;
 
 Dec:
-    | TyDec                { $1 }
+    | TyDecList            { TypeDec $1 }
     | VarDec               { $1 }
-    | FunDec               { $1 }
+    | FunDecList           { FunctionDec $1 }
+;
+
+/* Note: There is no empty clause. Emptiness is coverd by 'Declarations' */
+
+TyDecList:
+    | TyDec                { [$1] }
+    | TyDecList TyDec      { List.append $1 [$2] }
 ;
 
 TyDec:
-    | TYPE ID EQ Ty        { TypeDec [{name=$2; ty=$4}] }
+    | TYPE ID EQ Ty        { {name=$2; ty=$4} }
 ;
 
 VarDec:
@@ -188,9 +195,14 @@ VarDec:
     | VAR ID COLON ID ASSIGN Exp      { VarDec {name=$2; escape=ref true; typ=(Some $4); init=$6} }
 ;
 
+FunDecList:
+    | FunDec                { [$1] }
+    | FunDecList FunDec     { List.append $1 [$2] }
+;
+
 FunDec:
-    | FUNCTION ID LPAREN FieldDec RPAREN EQ Exp            { FunctionDec [{name=$2; param=$4; result=None; body=$7}] }
-    | FUNCTION ID LPAREN FieldDec RPAREN COLON ID EQ Exp   { FunctionDec [{name=$2; param=$4; result=(Some $7); body=$9}] }
+    | FUNCTION ID LPAREN FieldDec RPAREN EQ Exp            { {name=$2; param=$4; result=None; body=$7} }
+    | FUNCTION ID LPAREN FieldDec RPAREN COLON ID EQ Exp   { {name=$2; param=$4; result=(Some $7); body=$9} }
 ;
 
 /* Data types */
