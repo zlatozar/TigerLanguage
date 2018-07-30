@@ -30,6 +30,12 @@ type Table<'a> = Map<int, 'a>
 
 let empty = Map.empty<int, 'a>
 
-let enter (table: Table<'a>) (symbol: Symbol) value = table.Add ((snd symbol), value)
+let lookup (table: Table<'a>) (symbol: Symbol) = table.TryFind (snd symbol)
 
-let lookup (table: Table<'a>) (symbol: Symbol) = table.Item (snd symbol)
+// Imperative style
+
+let iEnter (table: Table<'a>) (symbol: Symbol) value = table.Add ((snd symbol), value)
+
+// Functional style
+
+let enter (table: Table<'a>) (symbol: Symbol) value = Map.add (snd symbol) value

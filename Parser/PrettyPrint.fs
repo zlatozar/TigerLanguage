@@ -37,6 +37,8 @@ let rec dolist d f args =
 // _____________________________________________________________________________
 //                                                                         Main
 
+// Tip: This is an example how to traverse the AST
+
 let rec var (expr, d) =
     match expr with
     | SimpleVar s        -> indent d; say "SimpleVar("; say (Store.name s); say ")"
