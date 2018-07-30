@@ -14,6 +14,7 @@
     <Compile Include="TigerParse.fs" />
     <Compile Include="TigerLex.fs" />
     <Compile Include="Parser.fs" />
+    <Compile Include="PrettyPrint.fs" />
 
     <None Include="TigerLex.fsl" />
     <None Include="TigerParse.fsy" />

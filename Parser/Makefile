@@ -16,4 +16,4 @@ full: parse
 
 repl:
 	@ echo -e "\nStart parser interactive session. Modules: open Tiger.Parser;;\n"
-	@ fsharpi -r ../FsLexYacc.Runtime.dll Store.fs Absyn.fs TigerParse.fs TigerLex.fs Parser.fs
+	@ fsharpi -r ../FsLexYacc.Runtime.dll Store.fs Absyn.fs TigerParse.fs TigerLex.fs Parser.fs PrettyPrint.fs

@@ -39,8 +39,8 @@ Tiger programs do not have arguments: a program is just an expression.
 
 <Exp>     ::= STRING | INT | NIL | BREAK | <LValue> | <Negation> |
               <InfixOp> | <Assign> | <FunCall> | <RecCreate> |
-			  <ArrCreate> | <SeqExp> | <IfExp> | <WhileExp> |
-			  <ForExp> | <LetExp>
+              <ArrCreate> | <SeqExp> | <IfExp> | <WhileExp> |
+              <ForExp> | <LetExp>
 
 ```
 
