@@ -1,5 +1,7 @@
 module PrettyPrint
 
+(* Could be used to check token positions *)
+
 open Absyn
 open Tiger.Parser
 
@@ -41,20 +43,20 @@ let rec dolist d f args =
 
 let rec var (expr, d) =
     match expr with
-    | SimpleVar s        -> indent d; say "SimpleVar("; say (Store.name s); say ")"
+    | SimpleVar(s, _)    -> indent d; say "SimpleVar("; say (Store.name s); say ")"
 
-    | FieldVar(v, s)     -> indent d; sayln "FieldVar(";  var (v, d + 1); sayln ",";
+    | FieldVar(v, s, p)  -> indent d; sayln "FieldVar(";  var (v, d + 1); sayln ",";
                             indent (d + 1); say (Store.name s); say ")"
 
-    | SubscriptVar(v, e) -> indent d; sayln "SubscriptVar("; var (v, d + 1); sayln ",";
-                            exp (e, d + 1); say ")"
+    | SubscriptVar(v, e, p) -> indent d; sayln "SubscriptVar("; var (v, d + 1); sayln ",";
+                               exp (e, d + 1); say ")"
 
 and exp (expr, d) =
     match expr with
-    | VarExp v         -> indent d; sayln "VarExp("; var (v, d + 1); say ")"
-    | NilExp             -> indent d; say "NilExp"
+    | VarExp v          -> indent d; sayln "VarExp("; var (v, d + 1); say ")"
+    | NilExp            -> indent d; say "NilExp"
     | IntExp i          -> indent d; say "IntExp("; say (string i); say ")"
-    | StringExp s       -> indent d; say "StringExp(\""; say s; say "\")"
+    | StringExp (s, p)  -> indent d; say "StringExp(\""; say s; say "\")"
 
     | CallExp callRec   -> indent d; say "CallExp("; say (Store.name callRec.func); say ",[";
                            (dolist d exp callRec.args); say "])"
@@ -62,7 +64,7 @@ and exp (expr, d) =
     | OpExp opRec       -> indent d; say "OpExp("; say (opname opRec.oper); sayln ",";
                            exp (opRec.left, d + 1); sayln ","; exp (opRec.right, d + 1); say ")"
 
-    | RecordExp recRec  -> let printFields ((name, e), d) =
+    | RecordExp recRec  -> let printFields ((name, e, p), d) =
                                indent d; say "("; say (Store.name name);
                                sayln ","; exp (e, d + 1);
                                say ")"
@@ -70,7 +72,7 @@ and exp (expr, d) =
                            sayln ",["; dolist d printFields recRec.fields; say "])"
 
     | SeqExp expList    -> indent d; say "SeqExp[";
-                           dolist d exp expList; say "]"
+                           dolist d exp (List.map fst expList); say "]"
 
     | AssignExp assignRec  -> indent d; sayln "AssignExp("; var(assignRec.var, d + 1); sayln ",";
                               exp (assignRec.exp, d + 1); say ")"
@@ -89,7 +91,7 @@ and exp (expr, d) =
                            exp (forRec.lo, d + 1); sayln ","; exp (forRec.hi,d + 1); sayln ",";
                            exp (forRec.body, d + 1); say ")"
 
-    | BreakExp          -> indent d; say "BreakExp"
+    | BreakExp p        -> indent d; say "BreakExp"
 
     | LetExp letRec     -> indent d; say "LetExp(["; dolist d dec letRec.decs; sayln "],";
                            exp (letRec.body, d + 1); say")"
@@ -110,7 +112,7 @@ and dec ((decl: TDec), d) =
                            dolist d field funDecRec.param; sayln "],";
                            match funDecRec.result with
                            | None        -> say "None"
-                           | Some (s, _) -> say "Some("; say s; say ")";
+                           | Some (s, _) -> say "Some("; say (Store.name s); say ")";
                                             sayln ","; exp (funDecRec.body, d + 1); say ")"
 
                        indent d; say "FunctionDec["; dolist d funDec l; say "]"
@@ -119,17 +121,17 @@ and dec ((decl: TDec), d) =
                         say ","; say (string (!varRec.escape)); say ",";
                         match varRec.typ with
                         | None       -> say "None"
-                        | Some(s, _) -> say "Some("; say s; say ")";
+                        | Some(s, _) -> say "Some("; say (Store.name s); say ")";
                                         sayln ","; exp (varRec.init, d + 1); say ")"
 
-    | TypeDec typeRecList -> let tdec ((typeRec: TypeRec), d) =
+    | TypeDec typeRecList -> let tdec ((typeRec: TypeDecRec), d) =
                                  indent d; say"("; say (Store.name typeRec.name);
                                  sayln ","; ty (typeRec.ty, d + 1); say ")"
                              indent d; say "TypeDec["; dolist d tdec typeRecList; say "]"
 
 and ty (typs, d) =
     match typs with
-    | NameTy s                -> indent d; say "NameTy("; say (Store.name s); say ")"
+    | NameTy (s, p)           -> indent d; say "NameTy("; say (Store.name s); say ")"
 
     | RecordTy fieldRecList   -> let f ((fieldRec: FieldRec), d) =
                                      indent d; say "("; say (Store.name fieldRec.name);
@@ -137,7 +139,7 @@ and ty (typs, d) =
                                      say (Store.name fieldRec.typ); say ")"
                                  indent d; say "RecordTy["; dolist d f fieldRecList; say "]"
 
-    | ArrayTy s               -> indent d; say "ArrayTy("; say (Store.name s); say ")"
+    | ArrayTy (s, p)         -> indent d; say "ArrayTy("; say (Store.name s); say ")"
 
 // _____________________________________________________________________________
 //

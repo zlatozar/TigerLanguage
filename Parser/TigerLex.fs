@@ -24,9 +24,11 @@ let commentDepth = ref 0
 // _____________________________________________________________________________
 //                                                             Helper functions
 
+exception LexicalError of string
+
 let lexicalError errorMsg (lexbuf: LexBuffer<_>) =
-    let message = "Lexical Error: " + errorMsg +
-                             (sprintf "\nLine: %d Column: %d\n" (lexbuf.StartPos.Line + 1) lexbuf.StartPos.Column)
+    let message = sprintf "Lexical Error: %s
+                              \nLine: %d Column: %d\n" errorMsg (lexbuf.StartPos.Line + 1) lexbuf.StartPos.Column
     failwith message
 
 let lexemeAsString lexbuf = LexBuffer<char>.LexemeString lexbuf
@@ -74,7 +76,7 @@ let keywordOrId token =
     | _       -> ID (token)
 
 
-# 77 "TigerLex.fs"
+# 79 "TigerLex.fs"
 let trans : uint16[] array = 
     [| 
     (* State 0 *)
@@ -213,252 +215,252 @@ and StringDef chars (lexbuf : Microsoft.FSharp.Text.Lexing.LexBuffer<_>) = _fsle
 and _fslex_Read  _fslex_state lexbuf =
   match _fslex_tables.Interpret(_fslex_state,lexbuf) with
   | 0 -> ( 
-# 96 "TigerLex.fsl"
-                                     Read lexbuf 
-# 218 "TigerLex.fs"
-          )
-  | 1 -> ( 
-# 97 "TigerLex.fsl"
-                                     newLine lexbuf; Read lexbuf 
-# 223 "TigerLex.fs"
-          )
-  | 2 -> ( 
 # 98 "TigerLex.fsl"
                                      Read lexbuf 
-# 228 "TigerLex.fs"
+# 220 "TigerLex.fs"
+          )
+  | 1 -> ( 
+# 99 "TigerLex.fsl"
+                                     newLine lexbuf; Read lexbuf 
+# 225 "TigerLex.fs"
+          )
+  | 2 -> ( 
+# 100 "TigerLex.fsl"
+                                     Read lexbuf 
+# 230 "TigerLex.fs"
           )
   | 3 -> ( 
-# 99 "TigerLex.fsl"
+# 101 "TigerLex.fsl"
                                      INT (Int32.Parse (lexemeAsString lexbuf)) 
-# 233 "TigerLex.fs"
+# 235 "TigerLex.fs"
           )
   | 4 -> ( 
-# 100 "TigerLex.fsl"
+# 102 "TigerLex.fsl"
                                     
                                      keywordOrId (lexemeAsString lexbuf)
                                    
-# 240 "TigerLex.fs"
+# 242 "TigerLex.fs"
           )
   | 5 -> ( 
-# 104 "TigerLex.fsl"
+# 106 "TigerLex.fsl"
                                      // starts a string
                                      STRING (StringDef [] lexbuf)
                                    
-# 247 "TigerLex.fs"
+# 249 "TigerLex.fs"
           )
   | 6 -> ( 
-# 108 "TigerLex.fsl"
+# 110 "TigerLex.fsl"
                                      // starts a comment
                                      commentStart := lexbuf.StartPos; commentDepth := 1;
                                      SkipComment lexbuf; Read lexbuf
                                    
-# 255 "TigerLex.fs"
+# 257 "TigerLex.fs"
           )
   | 7 -> ( 
-# 113 "TigerLex.fsl"
+# 115 "TigerLex.fsl"
                                      ASSIGN    
-# 260 "TigerLex.fs"
+# 262 "TigerLex.fs"
           )
   | 8 -> ( 
-# 114 "TigerLex.fsl"
+# 116 "TigerLex.fsl"
                                      DOT       
-# 265 "TigerLex.fs"
+# 267 "TigerLex.fs"
           )
   | 9 -> ( 
-# 115 "TigerLex.fsl"
+# 117 "TigerLex.fsl"
                                      LPAREN    
-# 270 "TigerLex.fs"
+# 272 "TigerLex.fs"
           )
   | 10 -> ( 
-# 116 "TigerLex.fsl"
+# 118 "TigerLex.fsl"
                                      RPAREN    
-# 275 "TigerLex.fs"
+# 277 "TigerLex.fs"
           )
   | 11 -> ( 
-# 117 "TigerLex.fsl"
+# 119 "TigerLex.fsl"
                                      LBRACK    
-# 280 "TigerLex.fs"
+# 282 "TigerLex.fs"
           )
   | 12 -> ( 
-# 118 "TigerLex.fsl"
+# 120 "TigerLex.fsl"
                                      RBRACK    
-# 285 "TigerLex.fs"
+# 287 "TigerLex.fs"
           )
   | 13 -> ( 
-# 119 "TigerLex.fsl"
+# 121 "TigerLex.fsl"
                                      LBRACE    
-# 290 "TigerLex.fs"
+# 292 "TigerLex.fs"
           )
   | 14 -> ( 
-# 120 "TigerLex.fsl"
+# 122 "TigerLex.fsl"
                                      RBRACE    
-# 295 "TigerLex.fs"
+# 297 "TigerLex.fs"
           )
   | 15 -> ( 
-# 121 "TigerLex.fsl"
+# 123 "TigerLex.fsl"
                                      SEMICOLON 
-# 300 "TigerLex.fs"
+# 302 "TigerLex.fs"
           )
   | 16 -> ( 
-# 122 "TigerLex.fsl"
+# 124 "TigerLex.fsl"
                                      COLON     
-# 305 "TigerLex.fs"
+# 307 "TigerLex.fs"
           )
   | 17 -> ( 
-# 123 "TigerLex.fsl"
+# 125 "TigerLex.fsl"
                                      COMMA     
-# 310 "TigerLex.fs"
+# 312 "TigerLex.fs"
           )
   | 18 -> ( 
-# 125 "TigerLex.fsl"
+# 127 "TigerLex.fsl"
                                      AND       
-# 315 "TigerLex.fs"
+# 317 "TigerLex.fs"
           )
   | 19 -> ( 
-# 126 "TigerLex.fsl"
+# 128 "TigerLex.fsl"
                                      OR        
-# 320 "TigerLex.fs"
+# 322 "TigerLex.fs"
           )
   | 20 -> ( 
-# 127 "TigerLex.fsl"
+# 129 "TigerLex.fsl"
                                      TIMES     
-# 325 "TigerLex.fs"
+# 327 "TigerLex.fs"
           )
   | 21 -> ( 
-# 128 "TigerLex.fsl"
+# 130 "TigerLex.fsl"
                                      DIVIDE    
-# 330 "TigerLex.fs"
+# 332 "TigerLex.fs"
           )
   | 22 -> ( 
-# 129 "TigerLex.fsl"
+# 131 "TigerLex.fsl"
                                      PLUS      
-# 335 "TigerLex.fs"
+# 337 "TigerLex.fs"
           )
   | 23 -> ( 
-# 130 "TigerLex.fsl"
+# 132 "TigerLex.fsl"
                                      MINUS     
-# 340 "TigerLex.fs"
+# 342 "TigerLex.fs"
           )
   | 24 -> ( 
-# 131 "TigerLex.fsl"
+# 133 "TigerLex.fsl"
                                      EQ        
-# 345 "TigerLex.fs"
+# 347 "TigerLex.fs"
           )
   | 25 -> ( 
-# 132 "TigerLex.fsl"
+# 134 "TigerLex.fsl"
                                      NEQ       
-# 350 "TigerLex.fs"
+# 352 "TigerLex.fs"
           )
   | 26 -> ( 
-# 133 "TigerLex.fsl"
+# 135 "TigerLex.fsl"
                                      GT        
-# 355 "TigerLex.fs"
+# 357 "TigerLex.fs"
           )
   | 27 -> ( 
-# 134 "TigerLex.fsl"
+# 136 "TigerLex.fsl"
                                      GE        
-# 360 "TigerLex.fs"
+# 362 "TigerLex.fs"
           )
   | 28 -> ( 
-# 135 "TigerLex.fsl"
+# 137 "TigerLex.fsl"
                                      LT        
-# 365 "TigerLex.fs"
+# 367 "TigerLex.fs"
           )
   | 29 -> ( 
-# 136 "TigerLex.fsl"
+# 138 "TigerLex.fsl"
                                      LE        
-# 370 "TigerLex.fs"
+# 372 "TigerLex.fs"
           )
   | 30 -> ( 
-# 138 "TigerLex.fsl"
+# 140 "TigerLex.fsl"
                                      EOF       
-# 375 "TigerLex.fs"
+# 377 "TigerLex.fs"
           )
   | 31 -> ( 
-# 139 "TigerLex.fsl"
+# 141 "TigerLex.fsl"
                                     
                                      lexicalError (sprintf "Unexpected char: '%s'." (lexemeAsString lexbuf)) lexbuf
                                    
-# 382 "TigerLex.fs"
+# 384 "TigerLex.fs"
           )
   | _ -> failwith "Read"
 (* Rule SkipComment *)
 and _fslex_SkipComment  _fslex_state lexbuf =
   match _fslex_tables.Interpret(_fslex_state,lexbuf) with
   | 0 -> ( 
-# 144 "TigerLex.fsl"
+# 146 "TigerLex.fsl"
                                      // comment ends
                                      commentDepth := !commentDepth - 1
                                      if !commentDepth = 0 then ()
                                      else SkipComment lexbuf
                                    
-# 395 "TigerLex.fs"
+# 397 "TigerLex.fs"
           )
   | 1 -> ( 
-# 149 "TigerLex.fsl"
+# 151 "TigerLex.fsl"
                                      // inner comment starts
                                      commentDepth := !commentDepth + 1
                                      SkipComment lexbuf
                                    
-# 403 "TigerLex.fs"
+# 405 "TigerLex.fs"
           )
   | 2 -> ( 
-# 153 "TigerLex.fsl"
+# 155 "TigerLex.fsl"
                                     
                                      lexicalError "Unterminated comment." lexbuf
                                    
-# 410 "TigerLex.fs"
+# 412 "TigerLex.fs"
           )
   | 3 -> ( 
-# 156 "TigerLex.fsl"
+# 158 "TigerLex.fsl"
                                      SkipComment lexbuf 
-# 415 "TigerLex.fs"
+# 417 "TigerLex.fs"
           )
   | _ -> failwith "SkipComment"
 (* Rule StringDef *)
 and _fslex_StringDef chars _fslex_state lexbuf =
   match _fslex_tables.Interpret(_fslex_state,lexbuf) with
   | 0 -> ( 
-# 161 "TigerLex.fsl"
+# 163 "TigerLex.fsl"
                                                       // string ends
                                                       String.concat "" (List.map string (List.rev chars))
                                                     
-# 426 "TigerLex.fs"
+# 428 "TigerLex.fs"
           )
   | 1 -> ( 
-# 164 "TigerLex.fsl"
+# 166 "TigerLex.fsl"
                                                       StringDef ((escape (lexemeAsString lexbuf) lexbuf) :: chars) lexbuf 
-# 431 "TigerLex.fs"
+# 433 "TigerLex.fs"
           )
   | 2 -> ( 
-# 165 "TigerLex.fsl"
+# 167 "TigerLex.fsl"
                                                       StringDef ((escape (lexemeAsString lexbuf) lexbuf) :: chars) lexbuf 
-# 436 "TigerLex.fs"
+# 438 "TigerLex.fs"
           )
   | 3 -> ( 
-# 166 "TigerLex.fsl"
+# 168 "TigerLex.fsl"
                                                       StringDef ((asciiToChar lexbuf) :: chars) lexbuf 
-# 441 "TigerLex.fs"
+# 443 "TigerLex.fs"
           )
   | 4 -> ( 
-# 167 "TigerLex.fsl"
+# 169 "TigerLex.fsl"
                                                       lexicalError "Newline in string." lexbuf 
-# 446 "TigerLex.fs"
+# 448 "TigerLex.fs"
           )
   | 5 -> ( 
-# 168 "TigerLex.fsl"
+# 170 "TigerLex.fsl"
                                                       lexicalError "Illegal escape sequence." lexbuf 
-# 451 "TigerLex.fs"
+# 453 "TigerLex.fs"
           )
   | 6 -> ( 
-# 169 "TigerLex.fsl"
+# 171 "TigerLex.fsl"
                                                       lexicalError "Unterminated string." lexbuf 
-# 456 "TigerLex.fs"
+# 458 "TigerLex.fs"
           )
   | 7 -> ( 
-# 170 "TigerLex.fsl"
+# 172 "TigerLex.fsl"
                                                       StringDef (char (lexbuf.LexemeChar 0) :: chars) lexbuf 
-# 461 "TigerLex.fs"
+# 463 "TigerLex.fs"
           )
   | _ -> failwith "StringDef"
 

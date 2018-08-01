@@ -2,33 +2,40 @@ module Absyn
 
 (* Definition of Tiger Abstract Syntax Types *)
 
+open Microsoft.FSharp.Text.Lexing
+
 open Store
 
 // _____________________________________________________________________________
 //                                                         Abstract Syntax Tree
 
+// Needed to report semantic errors in next phase - Semantic Analysis
+type Pos = int * int
+
+// Tip: Note that we track the positions of IDs and types
+
 type TVar =
-    | SimpleVar of Symbol              (*   x              *)
-    | FieldVar of TVar * Symbol        (*   x.all          *)
-    | SubscriptVar of TVar * TExp      (*   row[5];VarExp(SubscriptVar(SimpleVar(row).. *)
+    | SimpleVar of Symbol * Pos         (*   x              *)
+    | FieldVar of TVar * Symbol * Pos   (*   x.all          *)
+    | SubscriptVar of TVar * TExp * Pos (*   row[5];VarExp(SubscriptVar(SimpleVar(row).. *)
 
 and TExp =
-    | IntExp of int                    (*   1, 2, 3 ...    *)
-    | StringExp of string              (*   "\n Enter: "   *)
-    | NilExp                           (*   nil or represent absence of expressions     *)
-    | BreakExp                         (*   break          *)
-    | VarExp of TVar                   (*   double(x); x is VarExp(SimpleVar(x)...      *)
+    | IntExp of int                     (*   1, 2, 3 ...    *)
+    | StringExp of string * Pos         (*   "\n Enter: "   *)
+    | NilExp                            (*   nil or represent absence of expressions     *)
+    | BreakExp of Pos                   (*   break          *)
+    | VarExp of TVar                    (*   double(x); x is VarExp(SimpleVar(x)...      *)
 
-    | AssignExp of AssignRec           (*   a := 5         *)
-    | OpExp of OpRec                   (*   a + 4          *)
-    | CallExp of CallRec               (*   double(42)     *)
-    | RecordExp of RecordRec           (*   person {name="aname", id=0}   *)
-    | ArrayExp of ArrayRec             (*   col[i]         *)
-    | SeqExp of TExp list              (*   (a := 5; a+1)  *)
-    | IfExp of IfRec                   (*   if a=nil then b else d        *)
+    | AssignExp of AssignRec            (*   a := 5         *)
+    | OpExp of OpRec                    (*   a + 4          *)
+    | CallExp of CallRec                (*   double(42)     *)
+    | RecordExp of RecordRec            (*   person {name="aname", id=0}   *)
+    | ArrayExp of ArrayRec              (*   col[i]         *)
+    | SeqExp of (TExp * Pos) list       (*   (a := 5; a+1)  *)
+    | IfExp of IfRec                    (*   if a=nil then b else d        *)
     | WhileExp of WhileRec
     | ForExp of ForRec
-    | LetExp of LetRec                 (*   let var a:=1 in a*2 end       *)
+    | LetExp of LetRec                  (*   let var a:=1 in a*2 end       *)
 
 (*
    'FunctionDec' is a list because mutual recursive functions form a tree in a ASTree.
@@ -37,14 +44,14 @@ and TExp =
 *)
 
 and TDec =
-    | TypeDec of TypeRec list          (*   type tree = {key: int, children: treelist} *)
-    | VarDec of VarRec                 (*   var a := 5                                 *)
-    | FunctionDec of FunDecRec list    (*   function double(a: int) = a*2              *)
+    | TypeDec of TypeDecRec list           (*   type tree = {key: int, children: treelist} *)
+    | VarDec of VarDecRec                  (*   var a := 5                                 *)
+    | FunctionDec of FunDecRec list     (*   function double(a: int) = a*2              *)
 
 and TType =
-    | NameTy of Symbol                 (*   int           *)
-    | RecordTy of FieldRec list        (*   {name: string, id: int}      *)
-    | ArrayTy of Symbol                (*   array of int  *)
+    | NameTy of Symbol * Pos            (*   int           *)
+    | RecordTy of FieldRec list         (*   {name: string, id: int}      *)
+    | ArrayTy of Symbol * Pos           (*   array of int  *)
 
 and TOper =
     | PlusOp
@@ -62,51 +69,64 @@ and TOper =
 //                                                                      Records
 
 and AssignRec = { var: TVar;
-                  exp: TExp }
+                  exp: TExp;
+                  pos: Pos }
 
 and OpRec = { left: TExp;
               oper: TOper;
-              right: TExp }
+              right: TExp;
+              pos: Pos }
 
 and CallRec = { func: Symbol;
-                args: TExp list }
+                args: TExp list;
+                pos: Pos }
 
 and RecordRec = { typ: Symbol;
-                  fields: (Symbol * TExp) list }
+                  fields: (Symbol * TExp * Pos) list;
+                  pos: Pos }
 
 and ArrayRec = { typ: Symbol;
                  size: TExp;
-                 init: TExp }
+                 init: TExp;
+                 pos: Pos }
 
 and IfRec = { test: TExp;
               then': TExp;
-              else': TExp option }
+              else': TExp option;
+              pos: Pos }
 
 and WhileRec = { test: TExp;
-                 body: TExp }
+                 body: TExp;
+                 pos: Pos }
 
 and ForRec = { var: Symbol;
                escape: bool ref;
                lo: TExp;
                hi: TExp;
-               body: TExp }
+               body: TExp;
+               pos: Pos }
 
 and LetRec = { decs: TDec list;
-               body: TExp }      // It is an 'Exp' not list of expressions p. 519
+               body: TExp;       // It is an 'Exp' not list of expressions p. 519
+               pos: Pos }
 
-and TypeRec = { name: Symbol;
-                ty: TType }
+and TypeDecRec = { name: Symbol;
+                   ty: TType;
+                   pos: Pos }
 
-and VarRec = { name: Symbol;
-               escape: bool ref;
-               typ: Symbol option;
-               init: TExp }
+and VarDecRec = { name: Symbol;
+                  escape: bool ref;
+                  typ: (Symbol * Pos) option;
+                  init: TExp;
+                  pos: Pos }
 
 and FunDecRec = { name: Symbol;
                   param: FieldRec list;
-                  result: Symbol option;
-                  body: TExp }
+                  result: (Symbol * Pos) option;
+                  body: TExp;
+                  pos: Pos }
 
 and FieldRec = { name: Symbol;
                  escape: bool ref;
-                 typ: Symbol }
+                 typ: Symbol;
+                 pos: Pos }

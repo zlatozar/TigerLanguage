@@ -23,9 +23,11 @@ let commentDepth = ref 0
 // _____________________________________________________________________________
 //                                                             Helper functions
 
+exception LexicalError of string
+
 let lexicalError errorMsg (lexbuf: LexBuffer<_>) =
-    let message = "Lexical Error: " + errorMsg +
-                             (sprintf "\nLine: %d Column: %d\n" (lexbuf.StartPos.Line + 1) lexbuf.StartPos.Column)
+    let message = sprintf "Lexical Error: %s
+                              \nLine: %d Column: %d\n" errorMsg (lexbuf.StartPos.Line + 1) lexbuf.StartPos.Column
     failwith message
 
 let lexemeAsString lexbuf = LexBuffer<char>.LexemeString lexbuf

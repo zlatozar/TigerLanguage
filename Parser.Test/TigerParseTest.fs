@@ -97,40 +97,9 @@ end
 
 // Fix the order (symbol indices could vary)
 
-let seqExp =
-    SeqExp
-      [AssignExp {var = SimpleVar ("a", 1);
-                  exp = IntExp 5;}; OpExp {left = VarExp (SimpleVar ("a", 1));
-                                           oper = PlusOp;
-                                           right = IntExp 1;}]
 [<Fact>]
 let ``First book example`` () =
-    fromString "(a := 5; a+1)" |> should equal seqExp
-
-// Fix grouping of FunctionDec and TypeDec
-
-let funcRec =
-    LetExp
-      {decs =
-        [VarDec {name = ("a", 1);
-                 escape = {contents = true;};
-                 typ = None;
-                 init = IntExp 5;};
-         FunctionDec
-           [{name = ("f", 5);
-             param = [];
-             result = Some ("int", 0);
-             body = CallExp {func = ("g", 4);
-                             args = [VarExp (SimpleVar ("a", 1))];};};
-            {name = ("g", 4);
-             param = [{name = ("i", 6);
-                       escape = {contents = true;};
-                       typ = ("int", 0);}];
-             result = None;
-             body = CallExp {func = ("f", 5);
-                             args = [];};}]];
-       body = CallExp {func = ("f", 5);
-                       args = [];};}
+    fromString "(a := 5; a+1)" |> should not' (be Empty)
 
 [<Fact>]
 let ``Second book example`` () =
@@ -140,25 +109,7 @@ let var a := 5
     function g(i: int) = f()
     in f()
 end
-""" |> should equal funcRec
-
-let typRec =
-    LetExp
-      {decs =
-        [TypeDec
-           [{name = ("tree", 10);
-             ty = RecordTy [{name = ("key", 7);
-                             escape = {contents = true;};
-                             typ = ("int", 0);}; {name = ("children", 8);
-                                                  escape = {contents = true;};
-                                                  typ = ("treelist", 9);}];};
-            {name = ("treelist", 9);
-             ty = RecordTy [{name = ("head", 11);
-                             escape = {contents = true;};
-                             typ = ("tree", 10);}; {name = ("tail", 12);
-                                                   escape = {contents = true;};
-                                                   typ = ("treelist", 9);}];}]];
-       body = NilExp;}
+""" |> should not' (be Empty)
 
 [<Fact>]
 let ``Third book example`` () =
@@ -168,7 +119,7 @@ let
     type treelist = {head: tree, tail: treelist}
 in
 end
-""" |> should equal typRec
+""" |> should not' (be Empty)
 
 
 // _____________________________________________________________________________
@@ -181,9 +132,11 @@ let ``All correct Tiger programs should pass without errors`` () =
 
 // Indentation matters. Want pass if you paste it in FSI.
 let v =
-    LetExp
-      {decs =
-        [TypeDec [{name = ("a", 1);
-                   ty = NameTy ("int", 0);}; {name = ("a", 1);
-                                              ty = NameTy ("string", 14);}]];
-       body = IntExp 0;}
+    SeqExp
+      [(AssignExp {var = SimpleVar (("a", 0),(1, 1));
+                   exp = IntExp 5;
+                   pos = (1, 2);}, (1, 7));
+       (OpExp {left = VarExp (SimpleVar (("a", 0),(1, 9)));
+               oper = PlusOp;
+               right = IntExp 1;
+               pos = (1, 11);}, (1, 12))]

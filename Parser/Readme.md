@@ -20,7 +20,12 @@ Use to use language specification. If you create EBNF half of the work is done.
 
 - Test very careful with the generated tree. Every time read the resulted output
 
+- In specification sometimes there is _hidden_ clauses. In Tiger language this
+  is `()` so add it as expression.
+
 - As test use books examples. Is the output the same?
+
+- Isolate border cases and test them well.
 ```
 <LValue> ::=
           | ID

@@ -4,6 +4,8 @@ open Store
 
 type Unique = unit ref
 
+// Tip: Simplify types as much as possible
+
 type Ty =
     | RECORD of (Symbol * Ty) list * Unique
     | NIL

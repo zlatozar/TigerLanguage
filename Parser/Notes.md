@@ -110,8 +110,15 @@ Solved by adding `%left DO`
 `%left` to prefer **shift** but how to order priority?
 
 Let's say that `if..then..else` should be parsed. `then` should be with less
-priority because we want to continue for possible `else`. Same for `for..to..do` and
-`while..do`. Indicate with `%left` that the construction continues.
+priority(to avoid reduce) because we want to continue for possible `else`.
+Same for `for..to..do` and `while..do`. Indicate with `%left` that the construction
+continues. But how to order all of them (`then`, `else` and `do`). Here is how I think:
+ - `then` should be with less priority than `else` - do not hurry to reduce up to `then`
+ - Is it possible to have `for/while......do..then/else` - NO, but it is possible
+   to have `...then/else..for/while...do` so we have to reduce `for/while` before move
+   and finish with `if`. Conclusion is `do` has biggest priority, then `else` and with
+   lower is `then`.
+
 
 
 ### How to read parser output file?

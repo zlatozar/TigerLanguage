@@ -24,17 +24,17 @@ module SemanticAnalysis =
 
     let rec transVar (venv, tenv, (var: Absyn.TVar)) =
         match var with
-        | SimpleVar sym      -> ()
-        | FieldVar(v, sym)   -> ()
-        | SubscriptVar(v, e) -> ()
+        | SimpleVar (sym, pos)        -> ()
+        | FieldVar (tVar, sym, pos)   -> ()
+        | SubscriptVar (tVar, e, pos) -> ()
 
     and transExp (venv, tenv, (exp: Absyn.TExp)) =
         match exp with
-        | IntExp i          -> ()
-        | StringExp str     -> ()
-        | NilExp            -> ()
-        | BreakExp          -> ()
-        | VarExp v          -> ()
+        | IntExp i             -> ()
+        | StringExp (str, pos) -> ()
+        | NilExp               -> ()
+        | BreakExp pos         -> ()
+        | VarExp tVar          -> ()
 
         | AssignExp assignRec  -> ()
         | OpExp opRec       -> ()
@@ -55,9 +55,9 @@ module SemanticAnalysis =
 
     and transTy (tenv, (ty: Absyn.TType)) =
         match ty with
-        | NameTy s               -> ()
+        | NameTy (sym, pos)      -> ()
         | RecordTy fieldRecList  -> ()
-        | ArrayTy s              -> ()
+        | ArrayTy (sym, pos)     -> ()
 
 // ______________________________________________________________________________
 //
