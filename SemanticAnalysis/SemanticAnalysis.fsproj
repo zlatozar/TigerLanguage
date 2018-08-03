@@ -5,10 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="ErrorMsg.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Env.fs" />
     <Compile Include="Translate.fs" />
-    <Compile Include="SemanticAnalysis.fs" />
+    <Compile Include="TigerSemantic.fs" />
+    <Compile Include="Semantic.fs" />
+
     <None Include="Readme.md" />
   </ItemGroup>
 

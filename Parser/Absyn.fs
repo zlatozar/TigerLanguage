@@ -44,8 +44,8 @@ and TExp =
 *)
 
 and TDec =
-    | TypeDec of TypeDecRec list           (*   type tree = {key: int, children: treelist} *)
-    | VarDec of VarDecRec                  (*   var a := 5                                 *)
+    | TypeDec of TypeDecRec list        (*   type tree = {key: int, children: treelist} *)
+    | VarDec of VarDecRec               (*   var a := 5                                 *)
     | FunctionDec of FunDecRec list     (*   function double(a: int) = a*2              *)
 
 and TType =

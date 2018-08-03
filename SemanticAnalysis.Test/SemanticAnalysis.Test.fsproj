@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="SemanticAnalysisTests.fs" />
+    <Compile Include="TigerSemanticTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

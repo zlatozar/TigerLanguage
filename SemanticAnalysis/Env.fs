@@ -5,10 +5,6 @@ open Types
 // Needed in next steps. Dummy for now.
 type Access = unit
 
-type EnvEntry =
-    | VarEntry
-    | FunEntry
-
 type VarEntry = { ty: Ty; access: Access }
 type FunEntry = { formals: Ty list; result: Ty }
 
@@ -16,4 +12,4 @@ type FunEntry = { formals: Ty list; result: Ty }
 let base_tenv = () // :Store.Table<Ty> = ()
 
 // predefined functions
-let base_venv = () // :Store.Table<EnvEntry> = ()
+let base_fenv = () // :Store.Table<FunEntry> = ()

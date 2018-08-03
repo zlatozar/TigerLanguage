@@ -25,11 +25,6 @@ let commentDepth = ref 0
 
 exception LexicalError of string
 
-let lexicalError errorMsg (lexbuf: LexBuffer<_>) =
-    let message = sprintf "Lexical Error: %s
-                              \nLine: %d Column: %d\n" errorMsg (lexbuf.StartPos.Line + 1) lexbuf.StartPos.Column
-    failwith message
-
 let lexemeAsString lexbuf = LexBuffer<char>.LexemeString lexbuf
 
 let asciiToChar lexbuf =
@@ -49,7 +44,7 @@ let escape s (lexbuf: LexBuffer<_>) =
     | "\\^b" -> '\008'
     | "\\^v" -> '\011'
     | "\\^f" -> '\012'
-    | _      -> lexicalError "Impossible escape." lexbuf
+    | _      -> failwith "lexical error - impossible escape."
 
 let keywords = [("array", ARRAY);
                 ("break", BREAK);
@@ -139,7 +134,7 @@ rule Read = parse
 
   | eof             { EOF       }
   | _               {
-                      lexicalError (sprintf "Unexpected char: '%s'." (lexemeAsString lexbuf)) lexbuf
+                      failwith (sprintf "lexical error - unexpected char: '%s'." (lexemeAsString lexbuf))
                     }
 
 and SkipComment = parse
@@ -153,7 +148,7 @@ and SkipComment = parse
                       SkipComment lexbuf
                     }
    | eof            {
-                      lexicalError "Unterminated comment." lexbuf
+                      failwith "Unterminated comment."
                     }
    | _              { SkipComment lexbuf }
 
@@ -166,7 +161,7 @@ and StringDef chars = parse
   | '\\' ['n' 't' 'r' '\\' '"']      { StringDef ((escape (lexemeAsString lexbuf) lexbuf) :: chars) lexbuf }
   | "\\^" ['a' 'b' 'v' 'f']          { StringDef ((escape (lexemeAsString lexbuf) lexbuf) :: chars) lexbuf }
   | '\\' treeDigits                  { StringDef ((asciiToChar lexbuf) :: chars) lexbuf }
-  | ['\n' '\r']                      { lexicalError "Newline in string." lexbuf }
-  | '\\'                             { lexicalError "Illegal escape sequence." lexbuf }
-  | eof                              { lexicalError "Unterminated string." lexbuf }
+  | ['\n' '\r']                      { failwith "lexical error - newline in string." }
+  | '\\'                             { failwith "lexical error - illegal escape sequence." }
+  | eof                              { failwith "lexical error - unterminated string." }
   | _                                { StringDef (char (lexbuf.LexemeChar 0) :: chars) lexbuf }

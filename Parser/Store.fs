@@ -28,14 +28,10 @@ let showSymbols = Seq.iter (printf "%A\n") vars
 
 type Table<'a> = Map<int, 'a>
 
-let empty = Map.empty<int, 'a>
+let empty<'a> = Map.empty<int, 'a>
 
-let lookup (table: Table<'a>) (symbol: Symbol) = table.TryFind (snd symbol)
-
-// Imperative style
-
-let iEnter (table: Table<'a>) (symbol: Symbol) value = table.Add ((snd symbol), value)
+let lookup ((table: Table<'a>), (symbol: Symbol)) = table.TryFind (snd symbol)
 
 // Functional style
 
-let enter (table: Table<'a>) (symbol: Symbol) value = Map.add (snd symbol) value
+let enter ((table: Table<'a>), (symbol: Symbol), value) = Map.add (snd symbol) value table
