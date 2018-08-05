@@ -8,8 +8,13 @@ type Access = unit
 type VarEntry = { ty: Ty; access: Access }
 type FunEntry = { formals: Ty list; result: Ty }
 
-// predefined types
-let base_tenv = () // :Store.Table<Ty> = ()
+// Initially variable environment is empty
+let baseVarEnv :Store.Table<VarEntry> = Store.empty<VarEntry>
 
-// predefined functions
-let base_fenv = () // :Store.Table<FunEntry> = ()
+// Predefined functions
+let baseFunEnv :Store.Table<FunEntry> = Store.empty<FunEntry>
+
+// Predefined types - int and string
+let baseTyEnv :Store.Table<Ty> =
+    Store.enterAll Store.empty<Ty> [(Store.symbol "int", INT);
+                                    (Store.symbol "string", STRING)]

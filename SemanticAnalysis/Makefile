@@ -4,4 +4,5 @@ build:
 
 repl:
 	@ echo -e "\nStart parser interactive session. Modules: open Tiger.Semantic;;\n"
-	@ fsharpi ../Parser/Store.fs ErrorMsg.fs Types.fs Env.fs Translate.fs
+	@ fsharpi -r ../FsLexYacc.Runtime.dll -r ../Parser/bin/Debug/netstandard2.0/Parser.dll \
+                     ErrorMsg.fs Types.fs Env.fs Translate.fs TigerSemantic.fs Semantic.fs

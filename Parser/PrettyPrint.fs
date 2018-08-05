@@ -39,7 +39,7 @@ let rec dolist d f args =
 // _____________________________________________________________________________
 //                                                                         Main
 
-// Tip: This is an example how to traverse the AST
+// Tip: This is an example how to traverse the AST see Semantic.fs
 
 let rec var (expr, d) =
     match expr with

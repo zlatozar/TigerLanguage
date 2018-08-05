@@ -2,13 +2,20 @@ namespace Tiger
 
 module Semantic =
 
+    open Env
     open TigerSemantic
 
     // ______________________________________________________________________________
     //
 
-    let fromString (str: string) =
-        Tiger.Parser.fromString str
+    let transFromString (str: string) =
+        transExp (baseVarEnv,
+                  baseFunEnv,
+                  baseTyEnv,
+                  (Tiger.Parser.fromString str))
 
-    let fromFile (filename: string) =
-        Tiger.Parser.fromFile filename
+    let transFromFile (filename: string) =
+        transExp (baseVarEnv,
+                  baseFunEnv,
+                  baseTyEnv,
+                  (Tiger.Parser.fromFile filename))

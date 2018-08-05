@@ -35,3 +35,6 @@ let lookup ((table: Table<'a>), (symbol: Symbol)) = table.TryFind (snd symbol)
 // Functional style
 
 let enter ((table: Table<'a>), (symbol: Symbol), value) = Map.add (snd symbol) value table
+
+let enterAll (table: Table<'a>) entries =
+    List.fold (fun t e ->  enter (t, fst e, snd e)) table entries
