@@ -2,8 +2,6 @@ module Absyn
 
 (* Definition of Tiger Abstract Syntax Types *)
 
-open Microsoft.FSharp.Text.Lexing
-
 open Store
 
 // _____________________________________________________________________________
@@ -14,24 +12,24 @@ type Pos = int * int
 
 // Tip: Note that we track the positions of IDs and types
 
-type TVar =
+type TVar =                             (* Use examples during synctic analysis *)
     | SimpleVar of Symbol * Pos         (*   x              *)
     | FieldVar of TVar * Symbol * Pos   (*   x.all          *)
-    | SubscriptVar of TVar * TExp * Pos (*   row[5];VarExp(SubscriptVar(SimpleVar(row).. *)
+    | SubscriptVar of TVar * TExp * Pos (*   row[5]         *)
 
 and TExp =
     | IntExp of int                     (*   1, 2, 3 ...    *)
     | StringExp of string * Pos         (*   "\n Enter: "   *)
-    | NilExp                            (*   nil or represent absence of expressions     *)
+    | NilExp                            (*   nil            *)
     | BreakExp of Pos                   (*   break          *)
-    | VarExp of TVar                    (*   double(x); x is VarExp(SimpleVar(x)...      *)
+    | VarExp of TVar                    (*   container for TVars           *)
 
     | AssignExp of AssignRec            (*   a := 5         *)
     | OpExp of OpRec                    (*   a + 4          *)
     | CallExp of CallRec                (*   double(42)     *)
     | RecordExp of RecordRec            (*   person {name="aname", id=0}   *)
-    | ArrayExp of ArrayRec              (*   col[i]         *)
-    | SeqExp of (TExp * Pos) list       (*   (a := 5; a+1)  *)
+    | ArrayExp of ArrayRec              (*   col[i] := 42   *)
+    | SeqExp of (TExp * Pos) list       (*   (a := 5; a+1) or ()           *)
     | IfExp of IfRec                    (*   if a=nil then b else d        *)
     | WhileExp of WhileRec
     | ForExp of ForRec
@@ -45,13 +43,13 @@ and TExp =
 
 and TDec =
     | TypeDec of TypeDecRec list        (*   type tree = {key: int, children: treelist} *)
-    | VarDec of VarDecRec               (*   var a := 5                                 *)
+    | VarDec of VarDecRec               (*   var a := 5; Tip: for id:=5 to.. id is var  *)
     | FunctionDec of FunDecRec list     (*   function double(a: int) = a*2              *)
 
 and TType =
-    | NameTy of Symbol * Pos            (*   int           *)
+    | NameTy of Symbol * Pos            (*   int                          *)
     | RecordTy of FieldRec list         (*   {name: string, id: int}      *)
-    | ArrayTy of Symbol * Pos           (*   array of int  *)
+    | ArrayTy of Symbol * Pos           (*   array of int                 *)
 
 and TOper =
     | PlusOp

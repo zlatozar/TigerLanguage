@@ -2,6 +2,7 @@
 .vs
 *.suo
 *.user
+*.vscode
 
 # Build results
 [Dd]ebug/

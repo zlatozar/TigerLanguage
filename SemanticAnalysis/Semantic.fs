@@ -12,10 +12,12 @@ module Semantic =
         transExp (baseVarEnv,
                   baseFunEnv,
                   baseTyEnv,
+                  None,
                   (Tiger.Parser.fromString str))
 
     let transFromFile (filename: string) =
         transExp (baseVarEnv,
                   baseFunEnv,
                   baseTyEnv,
+                  None,
                   (Tiger.Parser.fromFile filename))

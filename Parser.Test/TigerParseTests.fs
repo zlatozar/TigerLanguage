@@ -19,15 +19,12 @@ let correctExamples = ["../../../../testcases/test01.tig";
                        "../../../../testcases/test07.tig";
                        "../../../../testcases/test08.tig";
                        "../../../../testcases/test12.tig";
-                       "../../../../testcases/test14.tig";
                        "../../../../testcases/test27.tig";
                        "../../../../testcases/test30.tig";
                        "../../../../testcases/test37.tig";
                        "../../../../testcases/test38.tig";
-                       "../../../../testcases/test39.tig";
                        "../../../../testcases/test41.tig";
                        "../../../../testcases/test42.tig";
-                       "../../../../testcases/test43.tig";
                        "../../../../testcases/test44.tig";
                        "../../../../testcases/test46.tig";
                        "../../../../testcases/test47.tig";
@@ -42,6 +39,7 @@ let badExamples = ["../../../../testcases/bad/test09.tig";
                    "../../../../testcases/bad/test10.tig";
                    "../../../../testcases/bad/test11.tig";
                    "../../../../testcases/bad/test13.tig";
+                   "../../../../testcases/bad/test14.tig";
                    "../../../../testcases/bad/test15.tig";
                    "../../../../testcases/bad/test16.tig";
                    "../../../../testcases/bad/test17.tig";
@@ -62,12 +60,14 @@ let badExamples = ["../../../../testcases/bad/test09.tig";
                    "../../../../testcases/bad/test34.tig";
                    "../../../../testcases/bad/test35.tig";
                    "../../../../testcases/bad/test36.tig";
+                   "../../../../testcases/bad/test39.tig";
                    "../../../../testcases/bad/test40.tig";
+                   "../../../../testcases/bad/test43.tig";
                    "../../../../testcases/bad/test45.tig";
                    "../../../../testcases/bad/test49.tig"]
 
 // _____________________________________________________________________________
-//                                                       Test during bug fixing
+//                                                      Tests during bug fixing
 
 // Fix grammar
 

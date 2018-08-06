@@ -26,6 +26,7 @@ Use to use language specification. If you create EBNF half of the work is done.
 - As test use books examples. Is the output the same?
 
 - Isolate border cases and test them well.
+
 ```
 <LValue> ::=
           | ID
@@ -195,6 +196,7 @@ Note: TYID is an identifier defined by a type declaration. Lexer could recognize
                  | <TypeFieldList> , ID : TYID
 
 ```
+
 #### Terminals
 
 Tip: This definition could be inlined.

@@ -7,6 +7,7 @@ type Access = unit
 
 type VarEntry = { ty: Ty; access: Access }
 type FunEntry = { formals: Ty list; result: Ty }
+type ParamEntry = { name: Store.Symbol; ty: Ty }
 
 // Initially variable environment is empty
 let baseVarEnv :Store.Table<VarEntry> = Store.empty<VarEntry>

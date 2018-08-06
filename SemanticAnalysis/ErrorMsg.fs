@@ -13,7 +13,7 @@ let reset = anyErrors := false
 let errorOrig pos (msg: string) =
   let rec look (lp, ln) =
       match lp with
-      | a::rest when a < pos  -> printf "Line:%i, Column: %i" ln (pos - a)
+      | a::rest when a < pos  -> printf "[Line:%i, Column: %i]" ln (pos - a)
       | a::rest               -> look (rest, ln - 1)
       | _                     -> printf "0.0"
 
@@ -23,4 +23,5 @@ let errorOrig pos (msg: string) =
   printf ": %s\n" msg
 
 let error (line, column) (msg: string) =
-     printf "Line:%i, Column: %i %s\n" line column msg
+    anyErrors := true
+    printf "[Line:%i, Column: %i] %s\n" line column msg

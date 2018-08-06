@@ -12,5 +12,8 @@ type Ty =
     | INT
     | STRING
     | ARRAY of Ty * Unique
-    | NAME of Symbol * Ty option ref  (* for forward references *)
-    | UNIT                            (* represents no value    *)
+    | NAME of Symbol * Ty option ref  (* for forward type references *)
+    | UNIT                            (* for expressions that return no value *)
+
+// When to use NIL and when UNIT? - NIL for Tiger language nil or no type, UNIT for
+// everything that do not return value. That's way it is important how parser treats ().

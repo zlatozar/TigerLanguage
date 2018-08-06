@@ -12,7 +12,7 @@ module Parser =
 
         with
             | exn -> let pos = lexbuf.EndPos
-                     failwithf "Line:%d, Column:%d %s\n"
+                     failwithf "[Line:%d, Column:%d] %s\n"
                          (pos.Line + 1) pos.Column exn.Message
 
     let fromFile (filename: string) =
@@ -25,5 +25,5 @@ module Parser =
 
         with
             | exn -> let pos = lexbuf.EndPos
-                     failwithf "Line:%d, Column:%d %s\n"
+                     failwithf "[Line:%d, Column:%d] %s\n"
                          (pos.Line + 1) pos.Column exn.Message
