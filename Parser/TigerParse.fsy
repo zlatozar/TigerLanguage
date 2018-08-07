@@ -169,7 +169,7 @@ ForExp:
 ;
 
 UnitExp:
-    | LPAREN RPAREN        { NilExp }
+    | LPAREN RPAREN        { SeqExp [] }
 
 LetExp:
     | LET Declarations IN ZeroOrMoreExp END   { LetExp {decs=$2; body=SeqExp $4; pos=(getEndPos parseState 1)} }

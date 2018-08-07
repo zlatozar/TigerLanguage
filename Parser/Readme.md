@@ -116,8 +116,8 @@ Tip: Remember that tick it is common for a lot of programming languages.
 <SeqExp> ::= ( <ZeroOrMoreExp> )
 
 <ZeroOrMoreExp> ::=
-                | <empty>
-                | <ExpSeq>
+                 | <empty>
+                 | <ExpSeq>
 
 <ExpSeq> ::=
           | <Exp>
@@ -207,7 +207,7 @@ Tip: This definition could be inlined.
 
 ### Precedence and Associativity
 
-Tip: This is only preliminary. Analyze **shift/reduce** errors from `FsYaccLex`.
+Tip: This is only preliminary. Analyze **shift/reduce** errors from `FsYaccLex` tool.
 
 Here is the order, from lower to highest:
 

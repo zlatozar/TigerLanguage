@@ -1019,7 +1019,7 @@ let _fsyacc_reductions ()  =    [|
                 (
                    (
 # 172 "TigerParse.fsy"
-                                                  NilExp 
+                                                  SeqExp [] 
                    )
 # 172 "TigerParse.fsy"
                  : 'UnitExp));

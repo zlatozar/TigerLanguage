@@ -101,13 +101,13 @@ and WhileRec = { test: TExp;
 
 and ForRec = { var: Symbol;
                escape: bool ref;
-               lo: TExp;
+               lo: TExp;    // initial value of 'var'
                hi: TExp;
                body: TExp;
                pos: Pos }
 
 and LetRec = { decs: TDec list;
-               body: TExp;       // It is an 'Exp' not list of expressions p. 519
+               body: TExp;  // It is an 'Exp' not list of expressions p. 519
                pos: Pos }
 
 and TypeDecRec = { name: Symbol;
