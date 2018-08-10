@@ -1,7 +1,6 @@
-/* valid for and let */
-
+/* Valid for and let */
 let
-	var a:= 0
-in 
-	for i:=0 to 100 do (a:=a+1;())
+    var a:= 0
+in
+    for i:=0 to 100 do (a := a + 1; ())
 end

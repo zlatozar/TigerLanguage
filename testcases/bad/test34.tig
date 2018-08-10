@@ -1,6 +1,7 @@
-/* error : formals and actuals have different types */
+/* Error: formals and actuals have different types */
+
 let
-	function g (a:int , b:string):int = a
+    function g(a:int, b:string) :int = a
 in
-	g("one", "two")
+    g("one", "two")
 end

@@ -1,8 +1,10 @@
-/* redeclaration of variable; this is legal, there are two different
-   variables with the same name.  The second one hides the first.  */
+/*
+  Re-declaration of variable; this is legal, there are two different
+  variables with the same name. The second one hides the first.
+*/
 let
-	var a := 0
-	var a := " "
+    var a := 0
+    var a := " "
 in
-	0
+    0
 end

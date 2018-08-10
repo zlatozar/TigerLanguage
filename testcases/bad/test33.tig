@@ -1,6 +1,7 @@
-/* error : unknown type */
+/* Error: unknown type */
+
 let
-	var a:= rectype {}
+    var a:= rectype {}
 in
-	0
+    0
 end

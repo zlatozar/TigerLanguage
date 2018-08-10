@@ -1,8 +1,9 @@
-/* error: initializing nil expressions not constrained by record type */
-let 
-	type rectype = {name:string, id:int}
+/* Error: initializing nil expressions not constrained by record type */
 
-	var a:= nil
+let
+    type rectype = {name:string, id:int}
+
+    var a:= nil
 in
-	a
+    a
 end

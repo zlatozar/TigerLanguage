@@ -1,8 +1,7 @@
-/* locals hide globals */
+/* Locals hide globals */
 let
-	var a:=0
-
-	function g(a:int):int = a 
+    var a := 0
+    function g(a: int) :int = a
 in
- g(2)
+    g(2)
 end

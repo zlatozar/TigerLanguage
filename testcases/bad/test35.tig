@@ -1,6 +1,7 @@
-/* error : formals are more then actuals */
+/* Error: formals are more then actuals */
+
 let
-	function g (a:int , b:string):int = a
+    function g(a:int, b:string) :int = a
 in
-	g("one")
+    g("one")
 end
