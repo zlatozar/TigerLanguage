@@ -49,6 +49,8 @@ let checkBothIntOrString (ty1, ty2, pos) =
     | _                -> error pos "expecting an integer or string."
 
 // Tip: NIL is a type and it is equal to every other p. 113
+
+// Ensure both results can be compared by equality
 let checkBothEq (ty1, ty2, pos) =
     match (ty1, ty2) with
     | (INT,    _)       -> checkBothIntOrString (ty1, ty2, pos)
@@ -68,6 +70,16 @@ let checkBothEq (ty1, ty2, pos) =
 
     | (ARRAY _ , _ )   -> error pos "expecting an array."
     | _                -> error pos "expecting an integer, string, array, or record."
+
+// Ensure the results have the same type
+let checkSame (ty1, ty2, pos) =
+    match (ty1, ty2) with
+    | (NIL, NIL)   -> ()
+    | (_, NIL)     -> error pos "expecting nil"
+    | (UNIT, UNIT) -> ()
+    | (_, UNIT)    -> error pos "expecting unit"
+    | (_, NAME _)  -> ()
+    | _            -> checkBothEq (ty1, ty2, pos)
 
 // (NAME a, (NAME b, (NAME c, ref T))), (NAME, nil)  or could be empty
 let rec actualTy (tenv, ty: Ty) =
@@ -154,7 +166,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
                             let variable = transVar (venv, fenv, tenv, breakpoint, assignRec.var)
                             let expression = transExp (venv, fenv, tenv, breakpoint, assignRec.exp)
 
-                            checkBothEq (variable.ty, expression.ty, assignRec.pos)
+                            checkSame (variable.ty, expression.ty, assignRec.pos)
                             { exp=(); ty=variable.ty }
 
     | OpExp opRec        -> printf "         !OpExp"
@@ -163,7 +175,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
 
                             match opRec.oper with
                             | PlusOp | MinusOp | TimesOp | DivideOp    -> checkBothInt (tyleft, tyright, opRec.pos)
-                            | EqOp | NeqOp | GtOp | GeOp | LtOp | LeOp -> checkBothIntOrString (tyleft, tyright, opRec.pos)
+                            | EqOp | NeqOp | GtOp | GeOp | LtOp | LeOp -> checkSame (tyleft, tyright, opRec.pos)
                             { exp=(); ty=INT }
 
     | CallExp callRec    -> printfn "         !CallExp"
@@ -175,12 +187,12 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
                                                let formalParmL = List.length funEntry.formals
 
                                                if actualParmL <> formalParmL 
-                                                   then error callRec.pos (sprintf "wrong number of arguments. Expecting `%i` given `%i`." formalParmL actualParmL)
+                                                   then error callRec.pos (sprintf "wrong number of arguments. Expecting %i agruments but given %i." formalParmL actualParmL)
                                                         { exp=(); ty=funEntry.result }
                                                    else 
                                                         let checkSame (e, formalTy) =
                                                             let expTy = transExp (venv, fenv, tenv, breakpoint, e)
-                                                            checkBothEq (actualTy (tenv, expTy.ty), actualTy (tenv, formalTy), callRec.pos)
+                                                            checkSame (actualTy (tenv, expTy.ty), actualTy (tenv, formalTy), callRec.pos)
 
                                                         List.map checkSame (List.zip callRec.args funEntry.formals) |> ignore
                                                         // Traslation should be returned in next phase
@@ -203,7 +215,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
                                                                                      if sym = tySym 
                                                                                          then
                                                                                              let expTy = transExp (venv, fenv, tenv, breakpoint, e)
-                                                                                             checkBothEq(expTy.ty, ty, p)
+                                                                                             checkSame (expTy.ty, ty, p)
                                                                                          else 
                                                                                              error p (sprintf "expecting `%s`, given `%s`." (Store.name tySym) (Store.name sym))
 
@@ -223,7 +235,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
 
                                               let init = transExp (venv, fenv, tenv, breakpoint, arrayRec.init)
                                               let initTy = ARRAY (actualTy (tenv, init.ty), ref ())   // !! that was tricky
-                                              checkBothEq (initTy, actualTy (tenv, arrayTy), arrayRec.pos)
+                                              checkSame (initTy, actualTy (tenv, arrayTy), arrayRec.pos)
                                               { exp=(); ty=arrayTy }
 
     | SeqExp expList     -> printfn "![SeqExp]"
@@ -244,7 +256,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
 
                             match ifRec.else' with
                             | Some e -> let elseExp = transExp (venv, fenv, tenv, breakpoint, e)
-                                        checkBothEq (then'.ty, elseExp.ty, ifRec.pos)
+                                        checkSame (then'.ty, elseExp.ty, ifRec.pos)
                                         { exp=(); ty=then'.ty }
                             | None _ -> if then'.ty = UNIT then ()
                                             else error ifRec.pos "`if/then` expression does not return a value."
@@ -335,7 +347,7 @@ and transDec (venv, fenv, tenv, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
                                                               | Some resultTy -> let expResult =
                                                                                      transExp ((List.fold addParam venv getParams), fenv, tenv, breakpoint, funDecRec.body)
              
-                                                                                 checkBothEq (resultTy, expResult.ty, resultPos)
+                                                                                 checkSame (resultTy, expResult.ty, resultPos)
                                                                                  // Traslation(using funEntry) should be returned in next phase
                                 
                                 | None                     -> transExp ((List.fold addParam venv getParams), fenv, tenv, breakpoint, funDecRec.body) |> ignore
