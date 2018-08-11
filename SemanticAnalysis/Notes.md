@@ -2,9 +2,11 @@
 
 #### Guideline during development
 
-- Format F# in a way that could be read 'at once'.
+- Format F# code in a way that could be read 'at once'.
 
-- Do baby development steps and test them.
+- Start with declarations.
+
+- Do baby development steps and test them very well.
 
 - Use to use Tiger language - this will speed up test case writing.
 

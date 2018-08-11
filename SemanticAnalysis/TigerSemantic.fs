@@ -60,16 +60,16 @@ let checkBothEq (ty1, ty2, pos) =
                         -> if fields1 = fields2 then ()
                            else error pos "records are not of the same type."
 
-    | (RECORD _ , NIL) -> ()
-    | (NIL, RECORD _)  -> ()
-    | (RECORD _, _)    -> error pos "expecting a record."
+    | (RECORD _ , NIL)  -> ()
+    | (NIL, RECORD _)   -> ()
+    | (RECORD _, _)     -> error pos "expecting a record."
 
     | (ARRAY (aty1, _), ARRAY (aty2, _))
-                       -> if aty1 = aty2 then ()
-                          else error pos "type of array's elements mismatched."
+                        -> if aty1 = aty2 then ()
+                           else error pos "type of array's elements mismatched."
 
-    | (ARRAY _ , _ )   -> error pos "expecting an array."
-    | _                -> error pos "expecting an integer, string, array, or record."
+    | (ARRAY _ , _ )    -> error pos "expecting an array."
+    | _                 -> error pos "expecting an integer, string, array, or record."
 
 // Ensure the results have the same type
 let checkSame (ty1, ty2, pos) =
@@ -136,10 +136,10 @@ let rec transVar ((venv: VEnv), fenv, tenv, breakpoint, (var: Absyn.TVar)) :ExpT
                             let subcript = transVar (venv, fenv, tenv, breakpoint, tVar)
                             let arrayTy = actualTy (tenv, subcript.ty)
                             match arrayTy with
-                            | ARRAY(_) -> { exp=(); ty=arrayTy }
-                            | _        -> error pos "expecting an array variable."
-                                          dummyTransExp
-
+                            | ARRAY(ty', _) -> { exp=(); ty=ty' }
+                            | _             -> error pos "expecting an array variable."
+                                               dummyTransExp
+ 
 and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint), (exp: Absyn.TExp)) :ExpTy =
     match exp with
     | IntExp i           -> printfn "        !IntExp"
@@ -166,8 +166,8 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
                             let variable = transVar (venv, fenv, tenv, breakpoint, assignRec.var)
                             let expression = transExp (venv, fenv, tenv, breakpoint, assignRec.exp)
 
-                            checkSame (variable.ty, expression.ty, assignRec.pos)
-                            { exp=(); ty=variable.ty }
+                            checkSame (actualTy (tenv, variable.ty), actualTy (tenv, expression.ty), assignRec.pos)
+                            { exp=(); ty=UNIT }
 
     | OpExp opRec        -> printf "         !OpExp"
                             let {exp=_; ty=tyleft} = transExp (venv, fenv, tenv, breakpoint, opRec.left)
@@ -303,10 +303,40 @@ and transDec (venv, fenv, tenv, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
     | TypeDec typeRecList
                          -> printfn "   !TypeDec"
                             let addDecl iniTEnv (dec: TypeDecRec) =
-                                Store.enter (iniTEnv, dec.name, transTy (iniTEnv, dec.ty))
+                                Store.enter (iniTEnv, dec.name, NAME (dec.name, ref None))  // !!
 
+                            // 1. Enter types heads
                             let tenv' = List.fold addDecl tenv typeRecList
-                            { venv=venv; fenv=fenv; tenv=tenv' }
+
+                            let inferDeclTypes iniTEnv' (dec: TypeDecRec) =
+                                 Store.enter (iniTEnv', dec.name, transTy (iniTEnv', dec.ty))
+
+                            // 2. Infer types
+                            let tenv'' = List.fold inferDeclTypes tenv' typeRecList
+
+                            let rec inCycle (seen, tyRef, pos) =
+                                match tyRef with 
+                                | None   -> error pos "can't find type definition."
+                                            true
+                                | Some t -> match t with
+                                            | NAME (s2, tr) -> if (List.exists (fun x -> x = s2) seen)
+                                                                  then true
+                                                                  else inCycle (s2::seen, !tr, pos)
+                                            | _             -> false
+                                          
+                            let rec checkEach (typeRecList: TypeDecRec list) =
+                                match typeRecList with
+                                | []       -> ()
+                                | f::rest  -> match Store.lookup (tenv'', f.name) with
+                                              | Some (NAME (_, r)) -> if (inCycle ([f.name], !r, f.pos))
+                                                                          then error f.pos (sprintf "name type `%s` is involved in cyclic defnition." (Store.name f.name))
+                                                                          else checkEach (rest)
+                                              | _                   -> ()
+
+                            // 3. Check for cyclic NAME definitions
+                            checkEach (typeRecList)
+
+                            { venv=venv; fenv=fenv; tenv=tenv'' }
 
     | VarDec varDecRec   -> printf "    !VarDec"
                             let {exp=_; ty=ty'} = transExp (venv, fenv, tenv, breakpoint, varDecRec.init)
@@ -383,21 +413,20 @@ and transDec (venv, fenv, tenv, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
 and transTy (tenv, (ty: Absyn.TType)) :Ty =
     // do not forget to return actual type
     match ty with
-    | NameTy (sym, pos)    -> printfn "        !NameTy"
-                              match Store.lookup (tenv, sym) with
-                              | None         -> error pos (sprintf "type `%s` is not defined." (Store.name sym))
-                                                NIL
-                              | Some symType -> actualTy (tenv, symType)
+    | NameTy (sym, _)    -> printfn "        !NameTy"
+                            match Store.lookup (tenv, sym) with
+                            | None         -> NAME (sym, ref None)    // ! If not found - create an empty NAME
+                            | Some symType -> symType
 
     | RecordTy fieldRecList
                          -> printfn "          !RecordTy"
-                            let addDecl (fieldRec: FieldRec) =
+                            let getFieldType (fieldRec: FieldRec) =
                                 match Store.lookup (tenv, fieldRec.typ) with 
                                 | None         -> error fieldRec.pos (sprintf "type `%s` is not defined." (Store.name fieldRec.typ))
-                                                  (fieldRec.name, NIL)
-                                | Some symType -> (fieldRec.name, actualTy (tenv, symType))
+                                                  None
+                                | Some symType -> Some (fieldRec.name, symType)
 
-                            let fieldsList = List.map addDecl fieldRecList
+                            let fieldsList = List.choose id (List.map getFieldType fieldRecList)
                             RECORD (fieldsList, ref ())
 
     | ArrayTy (sym, pos)
@@ -405,4 +434,4 @@ and transTy (tenv, (ty: Absyn.TType)) :Ty =
                             match Store.lookup (tenv, sym) with
                             | None ->          error pos (sprintf "type `%s` is not defined." (Store.name sym))
                                                NIL
-                            | Some symType ->  ARRAY (actualTy (tenv, symType), ref ())        
+                            | Some symType ->  ARRAY (symType, ref ())        
