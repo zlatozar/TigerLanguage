@@ -1,8 +1,7 @@
 namespace Tiger
 
-open System
 open System.IO
-open System.Text
+
 open System.Text.RegularExpressions
 open Microsoft.FSharp.Text.Lexing
 

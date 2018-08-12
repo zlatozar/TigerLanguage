@@ -3,7 +3,7 @@
   Because of the intervening variable declaration, the two "g" functions
   are not in the same  batch of mutually recursive functions.
 
-  See also test39
+  See also incorrect test39
 */
 let
     function g(a:int):int = a

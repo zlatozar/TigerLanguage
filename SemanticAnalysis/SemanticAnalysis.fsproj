@@ -1,22 +1,19 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
-
+  <ItemGroup>
+    <ProjectReference Include="..\Parser\Parser.fsproj" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="ErrorMsg.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Env.fs" />
+    <Compile Include="StandardLibrary.fs" />
+
     <Compile Include="Translate.fs" />
     <Compile Include="TigerSemantic.fs" />
     <Compile Include="Semantic.fs" />
-
     <None Include="Readme.md" />
   </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Parser\Parser.fsproj" />
-  </ItemGroup>
-
 </Project>

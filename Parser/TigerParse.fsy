@@ -27,8 +27,9 @@ let getEndPos (parseState: IParseState) lexIdx =
 %token ASSIGN DOT LPAREN RPAREN LBRACK RBRACK
 %token LBRACE RBRACE SEMICOLON COLON COMMA
 
-%token AND OR TIMES DIVIDE PLUS MINUS UMINUS
+%token PLUS MINUS UMINUS TIMES DIVIDE
 %token EQ NEQ GT GE LT LE
+%token AND OR
 
 %token EOF
 
@@ -68,8 +69,23 @@ Exp:
 /* Non terminals as place holders */
 
     | LValue           { VarExp $1 }
+
     | Negation         { $1 }
-    | InfixOp          { $1 }
+
+    | Exp PLUS Exp     { OpExp {left=$1; oper=PlusOp; right=$3; pos=(getEndPos parseState 2)} }
+    | Exp MINUS Exp    { OpExp {left=$1; oper=MinusOp; right=$3; pos=(getEndPos parseState 2)} }
+    | Exp TIMES Exp    { OpExp {left=$1; oper=TimesOp; right=$3; pos=(getEndPos parseState 2)} }
+    | Exp DIVIDE Exp   { OpExp {left=$1; oper=DivideOp; right=$3; pos=(getEndPos parseState 2)} }
+    | Exp EQ Exp       { OpExp {left=$1; oper=EqOp; right=$3; pos=(getEndPos parseState 2)} }
+    | Exp NEQ Exp      { OpExp {left=$1; oper=NeqOp; right=$3; pos=(getEndPos parseState 2)} }
+    | Exp GT Exp       { OpExp {left=$1; oper=GtOp; right=$3; pos=(getEndPos parseState 2)} }
+    | Exp GE Exp       { OpExp {left=$1; oper=GeOp; right=$3; pos=(getEndPos parseState 2)} }
+    | Exp LT Exp       { OpExp {left=$1; oper=LtOp; right=$3; pos=(getEndPos parseState 2)} }
+    | Exp LE Exp       { OpExp {left=$1; oper=LeOp; right=$3; pos=(getEndPos parseState 2)} }
+/* See again p. 99 */
+    | Exp AND Exp      { IfExp {test=$1; then'=$3; else'=Some (IntExp 0); pos=(getStartPos parseState 2)} }
+    | Exp OR Exp       { IfExp {test=$1; then'=(IntExp 1); else'=Some $3; pos=(getStartPos parseState 2)} }
+
     | Assign           { $1 }
     | FunCall          { $1 }
     | RecCreate        { $1 }
@@ -98,13 +114,6 @@ LValueNotID:
 /* In p. 99 is suggested negative numbers to be infix operation '0 - exp' */
 Negation:
     | MINUS Exp %prec UMINUS      { OpExp {left=(IntExp 0); oper=MinusOp; right=$2; pos=(getEndPos parseState 1)} }
-;
-
-InfixOp:
-    | Exp Op Exp                  { OpExp {left=$1; oper=$2; right=$3; pos=(getEndPos parseState 2)} }
-/* See again p. 99 */
-    | Exp AND Exp                 { IfExp {test=$1; then'=$3; else'=Some (IntExp 0); pos=(getStartPos parseState 2)} }
-    | Exp OR Exp                  { IfExp {test=$1; then'=(IntExp 1); else'=Some $3; pos=(getStartPos parseState 2)} }
 ;
 
 Assign:

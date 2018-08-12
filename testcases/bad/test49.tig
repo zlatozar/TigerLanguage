@@ -1,4 +1,4 @@
-/* Error: syntax error, nil should not be preceded by type-id. */
+/* Error: syntax(parse) error, nil should not be preceded by type-id. */
 
 let
     type rectype = {name:string, id:int}

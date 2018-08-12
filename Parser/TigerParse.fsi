@@ -2,19 +2,19 @@
 module TigerParse
 type token = 
   | EOF
+  | AND
+  | OR
   | EQ
   | NEQ
   | GT
   | GE
   | LT
   | LE
-  | AND
-  | OR
-  | TIMES
-  | DIVIDE
   | PLUS
   | MINUS
   | UMINUS
+  | TIMES
+  | DIVIDE
   | LBRACE
   | RBRACE
   | SEMICOLON
@@ -48,19 +48,19 @@ type token =
   | INT of (int)
 type tokenId = 
     | TOKEN_EOF
+    | TOKEN_AND
+    | TOKEN_OR
     | TOKEN_EQ
     | TOKEN_NEQ
     | TOKEN_GT
     | TOKEN_GE
     | TOKEN_LT
     | TOKEN_LE
-    | TOKEN_AND
-    | TOKEN_OR
-    | TOKEN_TIMES
-    | TOKEN_DIVIDE
     | TOKEN_PLUS
     | TOKEN_MINUS
     | TOKEN_UMINUS
+    | TOKEN_TIMES
+    | TOKEN_DIVIDE
     | TOKEN_LBRACE
     | TOKEN_RBRACE
     | TOKEN_SEMICOLON
@@ -101,7 +101,6 @@ type nonTerminalId =
     | NONTERM_LValue
     | NONTERM_LValueNotID
     | NONTERM_Negation
-    | NONTERM_InfixOp
     | NONTERM_Assign
     | NONTERM_FunCall
     | NONTERM_ActualParams

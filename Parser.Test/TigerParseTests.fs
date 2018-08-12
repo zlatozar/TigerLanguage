@@ -1,6 +1,5 @@
 module TigerParseTest
 
-open System
 open FsUnit.Xunit
 open Xunit
 
@@ -32,39 +31,9 @@ let correctExamples = ["../../../../testcases/test01.tig";
                        "../../../../testcases/queens.tig"]
 
 // _____________________________________________________________________________
-//                                          Tiger language examples with errors
+//                                     Tiger language examples with parse error
 
-let badExamples = ["../../../../testcases/bad/test09.tig";
-                   "../../../../testcases/bad/test10.tig";
-                   "../../../../testcases/bad/test11.tig";
-                   "../../../../testcases/bad/test13.tig";
-                   "../../../../testcases/bad/test14.tig";
-                   "../../../../testcases/bad/test15.tig";
-                   "../../../../testcases/bad/test16.tig";
-                   "../../../../testcases/bad/test17.tig";
-                   "../../../../testcases/bad/test18.tig";
-                   "../../../../testcases/bad/test19.tig";
-                   "../../../../testcases/bad/test20.tig";
-                   "../../../../testcases/bad/test21.tig";
-                   "../../../../testcases/bad/test22.tig";
-                   "../../../../testcases/bad/test23.tig";
-                   "../../../../testcases/bad/test24.tig";
-                   "../../../../testcases/bad/test25.tig";
-                   "../../../../testcases/bad/test26.tig";
-                   "../../../../testcases/bad/test28.tig";
-                   "../../../../testcases/bad/test29.tig";
-                   "../../../../testcases/bad/test31.tig";
-                   "../../../../testcases/bad/test32.tig";
-                   "../../../../testcases/bad/test33.tig";
-                   "../../../../testcases/bad/test34.tig";
-                   "../../../../testcases/bad/test35.tig";
-                   "../../../../testcases/bad/test36.tig";
-                   "../../../../testcases/bad/test38.tig";
-                   "../../../../testcases/bad/test39.tig";
-                   "../../../../testcases/bad/test40.tig";
-                   "../../../../testcases/bad/test43.tig";
-                   "../../../../testcases/bad/test45.tig";
-                   "../../../../testcases/bad/test49.tig"]
+let badExamples = ["../../../../testcases/bad/test49.tig"]
 
 // _____________________________________________________________________________
 //                                                      Tests during bug fixing
@@ -121,14 +90,23 @@ in
 end
 """ |> should not' (be Empty)
 
+[<Fact>]
+let ``or should be expanded properly`` =
+    fromString """
+let
+    function skipto() =
+        while a = " " | a = "\n" do buffer := getchar()
+in
+end
+""" |> should not' (be Empty)
 
 // _____________________________________________________________________________
 //                                                                  Tests Cases
 
 [<Fact>]
 let ``All correct Tiger programs should pass without errors`` () =
-    List.iter (fun test -> fromFile test |> printf "%A\n") correctExamples
-    |> should not' (be Empty)
+    List.iter (fromFile >> printfn "%A") correctExamples
+        |> should not' (be Empty)
 
 // Indentation matters. Want pass if you paste it in FSI.
 let v =

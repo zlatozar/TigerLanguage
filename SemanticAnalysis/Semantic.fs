@@ -8,6 +8,10 @@ module Semantic =
     // ______________________________________________________________________________
     //
 
+    // Standard Library
+    let baseFunEnv :Store.Table<FunEntry> = 
+        Store.enterAll Store.empty<FunEntry> StandardLibrary.includes
+
     let transFromString (str: string) =
         transExp (baseVarEnv,
                   baseFunEnv,

@@ -2,7 +2,7 @@
    This is illegal, since there are two types with the same name
    in the same (consecutive) batch of mutually recursive types.
 
-   See also test47
+   See also correct test47
 */
 let
     type a = int

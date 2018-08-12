@@ -1,12 +1,14 @@
 module TigerSemanticTests
 
-open System
+open NUnit.Framework
+
 open FsUnit.Xunit
 open Xunit
 
-open Env
-open Types
 open Tiger.Semantic
+
+[<SetUp>]
+let setUpBefore () = ErrorMsg.reset
 
 // _____________________________________________________________________________
 //                                              Correct Tiger language examples
@@ -29,41 +31,55 @@ let correctExamples = ["../../../../testcases/test01.tig";
                        "../../../../testcases/test46.tig";
                        "../../../../testcases/test47.tig";
                        "../../../../testcases/test48.tig";
-                       // "../../../../testcases/merge.tig";
-                       // "../../../../testcases/queens.tig"
-                       ]
-
-// _____________________________________________________________________________
-//                                                                  Tests Cases
-
-// [<Fact>]
-// let ``All correct Tiger programs should pass without errors`` () =
-//     List.iter (fun test -> transFromFile test |> printf "%A\n") correctExamples
-//         |> should not' (be Empty)
-
-// _____________________________________________________________________________
-//                                                     Tests during development
+                       "../../../../testcases/queens.tig;";
+                       "../../../../testcases/merge.tig"]    // most difficult
 
 [<Fact>]
-let ``Get actual type and assignment`` () =
-    transFromString """
-let
-    type a = int
-    type b = string
+let ``All correct Tiger programs should pass without errors`` () =
+    List.iter (transFromFile >> ignore) correctExamples
+    !ErrorMsg.anyErrors |> should be False
 
-    type result = b
+// _____________________________________________________________________________
+//                                          Tiger language examples with errors
 
-    var first:int := 10
-    var second:int := 20
-    var third:result := "String testing"
-in
-    first := second + first
-end
-"""
+let badExamples = ["../../../../testcases/bad/test09.tig";
+                   "../../../../testcases/bad/test10.tig";
+                   "../../../../testcases/bad/test11.tig";
+                   "../../../../testcases/bad/test13.tig";
+                   "../../../../testcases/bad/test14.tig";
+                   "../../../../testcases/bad/test15.tig";
+                   "../../../../testcases/bad/test16.tig";
+                   "../../../../testcases/bad/test17.tig";
+                   "../../../../testcases/bad/test18.tig";
+                   "../../../../testcases/bad/test19.tig";
+                   "../../../../testcases/bad/test20.tig";
+                   "../../../../testcases/bad/test21.tig";
+                   "../../../../testcases/bad/test22.tig";
+                   "../../../../testcases/bad/test23.tig";
+                   "../../../../testcases/bad/test24.tig";
+                   "../../../../testcases/bad/test25.tig";
+                   "../../../../testcases/bad/test26.tig";
+                   "../../../../testcases/bad/test28.tig";
+                   "../../../../testcases/bad/test29.tig";
+                   "../../../../testcases/bad/test31.tig";
+                   "../../../../testcases/bad/test32.tig";
+                   "../../../../testcases/bad/test33.tig";
+                   "../../../../testcases/bad/test34.tig";
+                   "../../../../testcases/bad/test35.tig";
+                   "../../../../testcases/bad/test36.tig";
+                   "../../../../testcases/bad/test38.tig";
+                   "../../../../testcases/bad/test39.tig";
+                   "../../../../testcases/bad/test40.tig";
+                   "../../../../testcases/bad/test43.tig";
+                   "../../../../testcases/bad/test45.tig"]
 
 [<Fact>]
-let ``Simple and correct if/then/else`` () =
-    transFromString "if (10 > 20) then 30 else 40"
+let ``All incorrect Tiger programs should pass with errors`` () =
+    List.iter (transFromFile >> ignore) badExamples
+    !ErrorMsg.anyErrors |> should be True
+
+// _____________________________________________________________________________
+//                                                                   Additional
 
 [<Fact>]
 let ``Correct 'for' cycle`` () =
@@ -71,9 +87,10 @@ let ``Correct 'for' cycle`` () =
 let
     var a:= 0
 in
-    for i:=0 to 100 do (a:=a+1;break;())
+    for i:=0 to 100 do (a:=a+1; break; ())
 end
-"""
+""" |> ignore
+    !ErrorMsg.anyErrors |> should be False
 
 [<Fact>]
 let ``Correct 'while' cycle`` () =
@@ -81,12 +98,24 @@ let ``Correct 'while' cycle`` () =
 let
     var a:= 0
 in
-    while a<10 do (a:=a+1;break;())
+    while a<10 do (a:=a+1; break; ())
 end
-"""
+""" |> ignore
+    !ErrorMsg.anyErrors |> should be False
 
 [<Fact>]
-let ``Cyclic types definition`` () =
+let ``break should be only in cycles`` () =
+    transFromString """
+let
+    var a := 0
+in
+    if a>0 then break
+end
+""" |> ignore
+    !ErrorMsg.anyErrors |> should be True
+
+[<Fact>]
+let ``Should catch cyclic types definition`` () =
     transFromString """
 let
    type a = b
@@ -95,168 +124,27 @@ let
    type d = a
 in
 end
-"""
+""" |> ignore
+    !ErrorMsg.anyErrors |> should be True
 
 [<Fact>]
-let ``Correct array types`` () =
+let ``or in test case`` () =
     transFromString """
 let
-    type myint = int
-    type  arrtype = array of myint
+    type any = { any: int }
+    var buffer := getchar()
 
-    var arr1:arrtype := arrtype [10] of 0
-in
-    arr1
-end
-"""
+    function readint(any: any) :int =
+        let
+            function skipto() =
+                while buffer = " "
+                do buffer := getchar()
 
-[<Fact>]
-let ``Correct array expressions`` () =
-    transFromString """
-let
-    type a = array of int
-    type b = a
-
-    var arr1:a := b [10] of 0
-in
-    arr1[2]
-end
-"""
-
-[<Fact>]
-let ``Correct record definition`` () =
-    transFromString """
-let
-    type rectype = {name:string, age:int}
-    type emptyRectype = {}
+       in
+           skipto();
+           42
+       end
 in
 end
-"""
-
-[<Fact>]
-let ``Correct record expression`` () =
-    transFromString """
-let
-    type  rectype = {name:string, age:int}
-    var rec1:rectype := rectype {name="Nobody", age=1000}
-in
-    rec1
-end
-"""
-
-[<Fact>]
-let ``Corrrect field variable assignment`` () =
-    transFromString """
-let
-    type  rectype = {name:string, age:int}
-    var rec1:rectype := rectype {name="Nobody", age=1000}
-in
-    rec1.name := "Somebody";
-    rec1
-end
-"""
-
-[<Fact>]
-let ``Corrrect function definition`` () =
-    transFromString """
-let
-    function double(n: int): int = n * 2
-in
-    double(10)
-end
-"""
-
-[<Fact>]
-let ``Corrrect recursive function definition`` () =
-    transFromString """
-let
-    function nfactor(n: int): int =
-        if n = 0
-          then 1
-          else n * nfactor(n - 1)
-in
-    nfactor(10)
-end
-"""
-
-[<Fact>]
-let ``Corrrect mutual recursive function definition`` () =
-    transFromString """
-let
-    function do_nothing1(a: int, b: string) :int=
-              (do_nothing2(a + 1); 0)
-
-    function do_nothing2(d: int):string =
-              (do_nothing1(d, "str"); " ")
-in
-    do_nothing1(0, "str2")
-end
-"""
-
-[<Fact>]
-let ``Valid nil initialization and assignment`` () =
-    transFromString """
-let
-    type rectype = {name:string, id:int}
-    var b:rectype := nil
-in
-    b := nil
-end
-"""
-
-[<Fact>]
-let ``Valid record comparisons`` () =
-    transFromString """
-let
-    type rectype = {name:string, id:int}
-    var b:rectype := nil
-in
-    b = nil;
-    b <> nil
-end
-"""
-
-[<Fact>]
-let ``Various declarations`` () =
-    transFromString """
-let
-    type arrtype1 = array of int
-    type rectype1 = {name:string, address:string, id: int , age: int}
-    type arrtype2 = array of rectype1
-    type rectype2 = {name : string, dates: arrtype1}
-
-    type arrtype3 = array of string
-
-    var arr1 := arrtype1 [10] of 0
-    var arr2  := arrtype2 [5] of rectype1 {name="aname", address="somewhere", id=0, age=0}
-    var arr3:arrtype3 := arrtype3 [100] of ""
-
-    var rec1 := rectype1 {name="Kapoios", address="Kapou", id=02432, age=44}
-    var rec2 := rectype2 {name="Allos", dates= arrtype1 [3] of 1900}
-in
-    arr1[0] := 1;
-    arr1[9] := 3;
-    arr2[3].name := "kati";
-    arr2[1].age := 23;
-    arr3[34] := "sfd";
-
-    rec1.name := "sdf";
-    rec2.dates[0] := 2323;
-    rec2.dates[2] := 2323
-end
-"""
-
-[<Fact>]
-let ``Define valid recursive type`` () =
-    transFromString """
-let
-    type intlist = {hd: int, tl: intlist}
-
-    type tree ={key: int, children: treelist}
-    type treelist = {hd: tree, tl: treelist}
-
-    var lis:intlist := intlist { hd=0, tl= nil }
-in
-    lis
-end
-"""
+""" |> ignore
+    !ErrorMsg.anyErrors |> should be False
