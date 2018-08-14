@@ -14,6 +14,7 @@ let getStartPos (parseState: IParseState) lexIdx =
 let getEndPos (parseState: IParseState) lexIdx =
     let pos = parseState.InputEndPosition lexIdx
     (pos.Line + 1, pos.Column)
+
 %}
 
 %token <int> INT
@@ -27,22 +28,19 @@ let getEndPos (parseState: IParseState) lexIdx =
 %token ASSIGN DOT LPAREN RPAREN LBRACK RBRACK
 %token LBRACE RBRACE SEMICOLON COLON COMMA
 
-%token PLUS MINUS UMINUS TIMES DIVIDE
-%token EQ NEQ GT GE LT LE
-%token AND OR
+%token AND OR TIMES DIVIDE PLUS MINUS UMINUS
+%token GT GE LT LE EQ NEQ
 
 %token EOF
 
 /* Precedence */
 
-%right SEMICOLON
-%left THEN
-%left ELSE
-%left DO OF
+%right OF
+%nonassoc DO THEN
+%nonassoc ELSE
 %nonassoc ASSIGN
-%left OR
-%left AND
-%nonassoc EQ NEQ GT GE LT LE
+%left AND OR
+%nonassoc GT GE LT LE EQ NEQ
 %left PLUS MINUS
 %left TIMES DIVIDE
 %left UMINUS
@@ -50,220 +48,187 @@ let getEndPos (parseState: IParseState) lexIdx =
 /* Start symbol and its type */
 
 %start Main
-%type <Absyn.TExp> Main
+%type <TExp> Main
 
 %%
 
-/* A Tiger program is a single Exp */
+/* A Tiger program is a single expression */
 
 Main:
-    Exp EOF            { $1 }
+    exp EOF              { $1 }
 ;
 
-Exp:
-    | INT              { IntExp $1    }
-    | STRING           { StringExp ($1, getEndPos parseState 1) }
-    | NIL              { NilExp       }
-    | BREAK            { BreakExp (getEndPos parseState 1)    }
+decs:
+    | /* empty */        { [] }
+    | tyDec decs         {
+                           match $2 with
+                           | []   -> (TypeDec [$1]) :: $2
+                           | h::t -> match h with
+                                     | TypeDec lst -> TypeDec ($1::lst) :: t
+                                     | _           -> (TypeDec [$1]) :: $2
+                         }
 
-/* Non terminals as place holders */
-
-    | LValue           { VarExp $1 }
-
-    | Negation         { $1 }
-
-    | Exp PLUS Exp     { OpExp {left=$1; oper=PlusOp; right=$3; pos=(getEndPos parseState 2)} }
-    | Exp MINUS Exp    { OpExp {left=$1; oper=MinusOp; right=$3; pos=(getEndPos parseState 2)} }
-    | Exp TIMES Exp    { OpExp {left=$1; oper=TimesOp; right=$3; pos=(getEndPos parseState 2)} }
-    | Exp DIVIDE Exp   { OpExp {left=$1; oper=DivideOp; right=$3; pos=(getEndPos parseState 2)} }
-    | Exp EQ Exp       { OpExp {left=$1; oper=EqOp; right=$3; pos=(getEndPos parseState 2)} }
-    | Exp NEQ Exp      { OpExp {left=$1; oper=NeqOp; right=$3; pos=(getEndPos parseState 2)} }
-    | Exp GT Exp       { OpExp {left=$1; oper=GtOp; right=$3; pos=(getEndPos parseState 2)} }
-    | Exp GE Exp       { OpExp {left=$1; oper=GeOp; right=$3; pos=(getEndPos parseState 2)} }
-    | Exp LT Exp       { OpExp {left=$1; oper=LtOp; right=$3; pos=(getEndPos parseState 2)} }
-    | Exp LE Exp       { OpExp {left=$1; oper=LeOp; right=$3; pos=(getEndPos parseState 2)} }
-/* See again p. 99 */
-    | Exp AND Exp      { IfExp {test=$1; then'=$3; else'=Some (IntExp 0); pos=(getStartPos parseState 2)} }
-    | Exp OR Exp       { IfExp {test=$1; then'=(IntExp 1); else'=Some $3; pos=(getStartPos parseState 2)} }
-
-    | Assign           { $1 }
-    | FunCall          { $1 }
-    | RecCreate        { $1 }
-    | ArrCreate        { $1 }
-    | SeqExp           { $1 }
-    | IfExp            { $1 }
-    | WhileExp         { $1 }
-    | ForExp           { $1 }
-    | LetExp           { $1 }
-
-/* This is hidden in specification - try to dicover such */
-
-    | UnitExp          { $1 }
+    | varDec decs          { $1 :: $2 }
+    | funDec decs        {
+                           match $2 with
+                           | []   -> (FunctionDec [$1]) :: $2
+                           | h::t -> match h with
+                                     | FunctionDec lst -> FunctionDec ($1::lst) :: t
+                                     | _               -> (FunctionDec [$1]) :: $2
+                         }
 ;
 
-LValue:
-    | ID               { SimpleVar (symbol $1, getStartPos parseState 1) }
-    | LValueNotID      { $1 }
-
-LValueNotID:
-    | LValue DOT ID                    { FieldVar ($1, symbol $3, (getEndPos parseState 2))     }
-    | ID LBRACK Exp RBRACK             { SubscriptVar (SimpleVar (symbol $1, getStartPos parseState 1), $3, getEndPos parseState 4) }
-    | LValueNotID LBRACK Exp RBRACK    { SubscriptVar ($1, $3, getEndPos parseState 4) }
+tyDec:
+     TYPE ID EQ ty       { {name=symbol $2; ty=$4; pos=(getStartPos parseState 1)} }
 ;
 
-/* In p. 99 is suggested negative numbers to be infix operation '0 - exp' */
-Negation:
-    | MINUS Exp %prec UMINUS      { OpExp {left=(IntExp 0); oper=MinusOp; right=$2; pos=(getEndPos parseState 1)} }
+ty:
+  | ID                   { NameTy (symbol $1, getStartPos parseState 1) }
+  | LBRACE tyFields RBRACE
+                         { RecordTy $2 }
+  | ARRAY OF ID          { ArrayTy (symbol $3, getStartPos parseState 3)      }
 ;
 
-Assign:
-    | LValue ASSIGN Exp           { AssignExp {var=$1; exp=$3; pos=(getEndPos parseState 1)} }
+tyFields:
+        | /* empty */    { [] }
+        | ID COLON ID tyFieldsCont
+                         { {name=symbol $1; escape=ref true; typ=symbol $3; pos=(getStartPos parseState 1)} :: $4 }
 ;
 
-FunCall:
-    | ID LPAREN ActualParams RPAREN    { CallExp {func=(symbol $1); args=$3; pos=(getEndPos parseState 1)} }
+tyFieldsCont:
+            | /* empty */
+                         { [] }
+            | COMMA ID COLON ID tyFieldsCont
+                         { {name=symbol $2; escape=ref true; typ=symbol $4; pos=(getStartPos parseState 2)} :: $5 }
 ;
 
-ActualParams:
-    | /* empty */          { [] }
-    | ExpList              { $1 }
+varDec:
+      | VAR ID ASSIGN exp
+                         { VarDec {name=symbol $2; escape=ref true; typ=None; init=$4;  pos=(getEndPos parseState 2)} }
 
-ExpList:
-    | Exp                  { [$1] }
-    | ExpList COMMA Exp    { List.append $1 [$3] }
-
-RecCreate:
-    | ID LBRACE RecAggregate RBRACE   { RecordExp {typ=(symbol $1); fields=$3; pos=(getEndPos parseState 1)} }
+      | VAR ID COLON ID ASSIGN exp
+                         { VarDec { name=symbol $2;
+                                    escape=ref true;
+                                    typ=Some (symbol $4, getEndPos parseState 4);
+                                    init=$6; pos=(getEndPos parseState 2)} }
 ;
 
-RecAggregate:
-    | /* empty */          { [] }
-    | FieldList            { $1 }
+funDec:
+      | FUNCTION ID LPAREN tyFields RPAREN EQ exp
+                         { {name=symbol $2; param=$4;
+                            result=None;
+                            body=$7; pos=(getStartPos parseState 2)} }
+
+      | FUNCTION ID LPAREN tyFields RPAREN COLON ID EQ exp
+                         { {name=symbol $2; param=$4;
+                            result=Some (symbol $7, getStartPos parseState 7);
+                            body=$9; pos=(getEndPos parseState 2)} }
 ;
 
-FieldList:
-    | ID EQ Exp                       { [(symbol $1, $3, getEndPos parseState 1)] }
-    | FieldList COMMA ID EQ Exp       { List.append $1 [(symbol $3, $5, getEndPos parseState 3)] }
+exp:
+   | INT                 { IntExp $1   }
+   | STRING              { StringExp ($1, getStartPos parseState 1) }
+   | NIL                 { NilExp      }
+   | BREAK               { BreakExp (getStartPos parseState 1)      }
+   | variable            { VarExp $1   }
+
+
+   | variable ASSIGN exp
+                         { AssignExp {var=$1; exp=$3; pos=(getEndPos parseState 1)} }
+
+   | ID LPAREN actualArgs RPAREN
+                         { CallExp {func=symbol $1; args=$3; pos=(getStartPos parseState 1)} }
+
+   | ID LBRACE recordFields RBRACE
+                         { RecordExp {typ=symbol $1; fields=$3; pos=(getStartPos parseState 1)} }
+
+   | ID LBRACK exp RBRACK OF exp
+                         { ArrayExp {typ=symbol $1; size=$3; init=$6; pos=(getStartPos parseState 1)} }
+
+   | LPAREN expSeq RPAREN
+                         { SeqExp $2 }
+
+   | IF exp THEN exp ELSE exp
+                         { IfExp {test=$2; then'=$4; else'=Some $6; pos=(getEndPos parseState 1)} }
+
+   | IF exp THEN exp %prec DO
+                         { IfExp {test=$2; then'=$4; else'=None; pos=(getEndPos parseState 1)} }
+
+   | WHILE exp DO exp    { WhileExp {test=$2; body=$4; pos=(getEndPos parseState 1)} }
+
+   | FOR ID ASSIGN exp TO exp DO exp
+                         { ForExp {var=symbol $2; escape=ref true; lo=$4; hi=$6; body=$8; pos=(getEndPos parseState 1)} }
+
+   | LET decs IN expSeq END
+                         { LetExp {decs=$2; body=SeqExp $4; pos=(getEndPos parseState 1)} }
+
+   | MINUS exp %prec UMINUS
+                         { OpExp {left=(IntExp 0); oper=MinusOp; right=$2; pos=(getEndPos parseState 1)} }
+
+   | exp PLUS exp        { OpExp {left=$1; oper=PlusOp; right=$3; pos=(getEndPos parseState 1)}   }
+   | exp MINUS exp       { OpExp {left=$1; oper=MinusOp; right=$3; pos=(getEndPos parseState 1)}  }
+   | exp DIVIDE exp      { OpExp {left=$1; oper=DivideOp; right=$3; pos=(getEndPos parseState 1)} }
+   | exp TIMES exp       { OpExp {left=$1; oper=TimesOp; right=$3; pos=(getEndPos parseState 1)}  }
+
+   | exp GT exp          { OpExp {left=$1; oper=GtOp; right=$3; pos=(getEndPos parseState 1)}  }
+   | exp LT exp          { OpExp {left=$1; oper=LtOp; right=$3; pos=(getEndPos parseState 1)}  }
+   | exp GE exp          { OpExp {left=$1; oper=GeOp; right=$3; pos=(getEndPos parseState 1)}  }
+   | exp LE exp          { OpExp {left=$1; oper=LeOp; right=$3; pos=(getEndPos parseState 1)}  }
+   | exp EQ exp          { OpExp {left=$1; oper=EqOp; right=$3; pos=(getEndPos parseState 1)}  }
+   | exp NEQ exp         { OpExp {left=$1; oper=NeqOp; right=$3; pos=(getEndPos parseState 1)} }
+
+   | exp AND exp         { IfExp {test=$1; then'=$3; else'=Some (IntExp 0); pos=(getStartPos parseState 2)} }
+   | exp OR exp          { IfExp {test=$1; then'=(IntExp 1); else'=Some $3; pos=(getStartPos parseState 2)} }
 ;
 
-ArrCreate:
-    | ID LBRACK Exp RBRACK OF Exp     { ArrayExp {typ=(symbol $1); size=$3; init=$6; pos=(getEndPos parseState 1)} }
+expSeq:
+      | /* unit, () */   { [] }
+      | exp expSeqCont
+                         { ($1, getStartPos parseState 1) :: $2 }
 ;
 
-SeqExp:
-    | LPAREN ZeroOrMoreExp RPAREN     { SeqExp $2 }
+expSeqCont:
+          | /* empty */  { [] }
+          | SEMICOLON exp expSeqCont
+                         { ($2, getStartPos parseState 2) :: $3 }
 ;
 
-ZeroOrMoreExp:
-    | /* empty */                     { [(NilExp, getEndPos parseState 1)] }
-    | ExpSeq                          { $1       }
+actualArgs:
+          | /* empty */  { [] }
+          | exp argsCont { $1 :: $2 }
 ;
 
-ExpSeq:
-    | Exp                             { [($1, getEndPos parseState 1)] }
-    | ExpSeq SEMICOLON Exp            { List.append $1 [($3, getEndPos parseState 1)] }
+argsCont:
+        | /* empty */    { [] }
+        | COMMA exp argsCont
+                         { $2 :: $3 }
 ;
 
-IfExp:
-    | IF Exp THEN Exp                 { IfExp {test=$2; then'=$4; else'=None; pos=(getEndPos parseState 1)}    }
-    | IF Exp THEN Exp ELSE Exp        { IfExp {test=$2; then'=$4; else'=Some $6; pos=(getEndPos parseState 1)} }
+recordFields:
+            | /* empty */
+                         { [] }
+            | ID EQ exp recordFieldsCont
+                         { (symbol $1, $3, (getEndPos parseState 1)) :: $4 }
 ;
 
-WhileExp:
-    | WHILE Exp DO Exp                { WhileExp {test=$2; body=$4; pos=(getEndPos parseState 1)} }
+recordFieldsCont:
+                | /* empty */
+                         { [] }
+                | COMMA ID EQ exp recordFieldsCont
+                         { (symbol $2, $4, (getEndPos parseState 2)) :: $5 }
 ;
 
-ForExp:
-    | FOR ID ASSIGN Exp TO Exp DO Exp { ForExp {var=symbol $2; escape=ref true; lo=$4; hi=$6; body=$8; pos=(getEndPos parseState 1)} }
+variable:
+        | ID             { SimpleVar (symbol $1, (getEndPos parseState 1)) }
+        | variableCont   { $1 }
 ;
 
-UnitExp:
-    | LPAREN RPAREN        { SeqExp [] }
-
-LetExp:
-    | LET Declarations IN ZeroOrMoreExp END   { LetExp {decs=$2; body=SeqExp $4; pos=(getEndPos parseState 1)} }
-;
-
-Declarations:
-    | /* empty */          { [] }
-    | DecList              { $1 }
-;
-
-DecList:
-    | Dec                  { [$1] }
-    | DecList Dec          { List.append $1 [$2] }
-;
-
-Dec:
-    | TyDecList            { TypeDec $1 }
-    | VarDec               { $1 }
-    | FunDecList           { FunctionDec $1 }
-;
-
-/* Note: There is no empty clause. Emptiness is coverd by 'Declarations' */
-
-TyDecList:
-    | TyDec                { [$1] }
-    | TyDecList TyDec      { List.append $1 [$2] }
-;
-
-TyDec:
-    | TYPE ID EQ Ty        { {name=symbol $2; ty=$4; pos=(getEndPos parseState 1)} }
-;
-
-VarDec:
-    | VAR ID ASSIGN Exp               { VarDec {name=symbol $2; escape=ref true; typ=None; init=$4; pos=(getEndPos parseState 1)} }
-    | VAR ID COLON ID ASSIGN Exp      { VarDec {
-                                                 name=symbol $2; escape=ref true;
-                                                 typ=Some (symbol $4, getStartPos parseState 4);
-                                                 init=$6; pos=(getEndPos parseState 1)
-                                               }
-                                      }
-;
-
-FunDecList:
-    | FunDec                { [$1] }
-    | FunDecList FunDec     { List.append $1 [$2] }
-;
-
-FunDec:
-    | FUNCTION ID LPAREN FieldDec RPAREN EQ Exp            { {name=symbol $2; param=$4; result=None; body=$7; pos=(getEndPos parseState 2)} }
-    | FUNCTION ID LPAREN FieldDec RPAREN COLON ID EQ Exp   {
-                                                             {
-                                                              name=symbol $2; param=$4;
-                                                              result=Some (symbol $7, getStartPos parseState 7);
-                                                              body=$9; pos=(getEndPos parseState 2)
-                                                              }
-                                                           }
-;
-
-/* Data types */
-
-Ty:
-    | ID                              { NameTy (symbol $1, getStartPos parseState 1)  }
-    | LBRACE FieldDec RBRACE          { RecordTy $2 }
-    | ARRAY OF ID                     { ArrayTy (symbol $3, getStartPos parseState 1) }
-;
-
-FieldDec:
-    | /* empty */          { [] }
-    | TypeFieldList        { $1 }
-;
-
-TypeFieldList:
-    | ID COLON ID                          { [{name=symbol $1; escape=ref true; typ=symbol $3; pos=(getEndPos parseState 1)}] }
-    | TypeFieldList COMMA ID COLON ID      { List.append $1 [{name=symbol $3; escape=ref true; typ=symbol $5; pos=(getEndPos parseState 1)}]}
-;
-
-Op:
-    | PLUS                 { PlusOp   }
-    | MINUS                { MinusOp  }
-    | TIMES                { TimesOp  }
-    | DIVIDE               { DivideOp }
-    | EQ                   { EqOp     }
-    | NEQ                  { NeqOp    }
-    | GT                   { GtOp     }
-    | GE                   { GeOp     }
-    | LT                   { LtOp     }
-    | LE                   { LeOp     }
+variableCont:
+            | ID DOT ID  { FieldVar (SimpleVar (symbol $1, getStartPos parseState 1), symbol $3, getEndPos parseState 3) }
+            | variableCont DOT ID
+                         { FieldVar ($1, symbol $3, getEndPos parseState 3) }
+            | ID LBRACK exp RBRACK
+                         { SubscriptVar (SimpleVar (symbol $1, getStartPos parseState 1), $3, getEndPos parseState 3) }
+            | variableCont LBRACK exp RBRACK
+                         { SubscriptVar ($1, $3, getEndPos parseState 3) }
 ;

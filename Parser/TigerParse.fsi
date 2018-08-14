@@ -2,19 +2,19 @@
 module TigerParse
 type token = 
   | EOF
-  | AND
-  | OR
-  | EQ
-  | NEQ
   | GT
   | GE
   | LT
   | LE
+  | EQ
+  | NEQ
+  | AND
+  | OR
+  | TIMES
+  | DIVIDE
   | PLUS
   | MINUS
   | UMINUS
-  | TIMES
-  | DIVIDE
   | LBRACE
   | RBRACE
   | SEMICOLON
@@ -48,19 +48,19 @@ type token =
   | INT of (int)
 type tokenId = 
     | TOKEN_EOF
-    | TOKEN_AND
-    | TOKEN_OR
-    | TOKEN_EQ
-    | TOKEN_NEQ
     | TOKEN_GT
     | TOKEN_GE
     | TOKEN_LT
     | TOKEN_LE
+    | TOKEN_EQ
+    | TOKEN_NEQ
+    | TOKEN_AND
+    | TOKEN_OR
+    | TOKEN_TIMES
+    | TOKEN_DIVIDE
     | TOKEN_PLUS
     | TOKEN_MINUS
     | TOKEN_UMINUS
-    | TOKEN_TIMES
-    | TOKEN_DIVIDE
     | TOKEN_LBRACE
     | TOKEN_RBRACE
     | TOKEN_SEMICOLON
@@ -97,38 +97,22 @@ type tokenId =
 type nonTerminalId = 
     | NONTERM__startMain
     | NONTERM_Main
-    | NONTERM_Exp
-    | NONTERM_LValue
-    | NONTERM_LValueNotID
-    | NONTERM_Negation
-    | NONTERM_Assign
-    | NONTERM_FunCall
-    | NONTERM_ActualParams
-    | NONTERM_ExpList
-    | NONTERM_RecCreate
-    | NONTERM_RecAggregate
-    | NONTERM_FieldList
-    | NONTERM_ArrCreate
-    | NONTERM_SeqExp
-    | NONTERM_ZeroOrMoreExp
-    | NONTERM_ExpSeq
-    | NONTERM_IfExp
-    | NONTERM_WhileExp
-    | NONTERM_ForExp
-    | NONTERM_UnitExp
-    | NONTERM_LetExp
-    | NONTERM_Declarations
-    | NONTERM_DecList
-    | NONTERM_Dec
-    | NONTERM_TyDecList
-    | NONTERM_TyDec
-    | NONTERM_VarDec
-    | NONTERM_FunDecList
-    | NONTERM_FunDec
-    | NONTERM_Ty
-    | NONTERM_FieldDec
-    | NONTERM_TypeFieldList
-    | NONTERM_Op
+    | NONTERM_decs
+    | NONTERM_tyDec
+    | NONTERM_ty
+    | NONTERM_tyFields
+    | NONTERM_tyFieldsCont
+    | NONTERM_varDec
+    | NONTERM_funDec
+    | NONTERM_exp
+    | NONTERM_expSeq
+    | NONTERM_expSeqCont
+    | NONTERM_actualArgs
+    | NONTERM_argsCont
+    | NONTERM_recordFields
+    | NONTERM_recordFieldsCont
+    | NONTERM_variable
+    | NONTERM_variableCont
 /// This function maps tokens to integer indexes
 val tagOfToken: token -> int
 
@@ -140,4 +124,4 @@ val prodIdxToNonTerminal: int -> nonTerminalId
 
 /// This function gets the name of a token as a string
 val token_to_string: token -> string
-val Main : (Microsoft.FSharp.Text.Lexing.LexBuffer<'cty> -> token) -> Microsoft.FSharp.Text.Lexing.LexBuffer<'cty> -> (Absyn.TExp) 
+val Main : (Microsoft.FSharp.Text.Lexing.LexBuffer<'cty> -> token) -> Microsoft.FSharp.Text.Lexing.LexBuffer<'cty> -> (TExp) 
