@@ -28,11 +28,13 @@
 
 - In list constructions during _fold_ initial types should be used. Specify them.
 
+- May be parser is not good enough in some situations. Check parser output.
+
 - Use helper functions for type comparison.
 
 - Start with simple examples to test current development progress.
 
-- Before start implementing logic it is a good idea to have
+- Before start implementing semantic analyzer it is a good idea to have
   marks that trace the path. Use `!` for implemented and `?` that are not.
   Here is mine:
 

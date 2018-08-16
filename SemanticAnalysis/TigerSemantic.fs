@@ -28,6 +28,7 @@ let dummyTransExp = { exp=(); ty=INT; name=None }
 // ______________________________________________________________________________
 //                                                              Helper functions
 
+// (NAME a, (NAME b, (NAME c, ref T))), (NAME, nil)  or could be empty
 let rec actualTy (ty: Ty, pos: Pos) =
     match ty with
     | NAME (sym, tyRef) -> match !tyRef with
@@ -85,7 +86,9 @@ let checkBothEq (ty1, ty2, pos) =
 let checkSame (ty1, ty2, pos) =
     match (ty1, ty2) with
     | (NIL, NIL)   -> ()
-    | (_, NIL)     -> error pos "expecting nil."
+    | (t, NIL)     -> match t with
+                      | RECORD(_)  -> ()
+                      | _          -> error pos "expecting nil."
     | (UNIT, UNIT) -> ()
     | (_, UNIT)    -> error pos "expecting unit."
     | (_, NAME _)  -> ()
@@ -104,7 +107,7 @@ let rec actualTy2 (tenv, ty: Ty) =
     match ty with
     | NAME (sym, opTy) -> match !opTy with
                           | None    -> match Store.lookup (tenv, sym) with
-                                       | None     -> ty    // was a placeholder - fill it
+                                       | None     -> ty 
                                        | Some ty' -> opTy := Some ty'
                                                      actualTy2 (tenv, ty')
                           | Some ty ->  actualTy2 (tenv, ty)
@@ -194,8 +197,8 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
 
                             match opRec.oper with
                             | PlusOp | MinusOp | TimesOp | DivideOp  -> checkBothInt (tyleft, tyright, opRec.pos)
-                            | EqOp | NeqOp                           -> checkBothIntOrString (tyleft, tyright, opRec.pos)
-                            | GtOp | GeOp | LtOp | LeOp              -> checkBothEq (tyleft, tyright, opRec.pos)
+                            | EqOp | NeqOp                           -> checkSame (tyleft, tyright, opRec.pos)
+                            | GtOp | GeOp | LtOp | LeOp              -> checkSame (tyleft, tyright, opRec.pos)
                             { exp=(); ty=INT; name=None }
                             
     | CallExp callRec    -> printfn "         !CallExp"

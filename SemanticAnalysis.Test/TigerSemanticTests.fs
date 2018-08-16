@@ -31,7 +31,7 @@ let correctExamples = ["../../../../testcases/test01.tig";
                        "../../../../testcases/test46.tig";
                        "../../../../testcases/test47.tig";
                        "../../../../testcases/test48.tig";
-                       "../../../../testcases/queens.tig;";
+                       "../../../../testcases/queens.tig";
                        "../../../../testcases/merge.tig"]    // most difficult
 
 [<Fact>]
