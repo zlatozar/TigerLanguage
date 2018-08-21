@@ -66,6 +66,7 @@ release.sh
 localpackages/
 paket-files
 *.orig
+*.bak*
 .paket/paket.exe
 docs/content/license.md
 docs/content/release-notes.md

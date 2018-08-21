@@ -1,0 +1,7 @@
+/* Error: break should be in cycles for/while only */
+
+let
+    var a := 0
+in
+    if a>0 then break
+end

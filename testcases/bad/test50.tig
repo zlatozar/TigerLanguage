@@ -1,0 +1,8 @@
+/* Error: cyclic definition */
+let
+   type a = b
+   type b = d
+   type c = a
+   type d = a
+in
+end

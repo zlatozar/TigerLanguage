@@ -68,7 +68,7 @@ decs:
                                      | _           -> (TypeDec [$1]) :: $2
                          }
 
-    | varDec decs          { $1 :: $2 }
+    | varDec decs        { $1 :: $2 }
     | funDec decs        {
                            match $2 with
                            | []   -> (FunctionDec [$1]) :: $2
