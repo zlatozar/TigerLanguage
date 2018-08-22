@@ -56,9 +56,9 @@ let checkBothInt (ty1, ty2, pos) =
 let checkBothIntOrString (ty1, ty2, pos) =
     match (ty1, ty2) with
     | (INT, INT)       -> ()
-    | (INT, _)         -> error pos (sprintf "expected an integer but given `%A`" ty2)
+    | (INT, _)         -> error pos (sprintf "expected an integer but given `%A`." ty2)
     | (STRING, STRING) -> ()
-    | (STRING, _)      -> error pos (sprintf "expected a string but given `%A`" ty2)
+    | (STRING, _)      -> error pos (sprintf "expected a string but given `%A`." ty2)
     | _                -> error pos "expecting an integer or string."
 
 // Tip: NIL is a type and it is equal to every other p. 113
@@ -146,6 +146,7 @@ let rec transVar ((venv: VEnv), fenv, tenv, breakpoint, (var: Absyn.TVar)) :ExpT
 
                             let subcript = transVar (venv, fenv, tenv, breakpoint, tVar)
                             let arrayTy = actualTy (subcript.ty, pos)
+
                             match arrayTy with
                             | ARRAY(ty', _) -> { exp=(); ty=ty'; name=None }
                             | _             -> error pos "expecting an array variable."
@@ -166,7 +167,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
     | BreakExp pos       -> printfn "         !BreakExp"
                             match breakpoint with
                             | Some _ -> ()
-                            | None   -> error pos "`break` must be in a `for` or `while` expression"
+                            | None   -> error pos "`break` must be in a `for` or `while` expression."
                             { exp=(); ty=UNIT; name=None }
 
     | VarExp tVar        -> printfn "        !VarExp"
@@ -204,7 +205,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
                                                    let lt = List.length ts
                                                    
                                                    if (lt <> le) then
-                                                       error pos (sprintf "%i args needed, but %i given" lt le)
+                                                       error pos (sprintf "%i args needed, but %i given." lt le)
                                                    else 
                                                        List.iter (fun (t, e) -> checkType(t, e.ty, pos)) (List.zip ts es)
 
@@ -229,7 +230,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
                                                                           let lts = List.length ts
                                                                           let lfs = List.length fs
                                                                           if (lts <> lfs) then
-                                                                              error pos (sprintf "%i fields needed, but %i given" lts lfs)
+                                                                              error pos (sprintf "%i fields needed, but %i given." lts lfs)
                                                                           else
                                                                               List.iter (fun (t, ty) -> checkType(snd t, ty, pos)) (List.zip ts fs)
 
@@ -375,15 +376,27 @@ and transDec (venv, fenv, tenv, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
                             // Is type specified?
                             match varDecRec.typ with
                             | Some (sym, p) -> // NOTE: Records and arrays are equal if there names are also equal
+
+                                               let areAlias (ty1, ty2, pos) =
+                                                   let rec actualAlias (ty, p, n) =
+                                                       match ty with
+                                                       | NAME (s, tyRef) -> match !tyRef with
+                                                                            | None    -> error p (sprintf "undefined type `%s`." (Store.name s))
+                                                                                         Store.name s
+                                                                            | Some ty -> actualAlias (ty, p, Store.name s)
+                                                       | _               -> n
+
+                                                   actualAlias (ty1, pos, "") = actualAlias (ty2, pos, " ")
+
                                                let checkNames (varTy) =
                                                    match expName with 
-                                                   | Some name -> if (name = sym) then ()
+                                                   | Some name -> if (sym = name) then ()
                                                                   else match Store.lookup (tenv, name) with
-                                                                       | Some t -> match t with
-                                                                                   | NAME _ -> ()
-                                                                                   | _      -> error varDecRec.pos (sprintf "`%s` is not an alias of `%s`.
+                                                                       | Some t -> if areAlias (varTy, t, p) then ()
+                                                                                   else 
+                                                                                       error varDecRec.pos (sprintf "`%s` is not an alias of `%s`.
                                                                                                                             " (Store.name name) (Store.name sym))
-                                                                       | _      -> error varDecRec.pos (sprintf "`%s` is not defined." (Store.name name))
+                                                                       | _ -> error varDecRec.pos (sprintf "`%s` is not defined." (Store.name name))
                                                    | None      -> ()
                                                
                                                match Store.lookup (tenv, sym) with
@@ -396,7 +409,7 @@ and transDec (venv, fenv, tenv, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
                                                | None _     -> error p (sprintf "undefined type `%s`." (Store.name sym))
                                                                { venv=venv; fenv=fenv; tenv=tenv }
 
-                            | None          -> if (expTy = NIL) then error varDecRec.pos "can't use nil" else ()
+                            | None          -> if (expTy = NIL) then error varDecRec.pos "can't use nil." else ()
 
                                                let venv' = Store.enter (venv, varDecRec.name, {ty=expTy; access=()})
                                                { venv=venv'; fenv=fenv; tenv=tenv }
@@ -472,7 +485,7 @@ and transTy (tenv, (ty: Absyn.TType)) :Ty =
     match ty with
     | NameTy (sym, _)    -> printfn "        !NameTy"
                             match Store.lookup (tenv, sym) with
-                            | None         -> NAME (sym, ref None)   // If not found - create an empty NAME
+                            | None         -> NAME (sym, ref None) // If not found - create an empty NAME
                             | Some symType -> symType
 
     | RecordTy fieldRecList
