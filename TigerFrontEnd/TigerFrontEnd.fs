@@ -1,4 +1,4 @@
-module TigerSemantic
+module TigerFrontEnd
 
 open Absyn
 
@@ -65,7 +65,7 @@ let checkBothIntOrString (ty1, ty2, pos) =
 
 (* let checkType (t1:Ty, t2:Ty, pos) =
     let t = actualTy (t1, pos)
-    if (t <> t2) then  // do not work when NAME ("someName", ref RECORD) here. Segmentation fault (core dumped).
+    if (t <> t2) then              // do not work when NAME ("someName", ref RECORD) here, since it might be recursive
 
         match (t, t2) with
         | (RECORD(_), NIL) -> ()

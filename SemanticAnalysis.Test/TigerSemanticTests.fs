@@ -33,7 +33,7 @@ let correctExamples = ["../../../../testcases/test01.tig";
                        "../../../../testcases/test48.tig";
                        "../../../../testcases/test52.tig";
                        "../../../../testcases/queens.tig";
-                       "../../../../testcases/merge.tig"]    // most difficult
+                       "../../../../testcases/merge.tig"]  // most difficult
 
 [<Fact>]
 let ``All correct Tiger programs should pass without errors`` () =
@@ -84,107 +84,3 @@ let ``All incorrect Tiger programs should pass with errors`` () =
         ErrorMsg.reset
 
     List.iter doErrorTest badExamples
-
-// _____________________________________________________________________________
-//                                                                   Additional
-
-// [<Fact>]
-// let ``Correct 'for' cycle`` () =
-//     transFromString """
-// let
-//     var a:= 0
-// in
-//     for i:=0 to 100 do (a:=a+1; break; ())
-// end
-// """ |> ignore
-//     !ErrorMsg.anyErrors |> should be False
-
-// [<Fact>]
-// let ``Correct 'while' cycle`` () =
-//     transFromString """
-// let
-//     var a:= 0
-// in
-//     while a<10 do (a:=a+1; break; ())
-// end
-// """ |> ignore
-//     !ErrorMsg.anyErrors |> should be False
-
-// [<Fact>]
-// let ``break should be only in cycles`` () =
-//     transFromString """
-// let
-//     var a := 0
-// in
-//     if a>0 then break
-// end
-// """ |> ignore
-//     !ErrorMsg.anyErrors |> should be True
-
-// [<Fact>]
-// let ``Should catch cyclic types definition`` () =
-//     transFromString """
-// let
-//    type a = b
-//    type b = d
-//    type c = a
-//    type d = a
-// in
-// end
-// """ |> ignore
-//     !ErrorMsg.anyErrors |> should be True
-
-// [<Fact>]
-// let ``or in test case`` () =
-//     transFromString """
-// let
-//     type any = { any: int }
-//     var buffer := getchar()
-
-//     function readint(any: any) :int =
-//         let
-//             function skipto() =
-//                 while buffer = " " | buffer = "\n"
-//                 do buffer := getchar()
-
-//        in
-//            skipto();
-//            42
-//        end
-// in
-// end
-// """ |> ignore
-//     !ErrorMsg.anyErrors |> should be False
-
-// [<Fact>]
-// let ``Deal with recursive records`` () =
-//     transFromString """
-// let
-//     type list = { first: int, rest: list }
-
-//     function merge(a: list, b: list) :list =
-//         list{first=a.first, rest=merge(b.rest, b)}
-
-// in
-// end
-// """ |> ignore
-//     !ErrorMsg.anyErrors |> should be False
-
-// [<Fact>]
-// let ``Mutual recursive types`` () =
-//     transFromString """
-// let
-//     type intlist = {hd: int, tl: intlist}
-
-//     var lis:intlist := intlist { hd=0, tl=nil }
-// in
-// end
-// """ |> ignore
-//     !ErrorMsg.anyErrors |> should be False
-
-// compare: t: `RECORD
-//   ([(("first", 14), INT);
-//     (("rest", 12), NAME (("list", 13),{contents = Some ...;}))],{contents = ();})` =
-//  t2: `RECORD
-//   ([(("first", 14), INT);
-//     (("rest", 12), NAME (("list", 13),{contents = Some ...;}))],{contents = ();})`

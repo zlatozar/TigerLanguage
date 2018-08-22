@@ -1,17 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
-<ItemGroup>
+  <ItemGroup>
     <Compile Include="ErrorMsg.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Env.fs" />
     <Compile Include="StandardLibrary.fs" />
 
     <Compile Include="Translate.fs" />
-    <Compile Include="TigerSemantic.fs" />
-    <Compile Include="Semantic.fs" />
+    <Compile Include="TigerFrontEnd.fs" />
+    <Compile Include="FrontEnd.fs" />
     <None Include="Readme.md" />
   </ItemGroup>
 
