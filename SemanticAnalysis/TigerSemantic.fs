@@ -32,9 +32,9 @@ let dummyTransExp = { exp=(); ty=INT; name=None }
 let rec actualTy (ty: Ty, pos: Pos) =
     match ty with
     | NAME (sym, tyRef) -> match !tyRef with
-                           | None    -> error pos (sprintf "undefined type `%s`." (Store.name sym))
-                                        NIL
-                           | Some ty -> actualTy (ty, pos)
+                           | None     -> error pos (sprintf "can't find actual type of `%s`." (Store.name sym))
+                                         NIL
+                           | Some ty' -> actualTy (ty', pos)
 
     | ARRAY (t, u)       -> ARRAY (actualTy (t, pos), u)
     | _                  -> ty
@@ -47,7 +47,7 @@ let checkString ((ty: Ty), pos) =
     if ty = STRING then ()
     else error pos "expected a string."
 
-// ATTENTION: When compare types first plase expected then the expression type
+// Tip: When compare types first place expected then the expression type
 
 let checkBothInt (ty1, ty2, pos) =
     checkInt (ty1, pos)
@@ -63,25 +63,17 @@ let checkBothIntOrString (ty1, ty2, pos) =
 
 // Tip: NIL is a type and it is equal to every other p. 113
 
-(* let checkType (t1:Ty, t2:Ty, pos) =
-    let t = actualTy (t1, pos)
-    if (t <> t2) then  // do not work when NAME ("someName", ref RECORD) here. Segmentation fault (core dumped).
+let checkType (t1:Ty, t2:Ty, pos) =
+    let ty1 = actualTy (t1, pos)
+    let ty2 = actualTy (t2, pos)
 
-        match (t, t2) with
+    if (ty1 <> ty2) then
+        match (ty1, ty2) with
         | (RECORD(_), NIL) -> ()
         | (NIL, RECORD(_)) -> ()
         | _                -> error pos "type mismatched."
-    else () *)
+    else ()
 
-let checkType (t1:Ty, t2:Ty, pos) =
-    let t = actualTy (t1, pos)
-    match (t, t2) with
-    | (RECORD(_), RECORD (_)) -> () // HACK
-    | (RECORD(_), NIL)        -> ()
-    | (NIL, RECORD(_))        -> ()
-    | (_, b)                  -> if (t <> b) then error pos "type mismatched."
-                                 else ()
-    
 // Ensure both results can be compared by equality
 let checkBothEq (lt, rt, pos) =
     match lt with
@@ -105,6 +97,15 @@ let rec checkDup ((decNameList: Store.Symbol list), positions) =
                                      then error pos (sprintf "duplicated definition `%s`." (Store.name name))
                                      else checkDup(rest, poss)
     | (_, _)                  -> ()
+
+let getRecType (tenv, (recTy: Ty), pos) =
+    match recTy with
+    | NAME (name, _) -> match Store.lookup (tenv, name) with 
+                        | Some t -> actualTy(t, pos)
+                        | _      -> error pos (sprintf 
+                                        "expecting recursive type. Can't find `%s`." (Store.name name))
+                                    NIL
+    | _              -> recTy
 
 // ______________________________________________________________________________
 //                                                                  Type checker
@@ -131,7 +132,7 @@ let rec transVar ((venv: VEnv), fenv, tenv, breakpoint, (var: Absyn.TVar)) :ExpT
                                                           | []           -> error pos (sprintf "field `%s` is not a member of that record type." (Store.name record))
                                                                             { exp=(); ty=NIL; name=None }
                                                           | (s, t)::rest -> if (s = record)
-                                                                            then { exp=(); ty=actualTy (t, pos); name=None }
+                                                                            then { exp=(); ty=actualTy (getRecType (tenv, t, pos), pos); name=None }
                                                                             else findField record rest
 
                                                       findField sym fieldTys
@@ -178,8 +179,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
                             let variable = transVar (venv, fenv, tenv, breakpoint, assignRec.var)
                             let expression = transExp (venv, fenv, tenv, breakpoint, assignRec.exp)
 
-                            checkSame (actualTy (variable.ty, assignRec.pos),
-                                       actualTy (expression.ty, assignRec.pos), assignRec.pos)
+                            checkSame (variable.ty, expression.ty, assignRec.pos)
                             { exp=(); ty=UNIT; name=None }
 
     | OpExp opRec        -> printf "         !OpExp"
@@ -232,7 +232,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
                                                                           if (lts <> lfs) then
                                                                               error pos (sprintf "%i fields needed, but %i given." lts lfs)
                                                                           else
-                                                                              List.iter (fun (t, ty) -> checkType(snd t, ty, pos)) (List.zip ts fs)
+                                                                              List.iter (fun (t, ty) -> checkType(getRecType (tenv, snd t, pos), ty, pos)) (List.zip ts fs)
 
                                                                       checkRecord(fieldTys, expTypes, recRec.pos)
 
@@ -254,7 +254,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
                                               | ARRAY(aat, g) -> let {exp=_; ty=initTy; name=_} = transExp (venv, fenv, tenv, breakpoint, arrayRec.init)
                                                                  
                                                                  checkType(aat, initTy, arrayRec.pos);
-                                                                 {exp=(); ty=ARRAY(aat, g); name=Some arrayRec.typ}
+                                                                 {exp=(); ty=ARRAY(aat, g); name=(Some arrayRec.typ)}
 
                                               | _             -> error arrayRec.pos "expecting an array type."
                                                                  {exp=(); ty=NIL; name=None}
@@ -322,24 +322,25 @@ and transDec (venv, fenv, tenv, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
     match dec with
     | TypeDec typeRecList
                          -> printfn "   !TypeDec"
-                            let addDecl iniTEnv (dec: TypeDecRec) =
+                            let addHeader iniTEnv (dec: TypeDecRec) =
                                 Store.enter (iniTEnv, dec.name, NAME (dec.name, ref None))  // !!
 
                             // 1. Enter types heads
-                            let tenv' = List.fold addDecl tenv typeRecList
+                            let tenv' = List.fold addHeader tenv typeRecList
 
-                            let inferDeclTypes iniTEnv' (dec: TypeDecRec) =
-                                match Store.lookup (iniTEnv', dec.name) with
-                                | Some ty -> match ty with
-                                             | NAME (_, opTy) -> match !opTy with
-                                                                 | None   -> opTy := Some (transTy (iniTEnv', dec.ty))
-                                                                             iniTEnv'
-                                                                 | Some _ -> iniTEnv'
-                                             | _              -> iniTEnv'
-                                | _       -> iniTEnv'
+                            // 2. Enter bodies
+                            let addBody iniTEnv' (dec: TypeDecRec) =
+                                Store.enter (iniTEnv', dec.name, transTy (iniTEnv', dec.ty))
 
-                            // 2. Infer types
-                            let tenv'' = List.fold inferDeclTypes tenv' typeRecList
+                            let tenv'' = List.fold addBody tenv' typeRecList
+
+                            let inferDeclTypes iniTEnv'' (dec: TypeDecRec) =
+                                match Store.lookup (iniTEnv'', dec.name) with
+                                | Some ty -> Store.enter (iniTEnv'', dec.name, NAME (dec.name, ref (Some ty)))
+                                | _       -> iniTEnv''
+
+                            // 3. Update
+                            let tenv''' = List.fold inferDeclTypes tenv'' typeRecList
 
                             let rec inCycle (seen, tyRef, pos) =
                                 match tyRef with
@@ -354,7 +355,7 @@ and transDec (venv, fenv, tenv, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
                             let rec checkEach (typeRecList: TypeDecRec list) =
                                 match typeRecList with
                                 | []       -> ()
-                                | f::rest  -> match Store.lookup (tenv'', f.name) with
+                                | f::rest  -> match Store.lookup (tenv''', f.name) with
                                               | Some (NAME (_, r)) -> if (inCycle ([f.name], !r, f.pos))
                                                                           then error f.pos (sprintf "name type `%s` is involved in cyclic defnition." (Store.name f.name))
                                                                           else checkEach (rest)
@@ -368,7 +369,7 @@ and transDec (venv, fenv, tenv, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
                             let allTypePos =  List.map (fun (x: TypeDecRec) -> x.pos) typeRecList
                             checkDup (allTypeNames, allTypePos)
 
-                            { venv=venv; fenv=fenv; tenv=tenv'' }
+                            { venv=venv; fenv=fenv; tenv=tenv''' }
 
     | VarDec varDecRec   -> printf "    !VarDec"
                             let {exp=_; ty=expTy; name=expName } = transExp (venv, fenv, tenv, breakpoint, varDecRec.init)
@@ -376,7 +377,6 @@ and transDec (venv, fenv, tenv, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
                             // Is type specified?
                             match varDecRec.typ with
                             | Some (sym, p) -> // NOTE: Records and arrays are equal if there names are also equal
-
                                                let areAlias (ty1, ty2, pos) =
                                                    let rec actualAlias (ty, p, n) =
                                                        match ty with
@@ -483,10 +483,11 @@ and transDec (venv, fenv, tenv, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
 
 and transTy (tenv, (ty: Absyn.TType)) :Ty =
     match ty with
-    | NameTy (sym, _)    -> printfn "        !NameTy"
+    | NameTy (sym, p)    -> printfn "        !NameTy"
                             match Store.lookup (tenv, sym) with
-                            | None         -> NAME (sym, ref None) // If not found - create an empty NAME
-                            | Some symType -> symType
+                            | None         -> error p (sprintf "type `%s` is not defined." (Store.name sym))
+                                              NIL
+                            | Some symType -> NAME (sym, ref (Some symType))  // Create an alias
 
     | RecordTy fieldRecList
                          -> printfn "          !RecordTy"
@@ -497,11 +498,10 @@ and transTy (tenv, (ty: Absyn.TType)) :Ty =
                             let getFieldType (fieldRec: FieldRec) =
                                 match Store.lookup (tenv, fieldRec.typ) with
                                 | None         -> error fieldRec.pos (sprintf "type `%s` is not defined." (Store.name fieldRec.typ))
-                                                  None
-                                | Some symType -> Some (fieldRec.name, symType)
+                                                  (fieldRec.name, UNIT)
+                                | Some symType -> (fieldRec.name, symType)
 
-                            // Take only fields with known type
-                            let fieldsList = List.choose id (List.map getFieldType fieldRecList)
+                            let fieldsList = List.map getFieldType fieldRecList
                             RECORD (fieldsList, ref ())
 
     | ArrayTy (sym, pos)
