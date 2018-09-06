@@ -1,4 +1,4 @@
-module TigerSemantic
+module TigerFrontEnd
 
 open Absyn
 

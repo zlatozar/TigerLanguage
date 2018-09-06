@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TigerFrontEnd\TigerFrontEnd.fsproj" />
+    <ProjectReference Include="..\FrontEnd\FrontEnd.fsproj" />
   </ItemGroup>
 
 </Project>
