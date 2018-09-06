@@ -8,8 +8,8 @@ open ErrorMsg
 
 open Translate
 
-// Intermediate language expression and its type (next chapters)
-type ExpTy = {exp: Translate.Exp; ty: Types.Ty; name: Store.Symbol option}
+// Intermediate Language
+type TreeExp = {exp: Translate.Exp; ty: Types.Ty; name: Store.Symbol option}
 
 // Variables
 type VEnv = Store.Table<VarEntry>
@@ -21,6 +21,10 @@ type FEnv = Store.Table<FunEntry>
 type TEnv = Store.Table<Types.Ty>
 
 type ProgEnv = {venv: VEnv; fenv: FEnv; tenv: TEnv}
+
+// As marker that 'for' and 'while' should pass. Dummy for now.
+type BreakPoint = string option
+let newBreakpoint = Some "_break"
 
 // Use it to continue analysis
 let dummyTransExp = { exp=(); ty=INT; name=None }
@@ -108,11 +112,9 @@ let getRecType (tenv, (recTy: Ty), pos) =
     | _              -> recTy
 
 // ______________________________________________________________________________
-//                                                                  Type checker
+//                               Type checker and intermidate languge translator
 
-// Tip: {exp=(); ty=UNIT} could be used as initial value
-
-let rec transVar ((venv: VEnv), fenv, tenv, breakpoint, (var: Absyn.TVar)) :ExpTy =
+let rec transVar ((venv: VEnv), fenv, tenv, breakpoint, (var: Absyn.TVar)) :TreeExp =
     // do not forget to return actual type
     match var with
     | SimpleVar (sym, pos)
@@ -153,7 +155,7 @@ let rec transVar ((venv: VEnv), fenv, tenv, breakpoint, (var: Absyn.TVar)) :ExpT
                             | _             -> error pos "expecting an array variable."
                                                dummyTransExp
 
-and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint), (exp: Absyn.TExp)) :ExpTy =
+and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint), (exp: Absyn.TExp)) :TreeExp =
     match exp with
     | IntExp i           -> printfn "        !IntExp"
                             { exp=(); ty=INT; name=None }

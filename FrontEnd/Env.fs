@@ -2,11 +2,13 @@ module Env
 
 open Types
 
-// Needed in next steps. Dummy for now.
-type Access = unit
+// Specifies execution environment
 
-type VarEntry = { ty: Ty; access: Access }
-type FunEntry = { formals: Ty list; result: Ty }
+type VarEntry = { access: Translate.Access; ty: Ty }
+
+type FunEntry = { level: Translate.Level;
+                  label: Temp.Label;
+                  formals: Ty list; result: Ty }
 
 type ParamEntry = { name: Store.Symbol; ty: Ty }
 

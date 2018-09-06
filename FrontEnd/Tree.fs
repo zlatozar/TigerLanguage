@@ -1,5 +1,7 @@
 module Tree
 
+// Intermidate Language is choosen to be - simple expression tree
+
 type Label = Temp.Label
 
 type Size = int

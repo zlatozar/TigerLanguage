@@ -2,6 +2,8 @@ module PrintTree
 
 open Tree
 
+// Use for debugging during development
+
 let private say s = printf "%s" s
 let private sayln s = printfn "%s" s
 
