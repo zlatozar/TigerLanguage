@@ -477,7 +477,7 @@ let _fsyacc_reductions ()  =    [|
                 (
                    (
 # 71 "TigerParse.fsy"
-                                                  _1 :: _2 
+                                                _1 :: _2 
                    )
 # 71 "TigerParse.fsy"
                  : 'decs));
