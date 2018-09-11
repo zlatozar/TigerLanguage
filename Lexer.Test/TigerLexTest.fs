@@ -1,6 +1,5 @@
 module Tests
 
-open System
 open FsUnit.Xunit
 open Xunit
 
@@ -66,8 +65,8 @@ let testCases = ["../../../../testcases/merge.tig";
 
 [<Fact>]
 let ``All test cases should pass without errors`` () =
-    List.iter (fun test -> fromFile test |> printf "%A\n") testCases
-    |> should not' (be Empty)
+    List.iter (fromFile >> printf "%A\n") testCases
+        |> should not' (be Empty)
 
 // _____________________________________________________________________________
 //                                                                   Edge Cases
