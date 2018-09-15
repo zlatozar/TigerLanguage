@@ -22,7 +22,7 @@
 
 - Create a scaffold of the parsing AST function using given _PrettyPrint.fs_
 
-- At the begging explicitly give type to all parameters and return types.
+- At the begging, explicitly give type to all parameters and return types.
 
 - There is no _boolean_ type. How to check `if/while/for` constructions?
 
@@ -53,4 +53,5 @@
 
 - Be consistent in style and punctuation with meaningful error messages.
 
-- How to proceed whit unit tests because only error messages will be returned?
+- How to proceed with unit tests because only error messages will be returned?
+  Now you know why `ErrorMsg` has `anyErrors`.
