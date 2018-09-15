@@ -22,10 +22,12 @@ type Frag =
 and ProcRec = 
     { body: Tree.Stm; frame: Frame}    
 
-type FrameRec = { name: Temp.Label; formalsEsc: bool list }
-
 // ____________________________________________________________________________
 //                                                                   Functions
+
+// Tip:  A variable escapes if its declared in a higher function and is used in a lower function.
+
+type FrameRec = { name: Temp.Label; formalsEsc: bool list }
 
 val newFrame   : FrameRec -> Frame
 val name       : Frame -> Temp.Label
@@ -39,6 +41,7 @@ val allocLocal : Frame -> bool -> Access
 // val RV : Temp.Temp
 // val RA : Temp.Temp
 
+// Architecture word size
 //val wordSize : int
 
 // val exp : Access -> Tree.Exp -> Tree.Exp

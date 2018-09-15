@@ -5,5 +5,5 @@ build:
 repl:
 	@ echo -e "\nStart parser interactive session. Modules: open Tiger.FrontEnd;;\n"
 	@ fsharpi -r ../FsLexYacc.Runtime.dll -r ../Parser/bin/Debug/netstandard2.0/Parser.dll \
-                     Types.fs Temp.fs Tree.fs Frame.fsi Translate.fs Env.fs StandardLibrary.fs \
-                     ErrorMsg.fs TigerFrontEnd.fs PrintTree.fs FrontEnd.fs
+                     Types.fs Temp.fs Tree.fs Frame.fsi MipsFrame.fs Translate.fs Env.fs StandardLibrary.fs \
+                     ErrorMsg.fs
