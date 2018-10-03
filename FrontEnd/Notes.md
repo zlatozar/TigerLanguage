@@ -96,6 +96,8 @@ Tip: Read it as assembler code.
 
 - `EXP` evaluate given expression and **discards** the result.
 
+- `TEMP ..` assume it is a register.
+
 #### Exp
 
 - `MEM` when is used as the **left child** of a `MOVE`, it means _"store"_, but anywhere else it means **"fetch"** !
@@ -103,3 +105,9 @@ Tip: Read it as assembler code.
 - `CALL(exp, params)` first execute `exp` to infer function name then calls it with given parameters.
 
 - `ESEQ(stm, exp)` statement is evaluated for side effects (do not return value), then _exp_ is evaluated for a result.
+
+- `ESEQ(stm, exp)` statement is evaluated for side effects (do not return value), then _exp_ is evaluated for a result.
+
+#### VSCode for Tiger language
+
+https://github.com/yunyu/tiger-vscode

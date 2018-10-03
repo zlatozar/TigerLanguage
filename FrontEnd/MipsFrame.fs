@@ -1,5 +1,7 @@
 module Frame
 
+open Tree
+
 type Access =
     | InFrame of int
     | InReg of Temp.Temp
@@ -16,9 +18,11 @@ type Frag =
 and ProcRec =
     { body: Tree.Stm; frame: Frame}
 
+// Tip: The static link escapes: it needs to be kept in memory
+
 type FrameRec = { name: Temp.Label; formalsEsc: bool list }
 
-let wordSize = 4
+let WORDSIZE = 4
 
 // ____________________________________________________________________________
 //                            All 32 MIPS instructions
@@ -36,7 +40,7 @@ let wordSize = 4
     $ra = $r31          return address
 *)
 
-let R0 = Temp.newTemp // always ZERO
+let R0 = Temp.newTemp // always zero
 let AT = Temp.newTemp // assembler temporary, reserved
 
 let RV = Temp.newTemp // return value from procedure call
@@ -106,6 +110,10 @@ let argRegs = [
     (A2, "$a2");
     (A3, "$a3")]
 
+let argRegsNum = List.length argRegs
+let argumentRegs = List.map (fun (r, _) -> r) argRegs
+
+// May be NOT overritten by called procedures
 let calleeSaves = [
     (S0, "$s0");
     (S1, "$s1");
@@ -116,6 +124,7 @@ let calleeSaves = [
     (S6, "$s6");
     (S7, "$s7")]
 
+// May be overritten by called procedures
 let callerSaves = [
     (T0, "$t0");
     (T1, "$t1");
@@ -130,15 +139,64 @@ let callerSaves = [
 
 let registers = List.map (fun (_, name) -> name) (argRegs @ callerSaves @ calleeSaves)
 
-let newFrame (frameRec: FrameRec) = { name=(Store.symbol "dummy"); formals=[]; locals=ref 0; instrs=[] }
+(*
+  MIPS frame
+
+    ...                        higher addresses
+|   arg_N   |  4 + 4*N
+|   ...     |
+|   arg_1   |  8               CALLER frame
+|static link|  4
+|           |
+| saved FP  |  FP              -------------
+|           |
+|  local_1  |  FP - 4          CALLEE (current) frame
+|  local_2  |  FP - 8
+|   ...     |
+|  local_N  |  FP - 4*N
+    ...
+                               lower addresses
+*)
+
+// 'newFrame' must calculate two things:
+//   1. How the parameter will be seen from inside the function (in a register, or in a frame location);
+//   2. What instructions must be produced to implement the "view shift."
+let newFrame (frameRec: FrameRec) =
+    let n = List.length frameRec.formalsEsc
+
+    let rec placeIn (escapes, size) =
+        match (escapes, size) with
+        | ([], _)               -> []
+        | (first::rest, offset) -> if first
+                                       then InFrame(offset) :: placeIn (rest, offset + WORDSIZE)
+                                       else InReg(Temp.newTemp) :: placeIn (rest, offset)
+
+    let funcParams :Access list = placeIn (frameRec.formalsEsc, WORDSIZE)
+
+    let shift loc temp =
+        match loc with
+        | InFrame(offset) -> MEM (BINOP (PLUS, temp, CONST offset))
+        | InReg(r)        -> TEMP r
+
+    // calculate offset from FP
+    let viewShift (param, reg) = MOVE (shift param (TEMP FP), TEMP reg)
+    let shiftInstrs = List.map viewShift (List.zip funcParams argumentRegs)
+
+    // For functions with more than 4 paramters, we just give up
+    if n <= argRegsNum
+        then {name=frameRec.name; formals=funcParams; locals=ref 0; instrs=shiftInstrs}
+        else failwithf "ERROR: Too many function arguments: %d." n
+
+let allocLocal (frame: Frame) (escape: bool) =
+    if (escape) then
+        let offSet = !frame.locals + 1
+        let ret = InFrame(offSet * (-WORDSIZE))
+        frame.locals := !frame.locals + 1; ret
+
+    else InReg(Temp.newTemp)
 
 let name (frame: Frame) = frame.name
 
 let formals (frame: Frame) = frame.formals
 
-let allocLocal (frame: Frame) (escape: bool) =
-    if (escape) then
-        let offSet = !frame.locals + 1
-        let ret = InFrame (offSet * (-wordSize)) // stack grows to lower addresses
-        frame.locals := !frame.locals + 1; ret
-    else InReg(Temp.newTemp)
+let externalCall (name, args) = CALL (NAME (Temp.namedLabel name), args)

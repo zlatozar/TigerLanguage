@@ -1,5 +1,11 @@
 module Frame
 
+// Frame is a data structure holding:
+//   - the locations of all the formals
+//   - instructions required to implement the "view shift"
+//   - the number of locals allocated so far
+//   - the `label` at which the function's machine code is to begin (see p.140)
+
 // This full version is on p. 260
 
 // ____________________________________________________________________________
@@ -9,23 +15,24 @@ type Access =
     | InFrame of int
     | InReg of Temp.Temp
 
-// Outline frame structure
+// What the frame should contain
 type Frame = { name: Temp.Label; formals: Access list;
                locals: int ref; instrs: Tree.Stm list }
 
 // Regeters are named
 type Register = string
 
+// Memory fragment could contain string or a routine
 type Frag =
     | PROC of ProcRec
     | STRING of Temp.Label * string
 
 and ProcRec =
-    { body: Tree.Stm; frame: Frame}
+    { body: Tree.Stm; frame: Frame }
 
 
 // Architecture word size
-val wordSize : int
+val WORDSIZE : int
 
 // ____________________________________________________________________________
 //
@@ -46,9 +53,16 @@ val registers : Register list
 
 type FrameRec = { name: Temp.Label; formalsEsc: bool list }
 
+// Create new frame
 val newFrame   : FrameRec -> Frame
+
+// Routine name
 val name       : Frame -> Temp.Label
+
+// Rotine formal parameters (where to find them)
 val formals    : Frame -> Access list
+
+// Allocate local variable and return it's location
 val allocLocal : Frame -> bool -> Access
 
 // val tempMap   : Register Temp.Table
@@ -58,8 +72,8 @@ val allocLocal : Frame -> bool -> Access
 
 // val exp : Access -> Tree.Exp -> Tree.Exp
 
+val externalCall : string * Tree.Exp list -> Tree.Exp
+
 // val procEntryExit1 : Frame * Tree.Stm -> Tree.Stm
 // val procEntryExit2 : frame * Assem.Instr list -> Assem.Instr list
 // val procEntryExit3 : frame * Assem.Instr list -> { prolog: string, body: Assem.instr list, epilog: string }
-
-// val externalCall : string * Tree.Exp list -> Tree.Exp

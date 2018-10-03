@@ -29,7 +29,7 @@ type Access = Level * Frame.Access
 
 // Tip: How to design Translate.fs? Specify how every Tiger language construction should be translated.
 
-let instrChunk stmList =
+let private instrChunk stmList =
     let rec cons x xs =
         match xs with
         | []          -> x
@@ -68,8 +68,8 @@ let unNx e =
 
 let unCx e =
     match e with
-    | Ex (CONST 0)  -> fun _ f -> JUMP (NAME f, [f]) // Tip: This two are needed because exp2 is not given
-    | Ex (CONST 1)  -> fun t _ -> JUMP (NAME t, [t])
+    | Ex (CONST 0)  -> fun _ f -> JUMP (NAME f, [f])  // Tip: This two are needed because CJUMP requires two expressions
+    | Ex (CONST 1)  -> fun t _ -> JUMP (NAME t, [t])  //      but we have only one
     | Ex exp        -> fun t f -> CJUMP (NE, exp, CONST 0, f, t)
     | Cx genStmFunc -> fun t f -> genStmFunc(t, f)
     | Nx _          -> failwithf "ERROR: Impossible usage of unCx."
@@ -78,16 +78,24 @@ let outermost = Top
 
 type FuncInfo = { parent: Level; name: Temp.Label; formals: bool list }
 
+// When enter a new inner function
 let newLevel (funInfo: FuncInfo) =
-    Inner ({parent=funInfo.parent;
-     frame=Frame.newFrame {name=funInfo.name; formalsEsc=true::funInfo.formals} }, ref () )
+    Inner ({ parent=funInfo.parent;
+             frame=Frame.newFrame {name=funInfo.name; formalsEsc=true::funInfo.formals}
+           }, ref () )
 
+// Return formals associated with the frame in this level,
+// excluding the static link (first element of the list p. 127)
 let formals (level: Level) = match level with
                              | Top                -> []
-                             | Inner(innerRec, _) -> let formParams = innerRec.frame.formals
-                                                     List.map (fun x -> (level, x)) formParams
-
+                             | Inner(innerRec, _) -> let formalParams = List.tail innerRec.frame.formals
+                                                     List.map (fun x -> (level, x)) formalParams
 let allocLocal (level: Level) escape =
     match level with
     | Top                 -> failwithf "ERROR: locals can't exist on top level."
     | Inner (innerRec, _) -> (level, Frame.allocLocal innerRec.frame escape)
+
+// ____________________________________________________________________________
+//                                    From Tiger to intermediate language (IR)
+
+// Using given frame interface Tiger language could be transformed
