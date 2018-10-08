@@ -137,6 +137,7 @@ let callerSaves = [
     (T8, "$t8");
     (T9, "$t9")]
 
+// A list of all register name, which can be used for coloring
 let registers = List.map (fun (_, name) -> name) (argRegs @ callerSaves @ calleeSaves)
 
 (*
@@ -158,6 +159,11 @@ let registers = List.map (fun (_, name) -> name) (argRegs @ callerSaves @ callee
                                lower addresses
 *)
 
+let exp loc temp =
+    match loc with
+    | InFrame(offset) -> MEM (BINOP (PLUS, temp, CONST offset))
+    | InReg(r)        -> TEMP r
+
 // 'newFrame' must calculate two things:
 //   1. How the parameter will be seen from inside the function (in a register, or in a frame location);
 //   2. What instructions must be produced to implement the "view shift."
@@ -173,13 +179,8 @@ let newFrame (frameRec: FrameRec) =
 
     let funcParams :Access list = placeIn (frameRec.formalsEsc, WORDSIZE)
 
-    let shift loc temp =
-        match loc with
-        | InFrame(offset) -> MEM (BINOP (PLUS, temp, CONST offset))
-        | InReg(r)        -> TEMP r
-
     // calculate offset from FP
-    let viewShift (param, reg) = MOVE (shift param (TEMP FP), TEMP reg)
+    let viewShift (param, reg) = MOVE (exp param (TEMP FP), TEMP reg)
     let shiftInstrs = List.map viewShift (List.zip funcParams argumentRegs)
 
     // For functions with more than 4 paramters, we just give up
@@ -198,5 +199,16 @@ let allocLocal (frame: Frame) (escape: bool) =
 let name (frame: Frame) = frame.name
 
 let formals (frame: Frame) = frame.formals
+
+let tempMap =
+    (argRegs @ callerSaves @ calleeSaves) |>
+        List.fold (fun table (k, v) -> Temp.Table.enter table k v) Temp.Table.empty
+
+let tempName t =
+    match Temp.Table.look tempMap t with
+    | Some name -> name
+    | None      -> Temp.makeString t
+
+let string (label, str) =  sprintf "%s: .asciiz \"%s\"\n" (Store.name label) str
 
 let externalCall (name, args) = CALL (NAME (Temp.namedLabel name), args)
