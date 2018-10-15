@@ -5,6 +5,6 @@ _"Modern Compiler Implementation in ML" (1998) by Andrew Appel_
 
 The main ideas behind every step during development are:
 
-- control constraints and give feedback (lexer, parser and syntactic analysis)
-- simplification of computation (intermediate language)
+- control the constraints and give feedback on error (lexer, parser and syntactic analysis)
+- linearization of syntax tree and represent it in a sequential form (intermediate representation)
 - efficiency/optimization (the whole compiler backend)

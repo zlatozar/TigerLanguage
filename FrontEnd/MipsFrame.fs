@@ -18,7 +18,7 @@ type Frag =
 and ProcRec =
     { body: Tree.Stm; frame: Frame}
 
-// Tip: The static link escapes: it needs to be kept in memory
+// Tip: The static link escapes: it needs to be kept in memory(frame)
 
 type FrameRec = { name: Temp.Label; formalsEsc: bool list }
 
@@ -82,8 +82,8 @@ let T9 = Temp.newTemp
 let K0 = Temp.newTemp
 let K1 = Temp.newTemp
 
-let GP = Temp.newTemp
-let SP = Temp.newTemp
+let GP = Temp.newTemp // Pointer to global area
+let SP = Temp.newTemp // Stack Pointer
 let FP = Temp.newTemp // Frame Pointer
 let RA = Temp.newTemp // Return Adderss
 
@@ -180,14 +180,15 @@ let newFrame (frameRec: FrameRec) =
     let funcParams :Access list = placeIn (frameRec.formalsEsc, WORDSIZE)
 
     // calculate offset from FP
-    let viewShift (param, reg) = MOVE (exp param (TEMP FP), TEMP reg)
-    let shiftInstrs = List.map viewShift (List.zip funcParams argumentRegs)
+    let calcOffset (param, reg) = MOVE (exp param (TEMP FP), TEMP reg)
+    let shiftInstrs = List.map calcOffset (List.zip funcParams argumentRegs)
 
     // For functions with more than 4 paramters, we just give up
     if n <= argRegsNum
         then {name=frameRec.name; formals=funcParams; locals=ref 0; instrs=shiftInstrs}
         else failwithf "ERROR: Too many function arguments: %d." n
 
+// Allocate a local variable in given frame or in register if not escapes
 let allocLocal (frame: Frame) (escape: bool) =
     if (escape) then
         let offSet = !frame.locals + 1

@@ -23,10 +23,9 @@ of low-level routines?
 
 In order to make rational programming decisions, the application programmer should have a
 feel for the efficiency of various high-level language constructs. An example is the
-choice of data structures: as we shall see, records and static arrays can be represented
-very efficiently, but the representations of dynamic arrays and recursive types carry
-overheads (indirect addressing, garbage collection) that might be unacceptable in some
-applications.
+choice of data structures: records and static arrays can be represented very efficiently,
+but the representations of dynamic arrays and recursive types carry overheads
+(indirect addressing, garbage collection) that might be unacceptable in some applications.
 
 ### Data representation
 
@@ -35,12 +34,13 @@ applications.
 Programming languages provide high-level data types such as truth values, integers,
 characters, records, and arrays, together with operations over these types. Target
 machines provide only machine 'types' such as bits, bytes, words, and double-words,
-together with low-level arithmetic and logical operations. To bridge the semantic gap
+together with low-level arithmetic and logical operations. To _bridge_ the semantic gap
 between the source language and the target machine, the implementor must decide how
 to represent the source language's types and operations in terms of the target machine's
 types and operations.
 
 We should bear in mind the following _fundamental_ principles of data representation:
+
 - **Nonconfusion**: Different values of a given type should have different representations.
 - **Uniqueness**: Each value should always have the same representation.
 
@@ -87,3 +87,11 @@ program). Since the latter frame is just under the called routine's frame, the c
 routine can find its arguments just under its own frame. In other words, the arguments
 have small negative addresses relative to the base of the called routine's frame. In all
 other respects, they can be accessed just like variables local to the called routine.
+
+#### View Shift
+
+The difference in the caller's method of access and the callee's is called the _view shift_.
+
+The frame module provides a sequence of instructions, the view shift, ensuring that,
+on function entry, parameters are moved into the callee's frame where they are expected by
+the callee's body. See 'instrs' field in Frame.

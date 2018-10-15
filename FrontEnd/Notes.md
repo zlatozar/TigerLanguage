@@ -7,14 +7,16 @@
     not want changed
   - To provide space for variables local to a procedure
 
-The frame pointer `$fp` points to the first word in the currently executing procedure's
+The frame pointer(MIPS) `$fp` points to the first word in the **currently executing** procedure's
 stack frame.  The stack pointer `$sp` points to the last word of frame. The first four
 arguments are passed in registers, so the fifth argument is the first one stored on the
 stack.
 
 The steps below describe the calling convention used on most **MIPS** machines.
 
-#### Immediately before the caller invokes the callee
+Tip: Function calling conventions try to ensure to generate as few memory traffic as possible.
+
+#### Immediately before the caller invokes the callee (function starts)
 
 1. _Pass arguments_. By convention, the first four arguments are passed in registers
 `$a0-$a3`. Any remaining arguments are pushed on the stack and appear at the beginning of
@@ -38,10 +40,10 @@ that allocates a new stack frame. However, register `$ra` only needs to be saved
 callee itself makes a call. The other calleesaved registers that are used also must be
 saved.
 
-3. Establish the frame pointer by adding the stack frame's size **minus 4** to `$sp` and
+3. Establish the frame pointer by adding the stack frame's size **minus WORD_SIZE** to `$sp` and
 storing the sum in register `$fp`.
 
-#### Immediately before the callee returns to the caller
+#### Immediately before the callee returns to the caller (function exit)
 
 1. If the callee is a function that returns a value, place the returned value in register
 `$v0`.
@@ -75,19 +77,20 @@ _Tree language_ instructions should be understood very well before start impleme
   to do that (also for readability):
 
 ```
-instrChunk [ ...
+blockCode [ ...
              LABEL f;
                MOVE(TEMP r, CONST 0);
              LABEL t]
 ```
 
-Tip: Read it as assembler code.
+### Intermediate Representation (IR)
 
 - `JUMP (exp, [labels])` calculate the address(or literal `NAME(l)`) for jump as evaluating the _exp_.
    Then match it to the list of given labels. By the way most used case is `JUMP(NAME (l), [l])`.
 
-- `LABEL` - is like a label definition in assembly language. The value `NAME(h)` may be the target of jumps, calls, etc.
-   Execution jumps to that label and start executing the code that _follows_. See previous example.
+- `LABEL(n)` - is like a label definition in assembly language. Define the constant value of name `n`
+   to be the current machine code address. Execution jumps to that label and start executing the code that _follows_.
+   Look at `NAME(label)` as a _reference_ to the given label. See previous example.
 
 - `MOVE` is used to **store** results. That's way it has two forms:
    * `MOVE(TEMP r, exp)` evaluates the expression and store the result in _register r_.
@@ -100,7 +103,8 @@ Tip: Read it as assembler code.
 
 #### Exp
 
-- `MEM` when is used as the **left child** of a `MOVE`, it means _"store"_, but anywhere else it means **"fetch"** !
+- `MEM(e)` when is used as the **left child** of a `MOVE`, it means _"store"_, but anywhere else it means
+  **"fetch"** - take the contents of _WORDSIZE_ bytes of memory from address `e`!
 
 - `CALL(exp, params)` first execute `exp` to infer function name then calls it with given parameters.
 
@@ -108,6 +112,37 @@ Tip: Read it as assembler code.
 
 - `ESEQ(stm, exp)` statement is evaluated for side effects (do not return value), then _exp_ is evaluated for a result.
 
-#### VSCode for Tiger language
+### Translation example
+
+Note: `t` and `f` are labels.
+
+  - `x>y` becomes `Cx(fun (t, f) -> CJUMP(GT, x, y, t, f))`
+
+  - `a>b | c<d` becomes `Cx(fun (t, f) -> SEQ( CJUMP(GT, a, b, t, z), SEQ(LABEL z, CJUMP(LT, c, d, t, f))))`
+
+  - `a:=x>y` becomes `MOVE (TEMP(a), e)` so `MOVE(TEMP(a), unEx(Cx(t, f) -> ...)`
+
+Tip: The _"wise"_ assignment of variables to caller/callee-save registers is an important
+     compiler optimization (backed  up  by **data-flow analysis** techniques).
+
+### Function IR definition
+
+Each Tiger function is translated into a _prologue_, a _body_  and an _epilogue_:
+
+1. pseudo-instructions for the function beginning
+2. a **label** definition for the function name
+3. an instruction to adjust the **stack pointer**
+4. instructions to **save** "escaping" arguments
+5. **store** instructions to save any callee-save registers
+
+6. the function body
+
+7. an instruction to deliver the **function result**
+8. load instructions to **restore** the callee-save registers
+9. an instruction to reset the **stack pointer**
+10. a jump to the **return address**
+11. pseudo-instructions for the function end
+
+#### VSCode plugin for Tiger language
 
 https://github.com/yunyu/tiger-vscode

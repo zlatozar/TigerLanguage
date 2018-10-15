@@ -25,11 +25,9 @@ and InnerRec = { parent: Level; frame: Frame.Frame }
 type Access = Level * Frame.Access
 
 // ____________________________________________________________________________
-//    Functions used by sematinc analysis to translate to intermidate language
+//                                                            Helper functions
 
-// Tip: How to design Translate.fs? Specify how every Tiger language construction should be translated.
-
-let private instrChunk stmList =
+let private blockCode stmList =
     let rec cons x xs =
         match xs with
         | []          -> x
@@ -47,7 +45,7 @@ let unEx e =
                        let t = Temp.newLabel
                        let f = Temp.newLabel
 
-                       ESEQ(instrChunk [ MOVE(TEMP r, CONST 1); // side effect
+                       ESEQ(blockCode [ MOVE(TEMP r, CONST 1); // side effect
                                          genStmFunc(t, f);
 
                                        LABEL f;
@@ -96,6 +94,8 @@ let allocLocal (level: Level) escape =
     | Inner (innerRec, _) -> (level, Frame.allocLocal innerRec.frame escape)
 
 // ____________________________________________________________________________
-//                                    From Tiger to intermediate language (IR)
+//                                             Intermediate Representation (IR)
 
-// Using given frame interface Tiger language could be transformed
+// IR is independent of the details of the source language.
+
+// Tip: How to design Translate.fs? Specify how every Tiger language construction should be translated.
