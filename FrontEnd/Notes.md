@@ -1,5 +1,8 @@
 ## Chapter 6
 
+In this and next chapter we work only with addresses - calculate or modify and then
+translate to a Tree language.
+
 **Frame** is used for a variety of purposes:
 
   - To hold values passed to a procedure as arguments

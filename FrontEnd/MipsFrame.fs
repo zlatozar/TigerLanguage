@@ -11,12 +11,14 @@ type Frame = { name: Temp.Label; formals: Access list;
 
 type Register = string
 
+// Fragmet is a procedure in a frame or a string.
+// Existing fragments could be reused.
 type Frag =
     | PROC of ProcRec
     | STRING of Temp.Label * string
 
 and ProcRec =
-    { body: Tree.Stm; frame: Frame}
+    { body: Tree.Stm; frame: Frame }
 
 // Tip: The static link escapes: it needs to be kept in memory(frame)
 
@@ -159,10 +161,14 @@ let registers = List.map (fun (_, name) -> name) (argRegs @ callerSaves @ callee
                                lower addresses
 *)
 
-let exp loc temp =
+// Turns a Frame.Access into the Tree expression.
+//
+// For a simple variable 'v' declared in the current procedure's stack frame,
+// 'k' is the offset of 'v' within the frame and 'tempFP' is the frame pointer register (p. 154).
+let exp loc tempFP :Exp =
     match loc with
-    | InFrame(offset) -> MEM (BINOP (PLUS, temp, CONST offset))
-    | InReg(r)        -> TEMP r
+    | InFrame(k) -> MEM (BINOP (PLUS, tempFP, CONST k))
+    | InReg(r)   -> TEMP r
 
 // 'newFrame' must calculate two things:
 //   1. How the parameter will be seen from inside the function (in a register, or in a frame location);
@@ -185,7 +191,7 @@ let newFrame (frameRec: FrameRec) =
 
     // For functions with more than 4 paramters, we just give up
     if n <= argRegsNum
-        then {name=frameRec.name; formals=funcParams; locals=ref 0; instrs=shiftInstrs}
+        then { name=frameRec.name; formals=funcParams; locals=ref 0; instrs=shiftInstrs }
         else failwithf "ERROR: Too many function arguments: %d." n
 
 // Allocate a local variable in given frame or in register if not escapes
@@ -213,3 +219,7 @@ let tempName t =
 let string (label, str) =  sprintf "%s: .asciiz \"%s\"\n" (Store.name label) str
 
 let externalCall (name, args) = CALL (NAME (Temp.namedLabel name), args)
+
+// For each incoming register parameter, move it to the place
+// from which it is seen from within the function. This could be
+// a frame location (for escaping parameters) or a fresh temporary.

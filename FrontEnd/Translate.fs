@@ -1,14 +1,15 @@
 module Translate
 
 open Tree
+open Frame
 
 // ____________________________________________________________________________
 //                                                                       Types
 
 // Result type
 type Exp =
-    | Ex of Tree.Exp   // value
-    | Nx of Tree.Stm   // no value
+    | Ex of Tree.Exp   // value that could be assigned
+    | Nx of Tree.Stm   // no value, can't assing
     | Cx of CxFunc     // represents condition
 
 // Function is used to postpone the execution. Needed parameters are known at runtime.
@@ -96,6 +97,71 @@ let allocLocal (level: Level) escape =
 // ____________________________________________________________________________
 //                                             Intermediate Representation (IR)
 
+// Contains list of defined procedures or strings
+let fragList :Frame.Frag list ref =
+    ref []
+
 // IR is independent of the details of the source language.
 
 // Tip: How to design Translate.fs? Specify how every Tiger language construction should be translated.
+
+// CONST represents integer
+let intIR (n: int) :Exp = Ex (CONST n)
+
+// nil is just CONS 0
+let nilIR :Exp = Ex (CONST 0)
+
+// Try to find same string to reuse it or create new one
+let strIR (newString: string) :Exp =
+    let sameStr = List.tryFind (fun x -> match x with
+                                         | Frame.PROC _                    -> false
+                                         | Frame.STRING(_, existingString) -> newString = existingString) !fragList
+    match sameStr with
+    | Some(Frame.STRING(existingLabel, _)) -> Ex (NAME existingLabel)
+
+    | _                                    -> let newLabel = Temp.newLabel
+                                              fragList := (Frame.STRING(newLabel, newString) :: !fragList)
+                                              Ex (NAME newLabel)
+
+// Binary and Relational
+let binopIR (oper, e1, e2) :Exp =
+    let left = unEx(e1)
+    let right = unEx(e2)
+
+    match oper with
+    | Absyn.PlusOp   -> Ex (BINOP (PLUS, left, right))
+    | Absyn.MinusOp  -> Ex (BINOP (MINUS, left, right))
+    | Absyn.TimesOp  -> Ex (BINOP (MUL, left, right))
+    | Absyn.DivideOp -> Ex (BINOP (DIV, left, right))
+    | _              -> failwithf "ERROR: binary operator is expected not a relational."
+
+let relopIR (oper, e1, e2) :Exp =
+    let left = unEx(e1)
+    let right = unEx(e2)
+
+    match oper with
+    // depends from the result (late binding) so use a function
+    | Absyn.EqOp   -> Cx (fun (t, f) -> CJUMP (EQ, left, right, t, f))
+    | Absyn.NeqOp  -> Cx (fun (t, f) -> CJUMP (NE, left, right, t, f))
+    | Absyn.LtOp   -> Cx (fun (t, f) -> CJUMP (LT, left, right, t, f))
+    | Absyn.LeOp   -> Cx (fun (t, f) -> CJUMP (LE, left, right, t, f))
+    | Absyn.GtOp   -> Cx (fun (t, f) -> CJUMP (GT, left, right, t, f))
+    | Absyn.GeOp   -> Cx (fun (t, f) -> CJUMP (GE, left, right, t, f))
+    | _            -> failwithf "ERROR: relational operator is expected not a binary."
+
+ // Fetch static links between the level of use (the level passed to simpleVarIR)
+ // and the level of definition - the level within the variable's access
+let simpleVarIR (access, varUsedLevel) :Exp =
+    let (defLevel, defAccess) = access
+
+    match defLevel with
+    | Top              -> failwithf "ERROR: can't pass Top level as current."
+    | Inner(_, defRef) -> let rec iter(curLevel, tempFP) =
+                              match curLevel with
+                              | Top                     -> failwithf "ERROR: failed to find level."
+                              | Inner(curLevel, curRef) -> if (defRef = curRef)
+                                                               then Frame.exp(defAccess) tempFP
+                                                               else let staticlink = List.head (Frame.formals curLevel.frame)
+                                                                    iter(curLevel.parent, Frame.exp(staticlink) tempFP)
+                          // access is defined as offset from the FP p. 156
+                          Ex (iter(varUsedLevel, TEMP(Frame.FP)))

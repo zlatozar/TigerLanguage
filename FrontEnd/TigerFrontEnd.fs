@@ -8,7 +8,7 @@ open ErrorMsg
 
 open Translate
 
-// Intermediate Language
+// 'exp' holds the intermediate-representation translation of each Tiger expression
 type TreeExp = {exp: Translate.Exp; ty: Types.Ty; name: Store.Symbol option}
 
 // Variables
@@ -104,9 +104,9 @@ let rec checkDup ((decNameList: Store.Symbol list), positions) =
 
 let getRecType (tenv, (recTy: Ty), pos) =
     match recTy with
-    | NAME (name, _) -> match Store.lookup (tenv, name) with 
+    | NAME (name, _) -> match Store.lookup (tenv, name) with
                         | Some t -> actualTy(t, pos)
-                        | _      -> error pos (sprintf 
+                        | _      -> error pos (sprintf
                                         "expecting recursive type. Can't find `%s`." (Store.name name))
                                     NIL
     | _              -> recTy
@@ -193,7 +193,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
                             | EqOp | NeqOp                           -> checkSame (tyleft, tyright, opRec.pos)
                             | GtOp | GeOp | LtOp | LeOp              -> checkSame (tyleft, tyright, opRec.pos)
                             { exp=(); ty=INT; name=None }
-                            
+
     | CallExp callRec    -> printfn "         !CallExp. %A" callRec.func
                             match Store.lookup (fenv, callRec.func) with
                             | None          -> error callRec.pos (sprintf "undefined function `%s`." (Store.name callRec.func))
@@ -205,10 +205,10 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
                                                let checkFormals (ts, es, pos) =
                                                    let le = List.length es
                                                    let lt = List.length ts
-                                                   
+
                                                    if (lt <> le) then
                                                        error pos (sprintf "%i args needed, but %i given." lt le)
-                                                   else 
+                                                   else
                                                        List.iter (fun (t, e) -> checkType(t, e.ty, pos)) (List.zip ts es)
 
                                                if actualParmL <> formalParmL
@@ -227,7 +227,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
                                             | RECORD (fieldTys, u) -> let expList = List.map (fun (_, e, _) -> transExp (venv, fenv, tenv, breakpoint, e)) recRec.fields
                                                                       let expTypes = List.map (fun {exp=_; ty=ty; name=_} -> ty) expList
                                                                       let fes = List.map (fun {exp=exp; ty=_; name=_} -> exp) expList
-                                                                      
+
                                                                       let checkRecord (ts, fs, pos) =
                                                                           let lts = List.length ts
                                                                           let lfs = List.length fs
@@ -239,7 +239,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
                                                                       checkRecord(fieldTys, expTypes, recRec.pos)
 
                                                                       { exp=(); ty=RECORD(fieldTys, u); name=Some recRec.typ }
-                                            
+
                                             | _                    -> error recRec.pos "expecting a record type."
                                                                       { exp=(); ty=NIL; name=None }
 
@@ -254,7 +254,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
                                               let arrTy = actualTy(arrayTy, arrayRec.pos)
                                               match arrTy with
                                               | ARRAY(aat, g) -> let {exp=_; ty=initTy; name=_} = transExp (venv, fenv, tenv, breakpoint, arrayRec.init)
-                                                                 
+
                                                                  checkType(aat, initTy, arrayRec.pos);
                                                                  {exp=(); ty=ARRAY(aat, g); name=(Some arrayRec.typ)}
 
@@ -391,16 +391,16 @@ and transDec (venv, fenv, tenv, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
                                                    actualAlias (ty1, pos, "") = actualAlias (ty2, pos, " ")
 
                                                let checkNames (varTy) =
-                                                   match expName with 
+                                                   match expName with
                                                    | Some name -> if (sym = name) then ()
                                                                   else match Store.lookup (tenv, name) with
                                                                        | Some t -> if areAlias (varTy, t, p) then ()
-                                                                                   else 
+                                                                                   else
                                                                                        error varDecRec.pos (sprintf "`%s` is not an alias of `%s`.
                                                                                                                             " (Store.name name) (Store.name sym))
                                                                        | _ -> error varDecRec.pos (sprintf "`%s` is not defined." (Store.name name))
                                                    | None      -> ()
-                                               
+
                                                match Store.lookup (tenv, sym) with
                                                | Some varTy -> checkNames (varTy)
                                                                checkType (varTy, expTy, p)

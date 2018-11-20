@@ -65,7 +65,7 @@ val allocLocal : Frame -> bool -> Access
 val name       : Frame -> Temp.Label
 
 // Rotine formal parameters (where to find them)
-val formals    : Frame -> Access list
+val formals   : Frame -> Access list
 
 val tempMap   : Register Temp.Table
 val tempName  : Temp.Temp -> string
@@ -73,6 +73,8 @@ val tempName  : Temp.Temp -> string
 val string : Tree.Label * string -> string
 
 val externalCall : string * Tree.Exp list -> Tree.Exp
+
+// Executing code when enter the procedure and on exit
 
 // val procEntryExit1 : Frame * Tree.Stm -> Tree.Stm
 
