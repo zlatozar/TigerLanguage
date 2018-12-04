@@ -8,7 +8,7 @@ open ErrorMsg
 
 open Translate
 
-// 'exp' holds the intermediate-representation translation of each Tiger expression
+// 'exp' holds the intermediate-representation(IR) translation of each Tiger expression
 type TreeExp = {exp: Translate.Exp; ty: Types.Ty; name: Store.Symbol option}
 
 // Variables
@@ -112,7 +112,7 @@ let getRecType (tenv, (recTy: Ty), pos) =
     | _              -> recTy
 
 // ______________________________________________________________________________
-//                               Type checker and intermidate languge translator
+//                               Type checker and intermidate representation(IR)
 
 let rec transVar ((venv: VEnv), fenv, tenv, breakpoint, (var: Absyn.TVar)) :TreeExp =
     // do not forget to return actual type
@@ -134,8 +134,8 @@ let rec transVar ((venv: VEnv), fenv, tenv, breakpoint, (var: Absyn.TVar)) :Tree
                                                           | []           -> error pos (sprintf "field `%s` is not a member of that record type." (Store.name record))
                                                                             { exp=(); ty=NIL; name=None }
                                                           | (s, t)::rest -> if (s = record)
-                                                                            then { exp=(); ty=actualTy (getRecType (tenv, t, pos), pos); name=None }
-                                                                            else findField record rest
+                                                                                then { exp=(); ty=actualTy (getRecType (tenv, t, pos), pos); name=None }
+                                                                                else findField record rest
 
                                                       findField sym fieldTys
 

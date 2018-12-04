@@ -162,6 +162,7 @@ let registers = List.map (fun (_, name) -> name) (argRegs @ callerSaves @ callee
 *)
 
 // Turns a Frame.Access into the Tree expression.
+// Use it to reach a variable/expression result.
 //
 // For a simple variable 'v' declared in the current procedure's stack frame,
 // 'k' is the offset of 'v' within the frame and 'tempFP' is the frame pointer register (p. 154).

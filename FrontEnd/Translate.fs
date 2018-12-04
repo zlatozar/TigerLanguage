@@ -1,12 +1,11 @@
 module Translate
 
 open Tree
-open Frame
 
 // ____________________________________________________________________________
 //                                                                       Types
 
-// Result type
+// Result type. Tree.Exp is a subset.
 type Exp =
     | Ex of Tree.Exp   // value that could be assigned
     | Nx of Tree.Stm   // no value, can't assing
@@ -39,6 +38,7 @@ let private blockCode stmList =
     | []      -> failwithf "ERROR: Instruction chunk can't be empty."
     | x :: xs -> cons x xs
 
+// To use an IR as an Ex, call this function
 let unEx e =
     match e with
     | Ex exp        -> exp
@@ -46,7 +46,7 @@ let unEx e =
                        let t = Temp.newLabel
                        let f = Temp.newLabel
 
-                       ESEQ(blockCode [ MOVE(TEMP r, CONST 1); // side effect
+                       ESEQ(blockCode [ MOVE(TEMP r, CONST 1); // side effect, preset TEMP r
                                          genStmFunc(t, f);
 
                                        LABEL f;
@@ -55,8 +55,10 @@ let unEx e =
                                        LABEL t],
                             TEMP r)                             // result
 
-    | Nx s          -> ESEQ(s, CONST 0)
+    | Nx s          -> ESEQ(s, CONST 0) // CONST 0, because s do not return value.
+                                        // Could be interpret as false.
 
+//  To use an IR as an Nx, call this function
 let unNx e =
     match e with
     | Ex exp        -> EXP exp
@@ -65,6 +67,7 @@ let unNx e =
                        LABEL t
     | Nx s          -> s
 
+//  To use an IR as an Cx, call this function
 let unCx e =
     match e with
     | Ex (CONST 0)  -> fun _ f -> JUMP (NAME f, [f])  // Tip: This two are needed because CJUMP requires two expressions
@@ -77,7 +80,7 @@ let outermost = Top
 
 type FuncInfo = { parent: Level; name: Temp.Label; formals: bool list }
 
-// When enter a new inner function
+// When enter a new nested function
 let newLevel (funInfo: FuncInfo) =
     Inner ({ parent=funInfo.parent;
              frame=Frame.newFrame {name=funInfo.name; formalsEsc=true::funInfo.formals}
@@ -95,21 +98,57 @@ let allocLocal (level: Level) escape =
     | Inner (innerRec, _) -> (level, Frame.allocLocal innerRec.frame escape)
 
 // ____________________________________________________________________________
-//                                             Intermediate Representation (IR)
+//                     IR is independent of the details of the source language
 
 // Contains list of defined procedures or strings
 let fragList :Frame.Frag list ref =
     ref []
 
-// IR is independent of the details of the source language.
+// Tip: How to design Translate.fs? Specify how every Tiger language expression should be translated.
 
-// Tip: How to design Translate.fs? Specify how every Tiger language construction should be translated.
+// ____________________________________________________________________________
+//                                                            transVar section
+
+// Must produce a chain of MEMs as fetch static links between the level of use
+// (the level passed to simpleVarIR) and the level of definition - the level
+// within the variable's access.
+let simpleVarIR (access, varUsedLevel) :Exp =
+    let (defLevel, defAccess) = access
+
+    match defLevel with
+    | Top              -> failwithf "ERROR: can't pass Top level as current."
+    | Inner(_, defRef) -> let rec iter(curLevel, offsetAcc) =
+                              match curLevel with
+                              | Top                     -> failwithf "ERROR: failed to find level."
+                              | Inner(curLevel, curRef) -> if (defRef = curRef)
+                                                               then Frame.exp(defAccess) offsetAcc
+                                                               else let staticlink = List.head (Frame.formals curLevel.frame)
+                                                                    // MEM(BINOP(PLUS, (MEM(BINOP(PLUS, ... (MEM(BINOP(PLUS, TEMP(Frame.FP), CONST(k))...)
+                                                                    iter(curLevel.parent, Frame.exp(staticlink) offsetAcc)
+                          // access is defined as offset from the FP p. 156
+                          Ex (iter(varUsedLevel, TEMP(Frame.FP)))
+
+// MEM (BINOP (PLUS, ex1, ex2) as +(ex1, ex2)
+let private memplus (ex1:Tree.Exp, ex2:Tree.Exp) = MEM (BINOP (PLUS, ex1, ex2))
+
+// All records and array values are pointers to record and array structures.
+// The base address(pBase) of the array is really the contents of a pointer variable,
+// so MEM is required to fetch this base address p. 159
+let fieldVar (pBase, sym, fieldList) :Exp =
+    // Pre-condition: sym should be member of the record (fieldList) is handled
+    // by type checker. We assume that function return index in any cases.
+    let findindex (list) = List.findIndex (fun elm -> elm = sym) list
+
+    Ex (memplus (unEx(pBase), BINOP(MUL, CONST(findindex(fieldList)), CONST(Frame.WORDSIZE))))
+
+let subscriptVarIR (pBase, offset) :Exp =
+    Ex (memplus (unEx(pBase), BINOP (MUL, unEx(offset), CONST(Frame.WORDSIZE))))
+
+// ____________________________________________________________________________
+//                                                            transExp section
 
 // CONST represents integer
 let intIR (n: int) :Exp = Ex (CONST n)
-
-// nil is just CONS 0
-let nilIR :Exp = Ex (CONST 0)
 
 // Try to find same string to reuse it or create new one
 let strIR (newString: string) :Exp =
@@ -123,7 +162,14 @@ let strIR (newString: string) :Exp =
                                               fragList := (Frame.STRING(newLabel, newString) :: !fragList)
                                               Ex (NAME newLabel)
 
-// Binary and Relational
+// nil is just CONS 0
+let nilIR :Exp = Ex (CONST 0)
+
+let breakIR (label) :Exp = Nx (JUMP(NAME label, [label]))
+
+// Assign do not return value
+let assignIR (lhs, rhs) :Exp = Nx (MOVE(unEx(lhs), unEx(rhs)))
+
 let binopIR (oper, e1, e2) :Exp =
     let left = unEx(e1)
     let right = unEx(e2)
@@ -149,19 +195,145 @@ let relopIR (oper, e1, e2) :Exp =
     | Absyn.GeOp   -> Cx (fun (t, f) -> CJUMP (GE, left, right, t, f))
     | _            -> failwithf "ERROR: relational operator is expected not a binary."
 
- // Fetch static links between the level of use (the level passed to simpleVarIR)
- // and the level of definition - the level within the variable's access
-let simpleVarIR (access, varUsedLevel) :Exp =
-    let (defLevel, defAccess) = access
+let strEQ (str1, str2) = Ex (Frame.externalCall("stringEqual", [unEx(str1); unEx(str2)]))
+let strNEQ (str1, str2) = Ex (BINOP(XOR, unEx (strEQ(str1, str2)), CONST(1)))
 
+// Translate a function call f(a1, ..., an) is simple, except that the static
+// link must be added as an implicit extra argument p. 166:
+//      CALL(NAME l_f, [staticLink, arg_1, ..., arg_n])
+let callIR (useLevel, defLevel, label, exps, isProcedure) :Exp =
     match defLevel with
-    | Top              -> failwithf "ERROR: can't pass Top level as current."
-    | Inner(_, defRef) -> let rec iter(curLevel, tempFP) =
-                              match curLevel with
-                              | Top                     -> failwithf "ERROR: failed to find level."
-                              | Inner(curLevel, curRef) -> if (defRef = curRef)
-                                                               then Frame.exp(defAccess) tempFP
-                                                               else let staticlink = List.head (Frame.formals curLevel.frame)
-                                                                    iter(curLevel.parent, Frame.exp(staticlink) tempFP)
-                          // access is defined as offset from the FP p. 156
-                          Ex (iter(varUsedLevel, TEMP(Frame.FP)))
+    | Top                             -> failwithf "ERROR: can't call function from top level."
+    | Inner({parent=Top; frame=_}, _) -> if isProcedure
+                                             then Nx (EXP (Frame.externalCall(Store.name label, List.map unEx exps)))
+                                             else Ex (Frame.externalCall(Store.name label, List.map unEx exps))
+
+    | _                               -> // Find the difference of static nesting depth
+                                         // between use level and definiton level
+                                         let rec depth level = match level with
+                                                               | Top                            -> 0
+                                                               | Inner({parent=p; frame=_} , _) -> 1 + depth p
+
+                                         // exclude Top level so +1
+                                         let diff = depth useLevel - depth defLevel + 1
+
+                                         let rec staticLink (d, curLevel) =
+                                             if d = 0 then TEMP Frame.FP
+                                             else
+                                                 match curLevel with
+                                                 | Top                -> failwithf "ERROR: can't find function definition."
+                                                 | Inner(innerRec, _) -> Frame.exp (List.head (Frame.formals innerRec.frame)) (staticLink(d - 1, innerRec.parent))
+
+                                         let call = CALL (NAME label, (staticLink(diff, useLevel)) :: (List.map unEx exps))
+                                         if isProcedure
+                                             then Nx (EXP(call))
+                                             else Ex (call)
+
+// See the picture on page 164
+let recordIR (fields) :Exp =
+    let r = Temp.newTemp
+    let init = MOVE(TEMP r, Frame.externalCall("allocRecord", [CONST(List.length(fields) * Frame.WORDSIZE)]))
+
+    let rec loop (fields, index) =
+        match fields with
+        | []            -> []
+        | first :: rest -> MOVE(memplus(TEMP r, CONST(index * Frame.WORDSIZE)), unEx(first)) :: loop(rest, index + 1)
+
+    Ex (ESEQ (blockCode(init :: loop(fields, 0)), TEMP r))
+
+let array (size, init) :Exp = Ex (Frame.externalCall("initArray", [unEx(size); unEx(init)]))
+
+// Result is the last exp. Note that the last sequence
+// might be a statement, which makes the whole sequence statement.
+let sequenceIR (exps: Exp list) :Exp =
+    let len = List.length exps
+
+    match exps with
+    | []  -> Nx (EXP (CONST 0))  // () is a statement !
+    | [e] -> e
+    | _   -> let firstN = blockCode(List.map unNx (List.take (len - 1) exps))
+             let last = List.last exps
+
+             match last with
+             | Nx(s) -> Nx (SEQ (firstN, s))
+             | _     -> Ex (ESEQ (firstN, unEx(last)))
+
+let ifThenIR test then' =
+  let t = Temp.newLabel
+  let f = Temp.newLabel
+  let testStmFunc = unCx test
+
+  Nx (blockCode [ testStmFunc t f;
+                LABEL t;
+                  unNx then';
+                LABEL f])
+
+let ifThenElse test thenStm elseStm =
+  let t = Temp.newLabel
+  let f = Temp.newLabel
+  let join = Temp.newLabel
+
+  let testStmFunc = unCx test
+
+  match thenStm, elseStm with
+  | Nx thenStm', Nx elseStm' -> Nx (blockCode [ testStmFunc t f;
+
+                                               LABEL t;
+                                                 thenStm';
+                                                 JUMP (NAME join, [join]);
+
+                                               LABEL f;
+                                                 elseStm';
+
+                                               LABEL join])
+  //  (e1 & e2 | e3)
+  | Cx thenStmFunc, Cx elseStmFunc -> let y = Temp.newLabel
+                                      let z = Temp.newLabel
+
+                                      Cx (fun (t, f) ->  blockCode [ testStmFunc z y;
+
+                                                                   LABEL z;
+                                                                     thenStmFunc(t, y);
+
+                                                                   LABEL y;
+                                                                     elseStmFunc(t, f)])
+
+  // (e1 & e2)
+  | Cx thenStmFunc, elseStm -> let y = Temp.newLabel
+                               let z = Temp.newLabel
+                               let elseExp = unEx elseStm
+
+                               Cx (fun (t, f) -> blockCode [ testStmFunc z y;
+
+                                                           LABEL z;
+                                                             thenStmFunc (t, f);
+
+                                                           LABEL y;
+                                                             CJUMP (NE, CONST 0, elseExp, t, f)])
+
+  // (e1 | e3)
+  | thenStm, Cx elseStmFunc -> let y = Temp.newLabel
+                               let z = Temp.newLabel
+                               let thenExp = unEx thenStm
+
+                               Cx (fun (t, f) -> blockCode [ testStmFunc z y;
+
+                                                           LABEL y;
+                                                             CJUMP (NE, CONST 0, thenExp, t, f);
+
+                                                           LABEL z;
+                                                             elseStmFunc(t, f)])
+
+  | thenStm, elseStm -> let r = Temp.newTemp
+                        let t = Temp.newLabel
+                        let f = Temp.newLabel
+
+                        let thenExp = unEx thenStm
+                        let elseExp = unEx elseStm
+
+                        Ex (ESEQ (blockCode [ MOVE (TEMP r, thenExp);
+                                              testStmFunc t f;
+                                            LABEL f;
+                                              MOVE (TEMP r, elseExp);
+                                            LABEL t],
+                                  TEMP r))

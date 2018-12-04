@@ -61,6 +61,9 @@ storing the sum in register `$fp`.
 
 _Tree language_ instructions should be understood very well before start implementing translation.
 
+NOTE: IR tree is a program representation; can be executed directly by an interpreter. Execution
+is a tree traversal and jumps to labels.
+
 #### Stm
 
 - with `SEQ` could be created instruction sequences via **CONSing**.
@@ -95,9 +98,9 @@ blockCode [ ...
    to be the current machine code address. Execution jumps to that label and start executing the code that _follows_.
    Look at `NAME(label)` as a _reference_ to the given label. See previous example.
 
-- `MOVE` is used to **store** results. That's way it has two forms:
+- `MOVE` is used to **store** results(assignments). That's way it has two forms:
    * `MOVE(TEMP r, exp)` evaluates the expression and store the result in _register r_.
-   * `MOVE(MEM exp1, exp2)` First evaluate _exp1_ yielding address `addr`. Then evaluate _exp2_ and
+   * `MOVE(MEM exp1, exp2)` First evaluate _exp1_ yielding address `addr`(store location). Then evaluate _exp2_ and
      store the result into _wordSize_(defined in Frame interface) bytes of memory **starting** at `addr`.
 
 - `EXP` evaluate given expression and **discards** the result.
@@ -107,13 +110,13 @@ blockCode [ ...
 #### Exp
 
 - `MEM(e)` when is used as the **left child** of a `MOVE`, it means _"store"_, but anywhere else it means
-  **"fetch"** - take the contents of _WORDSIZE_ bytes of memory from address `e`!
+  **"fetch"** - take the contents of _WORDSIZE_ bytes of memory from address `e`! In other words:
+   Computes value of `e` and looks up contents of memory at that address.
 
 - `CALL(exp, params)` first execute `exp` to infer function name then calls it with given parameters.
 
-- `ESEQ(stm, exp)` statement is evaluated for side effects (do not return value), then _exp_ is evaluated for a result.
-
-- `ESEQ(stm, exp)` statement is evaluated for side effects (do not return value), then _exp_ is evaluated for a result.
+- `ESEQ(stm, exp)` statement is evaluated for **side effects** (do not return value), then _exp_ is evaluated for a result.
+   Evaluates an expression `exp` **after** completion of a statement `stm` that might affect result of `exp`.
 
 ### Translation example
 
@@ -127,6 +130,29 @@ Note: `t` and `f` are labels.
 
 Tip: The _"wise"_ assignment of variables to caller/callee-save registers is an important
      compiler optimization (backed  up  by **data-flow analysis** techniques).
+
+### Example
+
+```
+n = 0;
+while (n < 10) {
+   n = n + 1
+}
+```
+
+```
+SEQ(
+    MOVE(TEMP(n), CONST(0)),
+  LABEL(HEAD),
+    CJUMP(LT(TEMP(n), CONST(10)),
+          BODY, END),
+  LABEL(BODY),
+    MOVE(TEMP(n), ADD(TEMP(n),
+         CONST(1))),
+    JUMP(NAME(HEAD)),
+  LABEL(END)
+)
+```
 
 ### Function IR definition
 
