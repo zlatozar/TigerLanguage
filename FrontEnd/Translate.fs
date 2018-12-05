@@ -35,7 +35,7 @@ let private blockCode stmList =
         | stm :: stms -> SEQ (x, cons stm stms)
 
     match stmList with
-    | []      -> failwithf "ERROR: Instruction chunk can't be empty."
+    | []      -> EXP (CONST 0)
     | x :: xs -> cons x xs
 
 // To use an IR as an Ex, call this function
@@ -46,17 +46,17 @@ let unEx e =
                        let t = Temp.newLabel
                        let f = Temp.newLabel
 
-                       ESEQ(blockCode [ MOVE(TEMP r, CONST 1); // side effect, preset TEMP r
+                       ESEQ(blockCode [ MOVE (TEMP r, CONST 1); // side effect, preset TEMP r
                                          genStmFunc(t, f);
 
                                        LABEL f;
                                          MOVE(TEMP r, CONST 0);
 
                                        LABEL t],
-                            TEMP r)                             // result
+                            TEMP r)                              // result
 
-    | Nx s          -> ESEQ(s, CONST 0) // CONST 0, because s do not return value.
-                                        // Could be interpret as false.
+    | Nx s          -> ESEQ (s, CONST 0) // CONST 0, because s do not return value.
+                                         // Could be interpret as false.
 
 //  To use an IR as an Nx, call this function
 let unNx e =
@@ -139,10 +139,10 @@ let fieldVar (pBase, sym, fieldList) :Exp =
     // by type checker. We assume that function return index in any cases.
     let findindex (list) = List.findIndex (fun elm -> elm = sym) list
 
-    Ex (memplus (unEx(pBase), BINOP(MUL, CONST(findindex(fieldList)), CONST(Frame.WORDSIZE))))
+    Ex (memplus (unEx pBase, BINOP(MUL, CONST(findindex(fieldList)), CONST(Frame.WORDSIZE))))
 
 let subscriptVarIR (pBase, offset) :Exp =
-    Ex (memplus (unEx(pBase), BINOP (MUL, unEx(offset), CONST(Frame.WORDSIZE))))
+    Ex (memplus (unEx pBase, BINOP (MUL, unEx offset, CONST(Frame.WORDSIZE))))
 
 // ____________________________________________________________________________
 //                                                            transExp section
@@ -168,11 +168,11 @@ let nilIR :Exp = Ex (CONST 0)
 let breakIR (label) :Exp = Nx (JUMP(NAME label, [label]))
 
 // Assign do not return value
-let assignIR (lhs, rhs) :Exp = Nx (MOVE(unEx(lhs), unEx(rhs)))
+let assignIR (lhs, rhs) :Exp = Nx (MOVE (unEx lhs, unEx rhs))
 
 let binopIR (oper, e1, e2) :Exp =
-    let left = unEx(e1)
-    let right = unEx(e2)
+    let left = unEx e1
+    let right = unEx e2
 
     match oper with
     | Absyn.PlusOp   -> Ex (BINOP (PLUS, left, right))
@@ -182,8 +182,8 @@ let binopIR (oper, e1, e2) :Exp =
     | _              -> failwithf "ERROR: binary operator is expected not a relational."
 
 let relopIR (oper, e1, e2) :Exp =
-    let left = unEx(e1)
-    let right = unEx(e2)
+    let left = unEx e1
+    let right = unEx e2
 
     match oper with
     // depends from the result (late binding) so use a function
@@ -195,7 +195,7 @@ let relopIR (oper, e1, e2) :Exp =
     | Absyn.GeOp   -> Cx (fun (t, f) -> CJUMP (GE, left, right, t, f))
     | _            -> failwithf "ERROR: relational operator is expected not a binary."
 
-let strEQ (str1, str2) = Ex (Frame.externalCall("stringEqual", [unEx(str1); unEx(str2)]))
+let strEQ (str1, str2) = Ex (Frame.externalCall("stringEqual", [unEx str1; unEx str2]))
 let strNEQ (str1, str2) = Ex (BINOP(XOR, unEx (strEQ(str1, str2)), CONST(1)))
 
 // Translate a function call f(a1, ..., an) is simple, except that the static
@@ -237,11 +237,11 @@ let recordIR (fields) :Exp =
     let rec loop (fields, index) =
         match fields with
         | []            -> []
-        | first :: rest -> MOVE(memplus(TEMP r, CONST(index * Frame.WORDSIZE)), unEx(first)) :: loop(rest, index + 1)
+        | first :: rest -> MOVE (memplus(TEMP r, CONST(index * Frame.WORDSIZE)), unEx first) :: loop(rest, index + 1)
 
     Ex (ESEQ (blockCode(init :: loop(fields, 0)), TEMP r))
 
-let array (size, init) :Exp = Ex (Frame.externalCall("initArray", [unEx(size); unEx(init)]))
+let array (size, init) :Exp = Ex (Frame.externalCall("initArray", [unEx size; unEx init]))
 
 // Result is the last exp. Note that the last sequence
 // might be a statement, which makes the whole sequence statement.
@@ -256,84 +256,143 @@ let sequenceIR (exps: Exp list) :Exp =
 
              match last with
              | Nx(s) -> Nx (SEQ (firstN, s))
-             | _     -> Ex (ESEQ (firstN, unEx(last)))
+             | _     -> Ex (ESEQ (firstN, unEx last))
 
-let ifThenIR test then' =
-  let t = Temp.newLabel
-  let f = Temp.newLabel
-  let testStmFunc = unCx test
+let ifThenIR (test, then') :Exp =
+    let t = Temp.newLabel
+    let f = Temp.newLabel
+    let testStmFunc = unCx test
 
-  Nx (blockCode [ testStmFunc t f;
-                LABEL t;
-                  unNx then';
-                LABEL f])
+    Nx (blockCode [ testStmFunc t f;
+                  LABEL t;
+                    unNx then';
+                  LABEL f])
 
-let ifThenElse test thenStm elseStm =
-  let t = Temp.newLabel
-  let f = Temp.newLabel
-  let join = Temp.newLabel
+let ifThenElseIR (test, thenStm, elseStm) :Exp =
+    let t = Temp.newLabel
+    let f = Temp.newLabel
+    let join = Temp.newLabel
 
-  let testStmFunc = unCx test
+    let testStmFunc = unCx test
 
-  match thenStm, elseStm with
-  | Nx thenStm', Nx elseStm' -> Nx (blockCode [ testStmFunc t f;
+    match thenStm, elseStm with
+    | Nx thenStm', Nx elseStm' -> Nx (blockCode [ testStmFunc t f;
 
-                                               LABEL t;
-                                                 thenStm';
-                                                 JUMP (NAME join, [join]);
+                                                 LABEL t;
+                                                   thenStm';
+                                                   JUMP (NAME join, [join]);
 
-                                               LABEL f;
-                                                 elseStm';
+                                                 LABEL f;
+                                                   elseStm';
 
-                                               LABEL join])
-  //  (e1 & e2 | e3)
-  | Cx thenStmFunc, Cx elseStmFunc -> let y = Temp.newLabel
-                                      let z = Temp.newLabel
+                                                 LABEL join])
+    //  (e1 & e2 | e3)
+    | Cx thenStmFunc, Cx elseStmFunc -> let y = Temp.newLabel
+                                        let z = Temp.newLabel
 
-                                      Cx (fun (t, f) ->  blockCode [ testStmFunc z y;
+                                        Cx (fun (t, f) ->  blockCode [ testStmFunc z y;
 
-                                                                   LABEL z;
-                                                                     thenStmFunc(t, y);
+                                                                     LABEL z;
+                                                                       thenStmFunc(t, y);
 
-                                                                   LABEL y;
-                                                                     elseStmFunc(t, f)])
+                                                                     LABEL y;
+                                                                       elseStmFunc(t, f)])
 
-  // (e1 & e2)
-  | Cx thenStmFunc, elseStm -> let y = Temp.newLabel
-                               let z = Temp.newLabel
-                               let elseExp = unEx elseStm
+    // (e1 & e2)
+    | Cx thenStmFunc, elseStm -> let y = Temp.newLabel
+                                 let z = Temp.newLabel
+                                 let elseExp = unEx elseStm
 
-                               Cx (fun (t, f) -> blockCode [ testStmFunc z y;
+                                 Cx (fun (t, f) -> blockCode [ testStmFunc z y;
 
-                                                           LABEL z;
-                                                             thenStmFunc (t, f);
+                                                             LABEL z;
+                                                               thenStmFunc (t, f);
 
-                                                           LABEL y;
-                                                             CJUMP (NE, CONST 0, elseExp, t, f)])
+                                                             LABEL y;
+                                                               CJUMP (NE, CONST 0, elseExp, t, f)])
 
-  // (e1 | e3)
-  | thenStm, Cx elseStmFunc -> let y = Temp.newLabel
-                               let z = Temp.newLabel
-                               let thenExp = unEx thenStm
+    // (e1 | e3)
+    | thenStm, Cx elseStmFunc -> let y = Temp.newLabel
+                                 let z = Temp.newLabel
+                                 let thenExp = unEx thenStm
 
-                               Cx (fun (t, f) -> blockCode [ testStmFunc z y;
+                                 Cx (fun (t, f) -> blockCode [ testStmFunc z y;
 
-                                                           LABEL y;
-                                                             CJUMP (NE, CONST 0, thenExp, t, f);
+                                                             LABEL y;
+                                                               CJUMP (NE, CONST 0, thenExp, t, f);
 
-                                                           LABEL z;
-                                                             elseStmFunc(t, f)])
+                                                             LABEL z;
+                                                               elseStmFunc(t, f)])
 
-  | thenStm, elseStm -> let r = Temp.newTemp
-                        let t = Temp.newLabel
-                        let f = Temp.newLabel
+    | thenStm, elseStm -> let r = Temp.newTemp
+                          let t = Temp.newLabel
+                          let f = Temp.newLabel
 
-                        let thenExp = unEx thenStm
-                        let elseExp = unEx elseStm
+                          let thenExp = unEx thenStm
+                          let elseExp = unEx elseStm
 
-                        Ex (ESEQ (blockCode [ MOVE (TEMP r, thenExp);
-                                              testStmFunc t f;
-                                            LABEL f;
-                                              MOVE (TEMP r, elseExp);
-                                            LABEL t],
-                                  TEMP r))
+                          Ex (ESEQ (blockCode [ MOVE (TEMP r, thenExp);
+                                                testStmFunc t f;
+
+                                              LABEL f;
+                                                MOVE (TEMP r, elseExp);
+
+                                              LABEL t],
+                                    TEMP r))
+
+let whileIR test =
+    let testLabel = Temp.newLabel
+    let bodyLabel = Temp.newLabel
+    let doneLabel = Temp.newLabel
+
+    let testStmFunc = unCx test
+
+    fun body -> let bodyStm = unNx body
+                Nx (blockCode [
+                              LABEL testLabel;
+                                testStmFunc bodyLabel doneLabel;
+
+                              LABEL bodyLabel;
+                                bodyStm;
+                                JUMP (NAME testLabel, [testLabel]);
+
+                              LABEL doneLabel
+                              ])
+
+let forIR (var, lo, hi) =
+    let testLabel = Temp.newLabel
+    let bodyLabel = Temp.newLabel
+
+    let varExp = unEx var
+    let loExp = unEx lo
+    let hiExp = unEx hi
+
+    let doneLabel = Temp.newLabel
+
+    fun body -> let bodyStm = unNx body
+                Nx (blockCode [ MOVE (varExp, loExp);
+                                CJUMP (LE, varExp, hiExp, bodyLabel, doneLabel);
+
+                              LABEL bodyLabel;
+                                bodyStm;
+                                CJUMP (LT, varExp, hiExp, testLabel, doneLabel);
+
+                              LABEL testLabel;
+                                MOVE (varExp, BINOP(PLUS, varExp, CONST 1));
+                                JUMP (NAME bodyLabel, [bodyLabel]);
+
+                              LABEL doneLabel])
+
+let letIR (decs, body) :Exp =
+    match List.length decs with
+    | 0 -> body
+    | 1 -> Ex (ESEQ (unNx (List.head decs), unEx body))
+    | _ -> let s = List.map unNx decs
+           Ex (ESEQ (blockCode s, unEx body))
+
+let procEntryExit (level: Level, body) =
+    match level with
+    | Top                                -> failwithf "Function declaration should not happen in top level."
+    | Inner({parent=_; frame=frame'}, _) -> let body' =
+                                               Frame.procEntryExit1 (frame', MOVE (TEMP Frame.RV, unEx body))
+                                            fragList := Frame.PROC{body=body'; frame=frame'} :: !fragList

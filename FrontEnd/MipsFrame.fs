@@ -7,7 +7,7 @@ type Access =
     | InReg of Temp.Temp
 
 type Frame = { name: Temp.Label; formals: Access list;
-               locals: int ref; instrs: Tree.Stm list }
+               locals: int ref; viewShiftInstr: Tree.Stm list }
 
 type Register = string
 
@@ -94,7 +94,7 @@ let RA = Temp.newTemp // Return Adderss
 // Constant 0
 let ZERO = R0
 
-let specialRegs = [
+let specialRegsMap = [
     (RV, "$v0");
     (V1, "$v1");
     (R0, "$zero");
@@ -106,17 +106,17 @@ let specialRegs = [
     (FP, "$fp");
     (RA, "$ra")]
 
-let argRegs = [
+let argRegsMap = [
     (A0, "$a0");
     (A1, "$a1");
     (A2, "$a2");
     (A3, "$a3")]
 
-let argRegsNum = List.length argRegs
-let argumentRegs = List.map (fun (r, _) -> r) argRegs
+let argRegsNum = List.length argRegsMap
+let argRegs = List.map (fun (r, _) -> r) argRegsMap
 
 // May be NOT overritten by called procedures
-let calleeSaves = [
+let calleeSavesMap = [
     (S0, "$s0");
     (S1, "$s1");
     (S2, "$s2");
@@ -126,8 +126,10 @@ let calleeSaves = [
     (S6, "$s6");
     (S7, "$s7")]
 
+let calleeSaves = List.map (fun (temp, _) -> temp) calleeSavesMap
+
 // May be overritten by called procedures
-let callerSaves = [
+let callerSavesMap = [
     (T0, "$t0");
     (T1, "$t1");
     (T2, "$t2");
@@ -139,8 +141,10 @@ let callerSaves = [
     (T8, "$t8");
     (T9, "$t9")]
 
+let callerSaves = List.map (fun (temp, _) -> temp) callerSavesMap
+
 // A list of all register name, which can be used for coloring
-let registers = List.map (fun (_, name) -> name) (argRegs @ callerSaves @ calleeSaves)
+let registers = List.map (fun (_, name) -> name) (argRegsMap @ callerSavesMap @ calleeSavesMap)
 
 (*
   MIPS frame
@@ -188,11 +192,11 @@ let newFrame (frameRec: FrameRec) =
 
     // calculate offset from FP
     let calcOffset (param, reg) = MOVE (exp param (TEMP FP), TEMP reg)
-    let shiftInstrs = List.map calcOffset (List.zip funcParams argumentRegs)
+    let shiftInstrs = List.map calcOffset (List.zip funcParams argRegs)
 
     // For functions with more than 4 paramters, we just give up
     if n <= argRegsNum
-        then { name=frameRec.name; formals=funcParams; locals=ref 0; instrs=shiftInstrs }
+        then { name=frameRec.name; formals=funcParams; locals=ref 0; viewShiftInstr=shiftInstrs }
         else failwithf "ERROR: Too many function arguments: %d." n
 
 // Allocate a local variable in given frame or in register if not escapes
@@ -209,7 +213,7 @@ let name (frame: Frame) = frame.name
 let formals (frame: Frame) = frame.formals
 
 let tempMap =
-    (argRegs @ callerSaves @ calleeSaves) |>
+    (argRegsMap @ callerSavesMap @ calleeSavesMap) |>
         List.fold (fun table (k, v) -> Temp.Table.enter table k v) Temp.Table.empty
 
 let tempName t =
@@ -221,6 +225,26 @@ let string (label, str) =  sprintf "%s: .asciiz \"%s\"\n" (Store.name label) str
 
 let externalCall (name, args) = CALL (NAME (Temp.namedLabel name), args)
 
+let private blockCode stmList =
+    let rec cons x xs =
+        match xs with
+        | []          -> x
+        | [s]         -> SEQ (x, s)
+        | stm :: stms -> SEQ (x, cons stm stms)
+
+    match stmList with
+    | []      -> EXP (CONST 0)
+    | x :: xs -> cons x xs
+
 // For each incoming register parameter, move it to the place
 // from which it is seen from within the function. This could be
 // a frame location (for escaping parameters) or a fresh temporary.
+let procEntryExit1 (frame: Frame, body: Stm) :Stm =
+    let args = frame.viewShiftInstr
+
+    let pairs = List.map (fun reg -> (allocLocal frame false, reg)) (RA::calleeSaves)
+    let saves = List.map (fun (localInFrame, reg) -> MOVE (exp localInFrame (TEMP FP), TEMP reg)) pairs
+    let restores =
+        List.map (fun (localInFrame, reg) -> MOVE (TEMP reg, exp localInFrame (TEMP FP))) (List.rev pairs)
+
+    blockCode (args @ saves @ [body] @ restores)

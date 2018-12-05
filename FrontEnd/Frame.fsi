@@ -17,7 +17,7 @@ type Access =
 
 // What the frame should contain
 type Frame = { name: Temp.Label; formals: Access list;
-               locals: int ref; instrs: Tree.Stm list }
+               locals: int ref; viewShiftInstr: Tree.Stm list }
 
 // Regeters are named
 type Register = string
@@ -42,14 +42,14 @@ val SP : Temp.Temp
 val RV : Temp.Temp
 val RA : Temp.Temp
 
-val argRegs     : (Temp.Temp * Register) list
-val callerSaves : (Temp.Temp * Register) list
-val calleeSaves : (Temp.Temp * Register) list
+val argRegs     : Temp.Temp list
+val callerSaves : Temp.Temp list
+val calleeSaves : Temp.Temp list
 
 // List of all register name, which can be used for coloring
 val registers : Register list
 
-// Tip:  A variable escapes if its declared in a higher function and is used in a lower function.
+// Tip: A variable escapes if its declared in a higher function and is used in a lower function.
 
 val exp : Access -> Tree.Exp -> Tree.Exp
 
@@ -76,7 +76,7 @@ val externalCall : string * Tree.Exp list -> Tree.Exp
 
 // Executing code when enter the procedure and on exit
 
-// val procEntryExit1 : Frame * Tree.Stm -> Tree.Stm
+val procEntryExit1 : Frame * Tree.Stm -> Tree.Stm
 
 // val procEntryExit2 : frame * Assem.Instr list -> Assem.Instr list
 // val procEntryExit3 : frame * Assem.Instr list -> { prolog: string, body: Assem.instr list, epilog: string }
