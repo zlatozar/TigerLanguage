@@ -63,8 +63,7 @@ let unNx e =
     match e with
     | Ex exp        -> EXP exp
     | Cx genStmFunc -> let t = Temp.newLabel
-                       genStmFunc(t, t) |> ignore // call function and go to the end
-                       LABEL t
+                       SEQ (genStmFunc(t, t), LABEL t) // call function and go to the end
     | Nx s          -> s
 
 //  To use an IR as an Cx, call this function
@@ -80,7 +79,7 @@ let outermost = Top
 
 type FuncInfo = { parent: Level; name: Temp.Label; formals: bool list }
 
-// When enter a new nested function
+// When enter a function new level should be set
 let newLevel (funInfo: FuncInfo) =
     Inner ({ parent=funInfo.parent;
              frame=Frame.newFrame {name=funInfo.name; formalsEsc=true::funInfo.formals}
@@ -125,6 +124,7 @@ let simpleVarIR (access, varUsedLevel) :Exp =
                                                                else let staticlink = List.head (Frame.formals curLevel.frame)
                                                                     // MEM(BINOP(PLUS, (MEM(BINOP(PLUS, ... (MEM(BINOP(PLUS, TEMP(Frame.FP), CONST(k))...)
                                                                     iter(curLevel.parent, Frame.exp(staticlink) offsetAcc)
+
                           // access is defined as offset from the FP p. 156
                           Ex (iter(varUsedLevel, TEMP(Frame.FP)))
 
@@ -214,7 +214,7 @@ let callIR (useLevel, defLevel, label, exps, isProcedure) :Exp =
                                                                | Top                            -> 0
                                                                | Inner({parent=p; frame=_} , _) -> 1 + depth p
 
-                                         // exclude Top level so +1
+                                         // exclude Top level - so +1
                                          let diff = depth useLevel - depth defLevel + 1
 
                                          let rec staticLink (d, curLevel) =
@@ -226,8 +226,8 @@ let callIR (useLevel, defLevel, label, exps, isProcedure) :Exp =
 
                                          let call = CALL (NAME label, (staticLink(diff, useLevel)) :: (List.map unEx exps))
                                          if isProcedure
-                                             then Nx (EXP(call))
-                                             else Ex (call)
+                                             then Nx (EXP call)
+                                             else Ex call
 
 // See the picture on page 164
 let recordIR (fields) :Exp =
@@ -390,9 +390,11 @@ let letIR (decs, body) :Exp =
     | _ -> let s = List.map unNx decs
            Ex (ESEQ (blockCode s, unEx body))
 
+// Function declaration
+// NOTE: Doesn't returns Exp, only cause side effect as changing 'fragList'
 let procEntryExit (level: Level, body) =
     match level with
     | Top                                -> failwithf "Function declaration should not happen in top level."
     | Inner({parent=_; frame=frame'}, _) -> let body' =
                                                Frame.procEntryExit1 (frame', MOVE (TEMP Frame.RV, unEx body))
-                                            fragList := Frame.PROC{body=body'; frame=frame'} :: !fragList
+                                            fragList := Frame.PROC({body=body'; frame=frame'}) :: !fragList

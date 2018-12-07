@@ -6,8 +6,6 @@ open Types
 open Env
 open ErrorMsg
 
-open Translate
-
 // 'exp' holds the intermediate-representation(IR) translation of each Tiger expression
 type TreeExp = {exp: Translate.Exp; ty: Types.Ty; name: Store.Symbol option}
 
@@ -445,7 +443,7 @@ and transDec (venv, fenv, tenv, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
 
                                 | None                     -> let result = transExp ((List.fold addParam venv getParams), fenv, tenv, breakpoint, funDecRec.body)
                                                               checkSame (result.ty, UNIT, funDecRec.pos)
-                                                              // Traslation(using funEntry) should be returned in next phase
+                                                              // Traslation(using funEntry) should be returned in the next phase
 
                             // Return the type (sum of types of the parameters) of the funcition head
                             let functionHeader (tenv, funDecRec) :FunEntry =

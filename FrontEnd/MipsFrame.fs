@@ -150,18 +150,23 @@ let registers = List.map (fun (_, name) -> name) (argRegsMap @ callerSavesMap @ 
   MIPS frame
 
     ...                        higher addresses
-|   arg_N   |  4 + 4*N
-|   ...     |
-|   arg_1   |  8               CALLER frame
-|static link|  4
-|           |
-| saved FP  |  FP              -------------
-|           |
-|  local_1  |  FP - 4          CALLEE (current) frame
-|  local_2  |  FP - 8
-|   ...     |
-|  local_N  |  FP - 4*N
-    ...
+|   arg_N    |  4 + 4*N
+|   ...      |
+|   arg_1    |  8               CALLER frame
+|static link |  4
+|            |
+|saved old FP|  FP              -------------
+|            |
+|  local_1   |  FP - 4
+|  local_2   |  FP - 8
+|   ...      |
+|  local_N   |  FP - 4*N
+|            |
+|return addr |                 CALLEE (current) frame
+|            |
+|temporaries |
+|            |
+|saved regs  |
                                lower addresses
 *)
 
@@ -240,11 +245,11 @@ let private blockCode stmList =
 // from which it is seen from within the function. This could be
 // a frame location (for escaping parameters) or a fresh temporary.
 let procEntryExit1 (frame: Frame, body: Stm) :Stm =
-    let args = frame.viewShiftInstr
+    let args = frame.viewShiftInstr   // see args using "veiw shift" instructions
 
     let pairs = List.map (fun reg -> (allocLocal frame false, reg)) (RA::calleeSaves)
-    let saves = List.map (fun (localInFrame, reg) -> MOVE (exp localInFrame (TEMP FP), TEMP reg)) pairs
+    let savedRegs = List.map (fun (localInFrame, reg) -> MOVE (exp localInFrame (TEMP FP), TEMP reg)) pairs
     let restores =
         List.map (fun (localInFrame, reg) -> MOVE (TEMP reg, exp localInFrame (TEMP FP))) (List.rev pairs)
 
-    blockCode (args @ saves @ [body] @ restores)
+    blockCode (args @ savedRegs @ [body] @ restores)
