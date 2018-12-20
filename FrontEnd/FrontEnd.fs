@@ -1,27 +1,44 @@
 namespace Tiger
+open Translate
 
 module FrontEnd =
 
     open Env
     open TigerFrontEnd
 
-    // ______________________________________________________________________________
-    //
-
     // Standard Library
-    let baseFunEnv :Store.Table<FunEntry> = 
+    let private baseFunEnv :Store.Table<FunEntry> =
         Store.enterAll Store.empty<FunEntry> StandardLibrary.includes
 
+// ______________________________________________________________________________
+//
+
     let transFromString (str: string) =
-        transExp (baseVarEnv,
-                  baseFunEnv,
-                  baseTyEnv,
-                  None,
-                  (Tiger.Parser.fromString str))
+        // clear fragment list and define entry point (main function)
+        reset |> ignore
+
+        let main = { parent=Top; name=Temp.namedLabel "main"; formals=[] }
+        let mainLevel = newLevel(main)
+
+        let {exp=exp; ty=_} = transExp (baseVarEnv, baseFunEnv,
+                                  baseTyEnv, mainLevel,
+                                  None, (Tiger.Parser.fromString str))
+
+        // translate to IR
+        Translate.procEntryExit(mainLevel, exp)
+        Translate.getResult
 
     let transFromFile (filename: string) =
-        transExp (baseVarEnv,
-                  baseFunEnv,
-                  baseTyEnv,
-                  None,
-                  (Tiger.Parser.fromFile filename))
+        reset |> ignore
+
+        let main = { parent=Top; name=Temp.namedLabel "main"; formals=[] }
+        let mainLevel = newLevel(main)
+
+        let {exp=exp; ty=_} = transExp (baseVarEnv, baseFunEnv,
+                                  baseTyEnv, mainLevel,
+                                  None, (Tiger.Parser.fromFile filename))
+
+        // translate to IR
+        Translate.procEntryExit(mainLevel, exp)
+        Translate.getResult
+

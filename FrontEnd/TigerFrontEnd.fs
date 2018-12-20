@@ -18,14 +18,14 @@ type FEnv = Store.Table<FunEntry>
 // Types
 type TEnv = Store.Table<Types.Ty>
 
-type ProgEnv = {venv: VEnv; fenv: FEnv; tenv: TEnv}
+type ProgEnv = {venv: VEnv; fenv: FEnv; tenv: TEnv; exps: Translate.Exp list}
 
 // As marker that 'for' and 'while' should pass. Dummy for now.
 type BreakPoint = string option
 let newBreakpoint = Some "_break"
 
 // Use it to continue analysis
-let dummyTransExp = { exp=(); ty=INT; name=None }
+let errorTransExp = { exp=Translate.errExp; ty=NIL; name=None }
 
 // ______________________________________________________________________________
 //                                                              Helper functions
@@ -112,90 +112,100 @@ let getRecType (tenv, (recTy: Ty), pos) =
 // ______________________________________________________________________________
 //                               Type checker and intermidate representation(IR)
 
-let rec transVar ((venv: VEnv), fenv, tenv, breakpoint, (var: Absyn.TVar)) :TreeExp =
+let rec transVar ((venv: VEnv), fenv, tenv, level, breakpoint, (var: Absyn.TVar)) :TreeExp =
     // do not forget to return actual type
     match var with
     | SimpleVar (sym, pos)
                          -> printfn "        !SimpleVar"
                             match Store.lookup (venv, sym) with
                             | None   -> error pos (sprintf "undefined variable `%s`." (Store.name sym))
-                                        dummyTransExp
-                            | Some v -> { exp=(); ty=actualTy (v.ty, pos); name=None }
+                                        errorTransExp
+                            | Some v -> { exp=Translate.simpleVarIR(v.access, level); ty=actualTy (v.ty, pos); name=None }
 
     | FieldVar (tVar, sym, pos)
                          -> printfn "    !FieldVar"
-                            let varTy = transVar (venv, fenv, tenv, breakpoint, tVar)
+                            let variable = transVar (venv, fenv, tenv, level, breakpoint, tVar)
 
-                            match varTy.ty with
+                            match variable.ty with
                             | RECORD (fieldTys, _) -> let rec findField record fieldList =
                                                           match fieldList with
                                                           | []           -> error pos (sprintf "field `%s` is not a member of that record type." (Store.name record))
-                                                                            { exp=(); ty=NIL; name=None }
+                                                                            errorTransExp
                                                           | (s, t)::rest -> if (s = record)
-                                                                                then { exp=(); ty=actualTy (getRecType (tenv, t, pos), pos); name=None }
+                                                                                then { exp=Translate.fieldVarIR(variable.exp, sym, fieldTys);
+                                                                                       ty=actualTy (getRecType (tenv, t, pos), pos); name=None }
                                                                                 else findField record rest
 
                                                       findField sym fieldTys
 
                             | _                    -> error pos "expecting a record variable."
-                                                      dummyTransExp
+                                                      errorTransExp
 
     | SubscriptVar (tVar, e, pos)
                          -> printfn "    !SubscriptVar"
-                            let init = transExp (venv, fenv, tenv, breakpoint, e)
-                            checkInt (actualTy (init.ty, pos), pos)
+                            let index = transExp (venv, fenv, tenv, level, breakpoint, e)
+                            checkInt (actualTy (index.ty, pos), pos)
 
-                            let subcript = transVar (venv, fenv, tenv, breakpoint, tVar)
+                            let subcript = transVar (venv, fenv, tenv, level, breakpoint, tVar)
                             let arrayTy = actualTy (subcript.ty, pos)
 
                             match arrayTy with
-                            | ARRAY(ty', _) -> { exp=(); ty=ty'; name=None }
+                            | ARRAY(ty', _) -> { exp=Translate.subscriptVarIR(subcript.exp, index.exp); ty=ty'; name=None }
                             | _             -> error pos "expecting an array variable."
-                                               dummyTransExp
+                                               errorTransExp
 
-and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint), (exp: Absyn.TExp)) :TreeExp =
+and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, (breakpoint: BreakPoint), (exp: Absyn.TExp)) :TreeExp =
     match exp with
     | IntExp i           -> printfn "        !IntExp"
-                            { exp=(); ty=INT; name=None }
+                            { exp=Translate.intIR(i); ty=INT; name=None }
 
     | StringExp (str, pos)
                          -> printfn "        !StringExp"
-                            { exp=(); ty=STRING; name=None }
+                            { exp=Translate.strIR(str); ty=STRING; name=None }
 
     | NilExp             -> printfn "        !NilExp"
-                            { exp=(); ty=NIL; name=None }
+                            { exp=Translate.nilIR; ty=NIL; name=None }
 
-    | BreakExp pos       -> printfn "         !BreakExp"
+    | BreakExp pos       -> printfn "         !BreakExp" // FIXIT
                             match breakpoint with
-                            | Some _ -> ()
+                            | Some _ -> { exp=Translate.breakIR; ty=UNIT; name=None}
                             | None   -> error pos "`break` must be in a `for` or `while` expression."
-                            { exp=(); ty=UNIT; name=None }
+                                        errorTransExp
 
     | VarExp tVar        -> printfn "        !VarExp"
-                            transVar (venv, fenv, tenv, breakpoint, tVar)
+                            transVar (venv, fenv, tenv, level, breakpoint, tVar)
 
     | AssignExp assignRec
                          -> printf "         !AssignExp"
-                            let variable = transVar (venv, fenv, tenv, breakpoint, assignRec.var)
-                            let expression = transExp (venv, fenv, tenv, breakpoint, assignRec.exp)
+                            let variable = transVar (venv, fenv, tenv, level, breakpoint, assignRec.var)
+                            let expression = transExp (venv, fenv, tenv, level, breakpoint, assignRec.exp)
 
                             checkSame (variable.ty, expression.ty, assignRec.pos)
-                            { exp=(); ty=UNIT; name=None }
+                            { exp=Translate.assignIR(variable.exp, expression.exp); ty=UNIT; name=None }
 
     | OpExp opRec        -> printf "         !OpExp"
-                            let {exp=_; ty=tyleft; name=_ } = transExp (venv, fenv, tenv, breakpoint, opRec.left)
-                            let {exp=_; ty=tyright; name=_ } = transExp (venv, fenv, tenv, breakpoint, opRec.right)
+                            let {exp=leftEx; ty=tyleft; name=_ } = transExp (venv, fenv, tenv, level, breakpoint, opRec.left)
+                            let {exp=rightEx; ty=tyright; name=_ } = transExp (venv, fenv, tenv, level, breakpoint, opRec.right)
 
                             match opRec.oper with
                             | PlusOp | MinusOp | TimesOp | DivideOp  -> checkBothInt (tyleft, tyright, opRec.pos)
+                                                                        { exp=Translate.binopIR(opRec.oper, leftEx, rightEx); ty=INT; name=None }
+
                             | EqOp | NeqOp                           -> checkSame (tyleft, tyright, opRec.pos)
+                                                                        match tyleft with
+                                                                        | STRING -> if (opRec.oper = EqOp)
+                                                                                        then { exp=Translate.strEQ(leftEx, rightEx); ty=INT; name=None }
+                                                                                        else { exp=Translate.strNEQ(leftEx, rightEx); ty=INT; name=None }
+                                                                        | _      -> { exp=Translate.relopIR(opRec.oper, leftEx, rightEx); ty=INT; name=None }
+
                             | GtOp | GeOp | LtOp | LeOp              -> checkSame (tyleft, tyright, opRec.pos)
-                            { exp=(); ty=INT; name=None }
+                                                                        { exp=Translate.relopIR(opRec.oper, leftEx, rightEx); ty=INT; name=None }
+
 
     | CallExp callRec    -> printfn "         !CallExp. %A" callRec.func
                             match Store.lookup (fenv, callRec.func) with
                             | None          -> error callRec.pos (sprintf "undefined function `%s`." (Store.name callRec.func))
-                                               { exp=(); ty=NIL; name=None }
+                                               errorTransExp
 
                             | Some funEntry -> let actualParmL = List.length callRec.args
                                                let formalParmL = List.length funEntry.formals
@@ -211,20 +221,28 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
 
                                                if actualParmL <> formalParmL
                                                    then error callRec.pos (sprintf "wrong number of arguments. Expecting %i agruments but given %i." formalParmL actualParmL)
-                                                        { exp=(); ty=funEntry.result; name=None }
+                                                        errorTransExp
                                                    else
-                                                        let argExps = List.map (fun a -> transExp (venv, fenv, tenv, breakpoint, a)) callRec.args
+                                                        let argExps = List.map (fun a -> transExp (venv, fenv, tenv, level, breakpoint, a)) callRec.args
                                                         checkFormals(funEntry.formals, argExps, callRec.pos);
-                                                        { exp=(); ty=actualTy (funEntry.result, callRec.pos); name=None }
+
+                                                        let isProcedure = funEntry.result = UNIT
+                                                        let actualParams = List.map (fun elm -> elm.exp) argExps
+
+                                                        // call the function
+                                                        { exp=Translate.callIR(level, funEntry.level, funEntry.label, actualParams, isProcedure);
+                                                          ty=actualTy (funEntry.result, callRec.pos); name=None }
 
     | RecordExp recRec   -> printfn "    !RecordExp. Type: %A" recRec.typ
                             match Store.lookup (tenv, recRec.typ) with
                             | None       -> error recRec.pos (sprintf "record type `%s` is not defined." (Store.name recRec.typ))
-                                            { exp=(); ty=NIL; name=None }
+                                            errorTransExp
+
                             | Some recTy -> match actualTy (recTy, recRec.pos) with
-                                            | RECORD (fieldTys, u) -> let expList = List.map (fun (_, e, _) -> transExp (venv, fenv, tenv, breakpoint, e)) recRec.fields
+                                            | RECORD (fieldTys, u) -> let expList = List.map (fun (_, e, _) -> transExp (venv, fenv, tenv, level, breakpoint, e)) recRec.fields
+
                                                                       let expTypes = List.map (fun {exp=_; ty=ty; name=_} -> ty) expList
-                                                                      let fes = List.map (fun {exp=exp; ty=_; name=_} -> exp) expList
+                                                                      let exps = List.map (fun {exp=exp; ty=_; name=_} -> exp) expList
 
                                                                       let checkRecord (ts, fs, pos) =
                                                                           let lts = List.length ts
@@ -236,89 +254,97 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), (breakpoint: BreakPoint)
 
                                                                       checkRecord(fieldTys, expTypes, recRec.pos)
 
-                                                                      { exp=(); ty=RECORD(fieldTys, u); name=Some recRec.typ }
+                                                                      { exp=Translate.recordIR(exps); ty=RECORD(fieldTys, u); name=Some recRec.typ }
 
                                             | _                    -> error recRec.pos "expecting a record type."
-                                                                      { exp=(); ty=NIL; name=None }
+                                                                      errorTransExp
 
     | ArrayExp arrayRec  -> printfn "    !ArrayExp. Type: %A" arrayRec.typ
                             match Store.lookup (tenv, arrayRec.typ) with
                             | None         -> error arrayRec.pos (sprintf "type `%s` is not defined." (Store.name arrayRec.typ))
-                                              { exp=(); ty=UNIT; name=None }
+                                              errorTransExp
 
-                            | Some arrayTy -> let size = transExp (venv, fenv, tenv, breakpoint, arrayRec.size)
+                            | Some arrayTy -> let size = transExp (venv, fenv, tenv, level, breakpoint, arrayRec.size)
                                               checkInt (size.ty, arrayRec.pos)
 
                                               let arrTy = actualTy(arrayTy, arrayRec.pos)
                                               match arrTy with
-                                              | ARRAY(aat, g) -> let {exp=_; ty=initTy; name=_} = transExp (venv, fenv, tenv, breakpoint, arrayRec.init)
+                                              | ARRAY(aat, g) -> let {exp=initExp; ty=initTy; name=_} = transExp (venv, fenv, tenv, level, breakpoint, arrayRec.init)
 
                                                                  checkType(aat, initTy, arrayRec.pos);
-                                                                 {exp=(); ty=ARRAY(aat, g); name=(Some arrayRec.typ)}
+                                                                 {exp=Translate.arrayIR(size.exp, initExp); ty=ARRAY(aat, g); name=(Some arrayRec.typ)}
 
                                               | _             -> error arrayRec.pos "expecting an array type."
-                                                                 {exp=(); ty=NIL; name=None}
+                                                                 errorTransExp
 
-    | SeqExp expList     -> printfn "![SeqExp]"
-                            match expList with
-                            | []          -> { exp=(); ty=UNIT; name=None }
-                            | lst         -> let runExp initial e =
-                                                (transExp (venv, fenv, tenv, breakpoint, (fst e))) :: initial
+    | SeqExp expList     -> printfn "![SeqExp] (check semantics)"
+                            let exps = List.map (fun (exp, _) -> (transExp (venv, fenv, tenv, level, breakpoint, exp)).exp) expList
+                            let ty' = match exps with
+                                      | [] -> UNIT
+                                      | _  -> (transExp (venv, fenv, tenv, level, breakpoint, fst (List.last expList))).ty
 
-                                             let result = List.fold runExp [{exp=(); ty=UNIT; name=None}] lst
-                                             { exp=(); ty=(result.Head.ty); name=None }
+                            {exp=Translate.sequenceIR(exps); ty=ty'; name=None}
 
     | IfExp ifRec        -> printfn "    !IfExp"
-                            let test = transExp (venv, fenv, tenv, breakpoint, ifRec.test)
+                            let test = transExp (venv, fenv, tenv, level, breakpoint, ifRec.test)
                             if test.ty = INT then ()
                                 else error ifRec.pos "test clause expression should be an integer."
 
-                            let then' = transExp (venv, fenv, tenv, breakpoint, ifRec.then')
+                            let then' = transExp (venv, fenv, tenv, level, breakpoint, ifRec.then')
 
                             match ifRec.else' with
-                            | Some e -> let elseExp = transExp (venv, fenv, tenv, breakpoint, e)
+                            | Some e -> let elseExp = transExp (venv, fenv, tenv, level, breakpoint, e)
                                         checkSame (then'.ty, elseExp.ty, ifRec.pos)
-                                        { exp=(); ty=elseExp.ty; name=None }
+                                        { exp=Translate.ifThenElseIR(test.exp, then'.exp, elseExp.exp); ty=elseExp.ty; name=None }
+
                             | None _ -> if then'.ty = UNIT then ()
                                             else error ifRec.pos "`if/then` expression does not return a value."
-                                        { exp=(); ty=UNIT; name=None }
+                                        { exp=Translate.ifThenIR(test.exp, then'.exp); ty=UNIT; name=None }
 
     // 'break' should know that it is in a cycle
     | WhileExp whileRec  -> printfn "    !WhileExp"
-                            let test = transExp (venv, fenv, tenv,  breakpoint, whileRec.test)
+                            let test = transExp (venv, fenv, tenv,  level, breakpoint, whileRec.test)
                             if test.ty = INT then ()
                                 else error whileRec.pos "test clause in `while..do` expression should be an integer."
 
-                            let body = transExp (venv, fenv, tenv, newBreakpoint, whileRec.body)
+                            let body = transExp (venv, fenv, tenv, level, newBreakpoint, whileRec.body)
                             if body.ty = UNIT then ()
                                 else error whileRec.pos "body of the `while..do` expression does not return a value."
-                            { exp=(); ty=UNIT; name=None }
+
+                            { exp=Translate.whileIR(test.exp) body.exp; ty=UNIT; name=None }
 
     | ForExp forRec      -> printfn "    !ForExp"
-                            let lo = transExp (venv, fenv, tenv, breakpoint, forRec.lo)
-                            let hi = transExp (venv, fenv, tenv, breakpoint, forRec.hi)
+                            let lo = transExp (venv, fenv, tenv, level, breakpoint, forRec.lo)
+                            let hi = transExp (venv, fenv, tenv, level, breakpoint, forRec.hi)
                             checkBothInt (lo.ty, hi.ty, forRec.pos)
 
                             // add 'for' id in variable environment
                             let idExpPos = (fst forRec.pos + 4, snd forRec.pos)
                             let id = VarDec { name=forRec.var; escape=forRec.escape;
                                               typ=Some (Store.symbol "int", idExpPos); init=forRec.lo; pos=idExpPos}
-                            let {venv=venv'; fenv=_; tenv=_} = transDec (venv, fenv, tenv, breakpoint, id)
+                            let {venv=venv'; fenv=_; tenv=_} = transDec (venv, fenv, tenv, level, breakpoint, id)
 
-                            let body = transExp (venv', fenv, tenv, newBreakpoint, forRec.body)
+                            let body = transExp (venv', fenv, tenv, level, newBreakpoint, forRec.body)
                             if body.ty = UNIT then ()
                                 else error forRec.pos "body of the `for..to..do` expression does not return a value."
-                            { exp=(); ty=UNIT; name=None }
+
+                            match Store.lookup (venv', forRec.var) with
+                            | None   -> error forRec.pos (sprintf "Compiler bug: Can't find '%s' inital variable of `for..to..do` cycle" (Store.name forRec.var))
+                                        errorTransExp
+                            | Some v -> { exp=Translate.forIR(Translate.simpleVarIR(v.access, level), lo.exp, hi.exp) body.exp; ty=UNIT; name=None }
 
     | LetExp letRec      -> printfn "!LetExp"
                             let transCurrentDec progEnv dec =
-                               transDec (progEnv.venv, progEnv.fenv, progEnv.tenv, breakpoint, dec)
+                               let decl = transDec (progEnv.venv, progEnv.fenv, progEnv.tenv, level, breakpoint, dec)
+                               {venv=venv; fenv=fenv; tenv=tenv; exps=(progEnv.exps @ decl.exps)}
 
-                            let newProgEnv = List.fold transCurrentDec {venv=venv; fenv=fenv; tenv=tenv} letRec.decs
-                            transExp (newProgEnv.venv, newProgEnv.fenv, newProgEnv.tenv, breakpoint, letRec.body)
+                            let newProgEnv = List.fold transCurrentDec {venv=venv; fenv=fenv; tenv=tenv; exps=[]} letRec.decs
+                            let {exp=bodyExp; ty=bodyTy} = transExp (newProgEnv.venv, newProgEnv.fenv, newProgEnv.tenv, level, breakpoint, letRec.body)
+
+                            { exp=Translate.letIR(newProgEnv.exps, bodyExp); ty=bodyTy; name=None }
 
 // change environment
-and transDec (venv, fenv, tenv, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
+and transDec (venv, fenv, tenv, level, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
     match dec with
     | TypeDec typeRecList
                          -> printfn "   !TypeDec"
@@ -372,7 +398,7 @@ and transDec (venv, fenv, tenv, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
                             { venv=venv; fenv=fenv; tenv=tenv''' }
 
     | VarDec varDecRec   -> printf "    !VarDec"
-                            let {exp=_; ty=expTy; name=expName } = transExp (venv, fenv, tenv, breakpoint, varDecRec.init)
+                            let {exp=_; ty=expTy; name=expName } = transExp (venv, fenv, tenv, level, breakpoint, varDecRec.init)
 
                             // Is type specified?
                             match varDecRec.typ with
@@ -436,12 +462,12 @@ and transDec (venv, fenv, tenv, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
                                 | Some (result, resultPos) -> match Store.lookup (tenv, result) with
                                                               | None          -> error resultPos "result type of the function is undefined."
                                                               | Some resultTy -> let expResult =
-                                                                                     transExp ((List.fold addParam venv getParams), fenv, tenv, breakpoint, funDecRec.body)
+                                                                                     transExp ((List.fold addParam venv getParams), fenv, tenv, level, breakpoint, funDecRec.body)
 
                                                                                  checkSame (resultTy, expResult.ty, resultPos)
                                                                                  // Traslation(using funEntry) should be returned in next phase
 
-                                | None                     -> let result = transExp ((List.fold addParam venv getParams), fenv, tenv, breakpoint, funDecRec.body)
+                                | None                     -> let result = transExp ((List.fold addParam venv getParams), fenv, tenv, level, breakpoint, funDecRec.body)
                                                               checkSame (result.ty, UNIT, funDecRec.pos)
                                                               // Traslation(using funEntry) should be returned in the next phase
 

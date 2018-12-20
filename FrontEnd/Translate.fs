@@ -103,6 +103,10 @@ let allocLocal (level: Level) escape =
 let fragList :Frame.Frag list ref =
     ref []
 
+let reset = fragList := []
+
+let getResult = !fragList
+
 // Tip: How to design Translate.fs? Specify how every Tiger language expression should be translated.
 
 // ____________________________________________________________________________
@@ -134,10 +138,10 @@ let private memplus (ex1:Tree.Exp, ex2:Tree.Exp) = MEM (BINOP (PLUS, ex1, ex2))
 // All records and array values are pointers to record and array structures.
 // The base address(pBase) of the array is really the contents of a pointer variable,
 // so MEM is required to fetch this base address p. 159
-let fieldVar (pBase, sym, fieldList) :Exp =
+let fieldVarIR (pBase, sym, fieldList) :Exp =
     // Pre-condition: sym should be member of the record (fieldList) is handled
     // by type checker. We assume that function return index in any cases.
-    let findindex (list) = List.findIndex (fun elm -> elm = sym) list
+    let findindex (list) = List.findIndex (fun (elm, _) -> elm = sym) list
 
     Ex (memplus (unEx pBase, BINOP(MUL, CONST(findindex(fieldList)), CONST(Frame.WORDSIZE))))
 
@@ -146,6 +150,8 @@ let subscriptVarIR (pBase, offset) :Exp =
 
 // ____________________________________________________________________________
 //                                                            transExp section
+
+let errExp = Ex (CONST 0)
 
 // CONST represents integer
 let intIR (n: int) :Exp = Ex (CONST n)
@@ -241,7 +247,7 @@ let recordIR (fields) :Exp =
 
     Ex (ESEQ (blockCode(init :: loop(fields, 0)), TEMP r))
 
-let array (size, init) :Exp = Ex (Frame.externalCall("initArray", [unEx size; unEx init]))
+let arrayIR (size, init) :Exp = Ex (Frame.externalCall("initArray", [unEx size; unEx init]))
 
 // Result is the last exp. Note that the last sequence
 // might be a statement, which makes the whole sequence statement.
