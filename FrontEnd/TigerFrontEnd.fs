@@ -5,6 +5,7 @@ open Absyn
 open Types
 open Env
 open ErrorMsg
+open PrettyPrint
 
 // 'exp' holds the intermediate-representation(IR) translation of each Tiger expression
 type TreeExp = {exp: Translate.Exp; ty: Types.Ty; name: Store.Symbol option}
@@ -168,7 +169,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, (breakpoint: Brea
 
     | BreakExp pos       -> printfn "         !BreakExp" // FIXIT
                             match breakpoint with
-                            | Some _ -> { exp=Translate.breakIR; ty=UNIT; name=None}
+                            | Some _ -> { exp=Translate.breakIR(); ty=UNIT; name=None}
                             | None   -> error pos "`break` must be in a `for` or `while` expression."
                                         errorTransExp
 
@@ -395,14 +396,17 @@ and transDec (venv, fenv, tenv, level, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
                             let allTypePos =  List.map (fun (x: TypeDecRec) -> x.pos) typeRecList
                             checkDup (allTypeNames, allTypePos)
 
-                            { venv=venv; fenv=fenv; tenv=tenv''' }
+                            { venv=venv; fenv=fenv; tenv=tenv'''; exps=[] }
 
     | VarDec varDecRec   -> printf "    !VarDec"
-                            let {exp=_; ty=expTy; name=expName } = transExp (venv, fenv, tenv, level, breakpoint, varDecRec.init)
+                            let {exp=varExp; ty=expTy; name=expName } = transExp (venv, fenv, tenv, level, breakpoint, varDecRec.init)
+
+                            let acc = Translate.allocLocal level !varDecRec.escape
+                            let var = Translate.simpleVarIR(acc, level)
 
                             // Is type specified?
                             match varDecRec.typ with
-                            | Some (sym, p) -> // NOTE: Records and arrays are equal if there names are also equal
+                            | Some (sym, p) -> // Records and arrays are equal if there names are also equal
                                                let areAlias (ty1, ty2, pos) =
                                                    let rec actualAlias (ty, p, n) =
                                                        match ty with
@@ -429,83 +433,91 @@ and transDec (venv, fenv, tenv, level, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
                                                | Some varTy -> checkNames (varTy)
                                                                checkType (varTy, expTy, p)
 
-                                                               let venv' = Store.enter (venv, varDecRec.name, {ty=actualTy (expTy, p); access=()})
-                                                               { venv=venv'; fenv=fenv; tenv=tenv}
+                                                               let venv' = Store.enter (venv, varDecRec.name, {ty=actualTy (expTy, p); access=acc})
+                                                               { venv=venv'; fenv=fenv; tenv=tenv; exps=[Translate.assignIR(var, varExp)] }
 
                                                | None _     -> error p (sprintf "undefined type `%s`." (Store.name sym))
-                                                               { venv=venv; fenv=fenv; tenv=tenv }
+                                                               { venv=venv; fenv=fenv; tenv=tenv; exps=[] }
 
                             | None          -> if (expTy = NIL) then error varDecRec.pos "can't use nil." else ()
 
-                                               let venv' = Store.enter (venv, varDecRec.name, {ty=expTy; access=()})
-                                               { venv=venv'; fenv=fenv; tenv=tenv }
-
+                                               let venv' = Store.enter (venv, varDecRec.name, {ty=expTy; access=acc})
+                                               { venv=venv'; fenv=fenv; tenv=tenv; exps=[Translate.assignIR(var, varExp)] }
+    // Things to check for a function:
+    //   1. No duplicate formal names
+    //   2. Result type exists and match
+    //   3. Formal type exists and match
+    //   4. Body type checks
     | FunctionDec funDecRecList
                          -> printfn "   !!FunctionDec"
 
-                            // Parameter type checking
-                            let transParam tenv (fieldRec: FieldRec) :ParamEntry =
-                                match Store.lookup (tenv, fieldRec.typ) with
+                            // Should not contain duplicate functions name
+                            let allFuncNames = List.map (fun (x: FunDecRec) -> x.name) funDecRecList
+                            let allFuncPos = List.map (fun (x: FunDecRec) -> x.pos) funDecRecList
+                            checkDup (allFuncNames, allFuncPos)
+
+                            // Formal parameter name and type
+                            let transParam (env: TEnv) (fieldRec: FieldRec) :ParamEntry =
+                                match Store.lookup (env, fieldRec.typ) with
                                 | None   -> error fieldRec.pos (sprintf "the type of the parameter `%s` is undefined." (Store.name fieldRec.name))
-                                            { name=fieldRec.name; ty=NIL }
-                                | Some t -> { name=fieldRec.name; ty=actualTy (t, fieldRec.pos) }
+                                            { name=fieldRec.name; ty=NIL; escape=fieldRec.escape }
+                                | Some t -> { name=fieldRec.name; ty=actualTy (t, fieldRec.pos); escape=fieldRec.escape }
 
-                            // Process function body
-                            let transFun (venv, fenv, tenv, breakpoint, (funDecRec: FunDecRec), (funEntry: FunEntry)) =
+                            let functionHeader ((env: TEnv), funDecRec) :FunEntry =
+                                let paramsTy = List.map (fun p -> (transParam env p).ty) funDecRec.param
 
-                                let getParams = List.map (transParam tenv) funDecRec.param
-
-                                let addParam (venv': VEnv) (paramEntry: ParamEntry) =
-                                    Store.enter (venv', paramEntry.name, { ty=paramEntry.ty; access=() })
+                                let newLevel = Translate.newLevel { parent=level; name=funDecRec.name; formals=List.map (fun (p: FieldRec) -> !p.escape) funDecRec.param }
 
                                 match funDecRec.result with
-                                | Some (result, resultPos) -> match Store.lookup (tenv, result) with
-                                                              | None          -> error resultPos "result type of the function is undefined."
-                                                              | Some resultTy -> let expResult =
-                                                                                     transExp ((List.fold addParam venv getParams), fenv, tenv, level, breakpoint, funDecRec.body)
+                                | Some (sym, pos) -> match Store.lookup (env, sym) with
+                                                     | None          -> error pos (sprintf "type `%s` is not defined." (Store.name sym))
+                                                                        { level=newLevel; label=funDecRec.name; formals=paramsTy; result=UNIT }
 
-                                                                                 checkSame (resultTy, expResult.ty, resultPos)
-                                                                                 // Traslation(using funEntry) should be returned in next phase
+                                                     | Some resultTy -> { level=newLevel; label=funDecRec.name; formals=paramsTy; result=resultTy }
 
-                                | None                     -> let result = transExp ((List.fold addParam venv getParams), fenv, tenv, level, breakpoint, funDecRec.body)
-                                                              checkSame (result.ty, UNIT, funDecRec.pos)
-                                                              // Traslation(using funEntry) should be returned in the next phase
+                                | None            -> { level=newLevel; label=funDecRec.name; formals=paramsTy; result=UNIT }
 
-                            // Return the type (sum of types of the parameters) of the funcition head
-                            let functionHeader (tenv, funDecRec) :FunEntry =
-                                let paramsTy = List.map (fun p -> (transParam tenv p).ty) funDecRec.param
+                            // Add function header first
 
-                                match funDecRec.result with
-                                | Some (sym, pos) -> match Store.lookup (tenv, sym) with
-                                                     | None          -> error pos "undefined type."
-                                                                        { formals=paramsTy; result=UNIT }
-
-                                                     | Some resultTy -> { formals=paramsTy; result=resultTy }
-
-                                | None            -> { formals=paramsTy; result=UNIT }
-
-                            // 1. Add function header first
                             let fenv' =
                                 List.fold (fun fenv (funDecRec: FunDecRec)
                                                     -> Store.enter (fenv, funDecRec.name, functionHeader (tenv, funDecRec))) fenv funDecRecList
 
-                            // 2. Then process functions bodies and watchout for duplicate paramter names
+                            // Then process functions body
+
+                            let transBody (venv, fenv, tenv, breakpoint, (funDecRec: FunDecRec), (funEntry: FunEntry)) =
+
+                                let getParams = List.map (transParam tenv) funDecRec.param
+
+                                let addParam (env: VEnv) (paramEntry: ParamEntry) =
+                                    Store.enter (env, paramEntry.name, { ty=paramEntry.ty; access=Translate.allocLocal funEntry.level (!paramEntry.escape) })
+
+                                // result type
+                                match funDecRec.result with
+                                | Some (result, pos) -> match Store.lookup (tenv, result) with
+                                                              | None          -> error pos "result type of the function is undefined."
+                                                              | Some resultTy -> let body =
+                                                                                     transExp ((List.fold addParam venv getParams), fenv, tenv, level, breakpoint, funDecRec.body)
+
+                                                                                 checkSame (resultTy, body.ty, pos)
+                                                                                 Translate.procEntryExit (funEntry.level, body.exp)
+
+                                // procdure should not have return type
+                                | None                     -> let body = transExp ((List.fold addParam venv getParams), fenv, tenv, level, breakpoint, funDecRec.body)
+
+                                                              checkSame (body.ty, UNIT, funDecRec.pos)
+                                                              Translate.procEntryExit (funEntry.level, body.exp)
+
                             let checkFunDec (funDecRec: FunDecRec) = let allParmNames = List.map (fun (x: FieldRec) -> x.name) funDecRec.param
                                                                      let allParamPos =  List.map (fun (x: FieldRec) -> x.pos) funDecRec.param
                                                                      checkDup (allParmNames, allParamPos)
 
                                                                      match Store.lookup (fenv', funDecRec.name) with
                                                                      | None          -> error funDecRec.pos "Tiger Semantic Analysis did not find function head."
-                                                                     | Some funEntry -> transFun (venv, fenv', tenv, breakpoint, funDecRec, funEntry)
+                                                                     | Some funEntry -> transBody (venv, fenv', tenv, breakpoint, funDecRec, funEntry)
 
-                            // 3. Should not contain duplicate functions name
-                            let allFuncNames = List.map (fun (x: FunDecRec) -> x.name) funDecRecList
-                            let allFuncPos = List.map (fun (x: FunDecRec) -> x.pos) funDecRecList
-                            checkDup (allFuncNames, allFuncPos)
-
-                            // Start checking function declaration
                             List.iter checkFunDec funDecRecList
-                            { venv=venv; fenv=fenv'; tenv=tenv }
+                            { venv=venv; fenv=fenv'; tenv=tenv; exps=[] }
 
 and transTy (tenv, (ty: Absyn.TType)) :Ty =
     match ty with

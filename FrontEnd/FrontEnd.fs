@@ -17,7 +17,7 @@ module FrontEnd =
         // clear fragment list and define entry point (main function)
         reset |> ignore
 
-        let main = { parent=Top; name=Temp.namedLabel "main"; formals=[] }
+        let main = { parent=Top; name=Temp.namedLabel "__main"; formals=[] }
         let mainLevel = newLevel(main)
 
         let {exp=exp; ty=_} = transExp (baseVarEnv, baseFunEnv,
@@ -31,7 +31,7 @@ module FrontEnd =
     let transFromFile (filename: string) =
         reset |> ignore
 
-        let main = { parent=Top; name=Temp.namedLabel "main"; formals=[] }
+        let main = { parent=Top; name=Temp.namedLabel "__main"; formals=[] }
         let mainLevel = newLevel(main)
 
         let {exp=exp; ty=_} = transExp (baseVarEnv, baseFunEnv,
