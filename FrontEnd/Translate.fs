@@ -107,6 +107,8 @@ let reset = fragList := []
 
 let getResult = !fragList
 
+let newBreakpoint = Temp.newLabel
+
 // Tip: How to design Translate.fs? Specify how every Tiger language expression should be translated.
 
 // ____________________________________________________________________________

@@ -21,9 +21,8 @@ type TEnv = Store.Table<Types.Ty>
 
 type ProgEnv = {venv: VEnv; fenv: FEnv; tenv: TEnv; exps: Translate.Exp list}
 
-// As marker that 'for' and 'while' should pass. Dummy for now.
-type BreakPoint = string option
-let newBreakpoint = Some "_break"
+// int reference used to determine nest level of breaks in loops. >0 is valid.
+let breakLevel = ref 0
 
 // Use it to continue analysis
 let errorTransExp = { exp=Translate.errExp; ty=NIL; name=None }
@@ -155,7 +154,7 @@ let rec transVar ((venv: VEnv), fenv, tenv, level, breakpoint, (var: Absyn.TVar)
                             | _             -> error pos "expecting an array variable."
                                                errorTransExp
 
-and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, (breakpoint: BreakPoint), (exp: Absyn.TExp)) :TreeExp =
+and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp: Absyn.TExp)) :TreeExp =
     match exp with
     | IntExp i           -> printfn "        !IntExp"
                             { exp=Translate.intIR(i); ty=INT; name=None }
@@ -167,11 +166,10 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, (breakpoint: Brea
     | NilExp             -> printfn "        !NilExp"
                             { exp=Translate.nilIR; ty=NIL; name=None }
 
-    | BreakExp pos       -> printfn "         !BreakExp" // FIXIT
-                            match breakpoint with
-                            | Some _ -> { exp=Translate.breakIR(); ty=UNIT; name=None}
-                            | None   -> error pos "`break` must be in a `for` or `while` expression."
-                                        errorTransExp
+    | BreakExp pos       -> printfn "         !BreakExp"
+                            if (!breakLevel > 0) then ()
+                                else error pos "`break` not properly nested."
+                            { exp=Translate.breakIR(breakpoint); ty=UNIT; name=None}
 
     | VarExp tVar        -> printfn "        !VarExp"
                             transVar (venv, fenv, tenv, level, breakpoint, tVar)
@@ -304,17 +302,22 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, (breakpoint: Brea
 
     // 'break' should know that it is in a cycle
     | WhileExp whileRec  -> printfn "    !WhileExp"
+                            breakLevel := !breakLevel + 1
+
                             let test = transExp (venv, fenv, tenv,  level, breakpoint, whileRec.test)
                             if test.ty = INT then ()
                                 else error whileRec.pos "test clause in `while..do` expression should be an integer."
 
-                            let body = transExp (venv, fenv, tenv, level, newBreakpoint, whileRec.body)
+                            let body = transExp (venv, fenv, tenv, level, Translate.newBreakpoint, whileRec.body)
                             if body.ty = UNIT then ()
                                 else error whileRec.pos "body of the `while..do` expression does not return a value."
 
+                            breakLevel := !breakLevel - 1
                             { exp=Translate.whileIR(test.exp) body.exp; ty=UNIT; name=None }
 
     | ForExp forRec      -> printfn "    !ForExp"
+                            breakLevel := !breakLevel + 1
+
                             let lo = transExp (venv, fenv, tenv, level, breakpoint, forRec.lo)
                             let hi = transExp (venv, fenv, tenv, level, breakpoint, forRec.hi)
                             checkBothInt (lo.ty, hi.ty, forRec.pos)
@@ -325,10 +328,11 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, (breakpoint: Brea
                                               typ=Some (Store.symbol "int", idExpPos); init=forRec.lo; pos=idExpPos}
                             let {venv=venv'; fenv=_; tenv=_} = transDec (venv, fenv, tenv, level, breakpoint, id)
 
-                            let body = transExp (venv', fenv, tenv, level, newBreakpoint, forRec.body)
+                            let body = transExp (venv', fenv, tenv, level, Translate.newBreakpoint, forRec.body)
                             if body.ty = UNIT then ()
                                 else error forRec.pos "body of the `for..to..do` expression does not return a value."
 
+                            breakLevel := !breakLevel - 1
                             match Store.lookup (venv', forRec.var) with
                             | None   -> error forRec.pos (sprintf "Compiler bug: Can't find '%s' inital variable of `for..to..do` cycle" (Store.name forRec.var))
                                         errorTransExp

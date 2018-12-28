@@ -22,7 +22,7 @@ module FrontEnd =
 
         let {exp=exp; ty=_} = transExp (baseVarEnv, baseFunEnv,
                                   baseTyEnv, mainLevel,
-                                  None, (Tiger.Parser.fromString str))
+                                  Temp.newLabel, (Tiger.Parser.fromString str))
 
         // translate to IR
         Translate.procEntryExit(mainLevel, exp)
@@ -36,7 +36,7 @@ module FrontEnd =
 
         let {exp=exp; ty=_} = transExp (baseVarEnv, baseFunEnv,
                                   baseTyEnv, mainLevel,
-                                  None, (Tiger.Parser.fromFile filename))
+                                  Temp.newLabel, (Tiger.Parser.fromFile filename))
 
         // translate to IR
         Translate.procEntryExit(mainLevel, exp)
