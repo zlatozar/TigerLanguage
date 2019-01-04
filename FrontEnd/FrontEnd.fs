@@ -1,9 +1,9 @@
 namespace Tiger
-open Translate
 
 module FrontEnd =
 
     open Env
+    open Translate
     open TigerFrontEnd
 
     // Standard Library

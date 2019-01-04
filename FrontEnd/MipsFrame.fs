@@ -197,7 +197,9 @@ let newFrame (frameRec: FrameRec) =
 
     // calculate offset from FP
     let calcOffset (param, reg) = MOVE (exp param (TEMP FP), TEMP reg)
-    let shiftInstrs = List.map calcOffset (List.zip funcParams argRegs)
+    let shiftInstrs = Seq.zip funcParams argRegs   // could be with different length
+                      |> Seq.map calcOffset
+                      |> Seq.toList
 
     // For functions with more than 4 paramters, we just give up
     if n <= argRegsNum

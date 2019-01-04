@@ -5,7 +5,6 @@ open Absyn
 open Types
 open Env
 open ErrorMsg
-open PrettyPrint
 
 // 'exp' holds the intermediate-representation(IR) translation of each Tiger expression
 type TreeExp = {exp: Translate.Exp; ty: Types.Ty; name: Store.Symbol option}
@@ -341,7 +340,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
     | LetExp letRec      -> printfn "!LetExp"
                             let transCurrentDec progEnv dec =
                                let decl = transDec (progEnv.venv, progEnv.fenv, progEnv.tenv, level, breakpoint, dec)
-                               {venv=venv; fenv=fenv; tenv=tenv; exps=(progEnv.exps @ decl.exps)}
+                               {venv=decl.venv; fenv=decl.fenv; tenv=decl.tenv; exps=(progEnv.exps @ decl.exps)}
 
                             let newProgEnv = List.fold transCurrentDec {venv=venv; fenv=fenv; tenv=tenv; exps=[]} letRec.decs
                             let {exp=bodyExp; ty=bodyTy} = transExp (newProgEnv.venv, newProgEnv.fenv, newProgEnv.tenv, level, breakpoint, letRec.body)
