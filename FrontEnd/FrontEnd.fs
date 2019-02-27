@@ -15,10 +15,10 @@ module FrontEnd =
 
     let transFromString (str: string) =
         // clear fragment list and define entry point (main function)
-        reset |> ignore
+        // reset |> ignore
 
-        let main = { parent=Top; name=Temp.namedLabel "__main"; formals=[] }
-        let mainLevel = newLevel(main)
+        let mainMethod = { parent=Top; name=Temp.namedLabel "__main"; formals=[] }
+        let mainLevel = newLevel(mainMethod)
 
         let {exp=exp; ty=_} = transExp (baseVarEnv, baseFunEnv,
                                   baseTyEnv, mainLevel,
@@ -29,10 +29,10 @@ module FrontEnd =
         Translate.getResult
 
     let transFromFile (filename: string) =
-        reset |> ignore
+        // reset |> ignore
 
-        let main = { parent=Top; name=Temp.namedLabel "__main"; formals=[] }
-        let mainLevel = newLevel(main)
+        let mainMethod = { parent=Top; name=Temp.namedLabel "__main"; formals=[] }
+        let mainLevel = newLevel(mainMethod)
 
         let {exp=exp; ty=_} = transExp (baseVarEnv, baseFunEnv,
                                   baseTyEnv, mainLevel,
@@ -41,4 +41,3 @@ module FrontEnd =
         // translate to IR
         Translate.procEntryExit(mainLevel, exp)
         Translate.getResult
-

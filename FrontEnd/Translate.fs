@@ -103,7 +103,8 @@ let allocLocal (level: Level) escape =
 let fragList :Frame.Frag list ref =
     ref []
 
-let reset = fragList := []
+let reset =
+    fragList := []
 
 let getResult = !fragList
 
