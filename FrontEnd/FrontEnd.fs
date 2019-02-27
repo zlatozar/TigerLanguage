@@ -15,7 +15,7 @@ module FrontEnd =
 
     let transFromString (str: string) =
         // clear fragment list and define entry point (main function)
-        // reset |> ignore
+        fragList := []
 
         let mainMethod = { parent=Top; name=Temp.namedLabel "__main"; formals=[] }
         let mainLevel = newLevel(mainMethod)
@@ -25,11 +25,11 @@ module FrontEnd =
                                   Temp.newLabel, (Tiger.Parser.fromString str))
 
         // translate to IR
-        Translate.procEntryExit(mainLevel, exp)
-        Translate.getResult
+        procEntryExit(mainLevel, exp)
+        !fragList
 
     let transFromFile (filename: string) =
-        // reset |> ignore
+        fragList := []
 
         let mainMethod = { parent=Top; name=Temp.namedLabel "__main"; formals=[] }
         let mainLevel = newLevel(mainMethod)
@@ -39,5 +39,5 @@ module FrontEnd =
                                   Temp.newLabel, (Tiger.Parser.fromFile filename))
 
         // translate to IR
-        Translate.procEntryExit(mainLevel, exp)
-        Translate.getResult
+        procEntryExit(mainLevel, exp)
+        !fragList

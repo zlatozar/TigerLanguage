@@ -1,2 +1,2 @@
-/* Correct if */
+/* Correct if statement. Could be used as a first code to test code generation */
 if (10 > 20) then 30 else 40
