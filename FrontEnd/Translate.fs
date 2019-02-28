@@ -42,9 +42,9 @@ let private blockCode stmList =
 let unEx e =
     match e with
     | Ex exp        -> exp
-    | Cx genStmFunc -> let r = Temp.newTemp
-                       let t = Temp.newLabel
-                       let f = Temp.newLabel
+    | Cx genStmFunc -> let r = Temp.newTemp()
+                       let t = Temp.newLabel()
+                       let f = Temp.newLabel()
 
                        ESEQ(blockCode [ MOVE (TEMP r, CONST 1); // side effect, preset TEMP r
                                          genStmFunc(t, f);
@@ -62,7 +62,7 @@ let unEx e =
 let unNx e =
     match e with
     | Ex exp        -> EXP exp
-    | Cx genStmFunc -> let t = Temp.newLabel
+    | Cx genStmFunc -> let t = Temp.newLabel()
                        SEQ (genStmFunc(t, t), LABEL t) // call function and go to the end
     | Nx s          -> s
 
@@ -103,7 +103,7 @@ let allocLocal (level: Level) escape =
 let fragList :Frame.Frag list ref =
     ref []
 
-let newBreakpoint = Temp.newLabel
+let newBreakpoint = Temp.newLabel()
 
 // Tip: How to design Translate.fs? Specify how every Tiger language expression should be translated.
 
@@ -162,7 +162,7 @@ let strIR (newString: string) :Exp =
     match sameStr with
     | Some(Frame.STRING(existingLabel, _)) -> Ex (NAME existingLabel)
 
-    | _                                    -> let newLabel = Temp.newLabel
+    | _                                    -> let newLabel = Temp.newLabel()
                                               fragList := (Frame.STRING(newLabel, newString) :: !fragList)
                                               Ex (NAME newLabel)
 
@@ -235,7 +235,7 @@ let callIR (useLevel, defLevel, label, exps, isProcedure) :Exp =
 
 // See the picture on page 164
 let recordIR (fields) :Exp =
-    let r = Temp.newTemp
+    let r = Temp.newTemp()
     let init = MOVE(TEMP r, Frame.externalCall("allocRecord", [CONST(List.length(fields) * Frame.WORDSIZE)]))
 
     let rec loop (fields, index) =
@@ -263,8 +263,8 @@ let sequenceIR (exps: Exp list) :Exp =
              | _     -> Ex (ESEQ (firstN, unEx last))
 
 let ifThenIR (test, then') :Exp =
-    let t = Temp.newLabel
-    let f = Temp.newLabel
+    let t = Temp.newLabel()
+    let f = Temp.newLabel()
     let testStmFunc = unCx test
 
     Nx (blockCode [ testStmFunc t f;
@@ -273,9 +273,9 @@ let ifThenIR (test, then') :Exp =
                   LABEL f])
 
 let ifThenElseIR (test, thenStm, elseStm) :Exp =
-    let t = Temp.newLabel
-    let f = Temp.newLabel
-    let join = Temp.newLabel
+    let t = Temp.newLabel()
+    let f = Temp.newLabel()
+    let join = Temp.newLabel()
 
     let testStmFunc = unCx test
 
@@ -291,8 +291,8 @@ let ifThenElseIR (test, thenStm, elseStm) :Exp =
 
                                                  LABEL join])
     //  (e1 & e2 | e3)
-    | Cx thenStmFunc, Cx elseStmFunc -> let y = Temp.newLabel
-                                        let z = Temp.newLabel
+    | Cx thenStmFunc, Cx elseStmFunc -> let y = Temp.newLabel()
+                                        let z = Temp.newLabel()
 
                                         Cx (fun (t, f) ->  blockCode [ testStmFunc z y;
 
@@ -303,8 +303,8 @@ let ifThenElseIR (test, thenStm, elseStm) :Exp =
                                                                        elseStmFunc(t, f)])
 
     // (e1 & e2)
-    | Cx thenStmFunc, elseStm -> let y = Temp.newLabel
-                                 let z = Temp.newLabel
+    | Cx thenStmFunc, elseStm -> let y = Temp.newLabel()
+                                 let z = Temp.newLabel()
                                  let elseExp = unEx elseStm
 
                                  Cx (fun (t, f) -> blockCode [ testStmFunc z y;
@@ -316,8 +316,8 @@ let ifThenElseIR (test, thenStm, elseStm) :Exp =
                                                                CJUMP (NE, CONST 0, elseExp, t, f)])
 
     // (e1 | e3)
-    | thenStm, Cx elseStmFunc -> let y = Temp.newLabel
-                                 let z = Temp.newLabel
+    | thenStm, Cx elseStmFunc -> let y = Temp.newLabel()
+                                 let z = Temp.newLabel()
                                  let thenExp = unEx thenStm
 
                                  Cx (fun (t, f) -> blockCode [ testStmFunc z y;
@@ -328,9 +328,9 @@ let ifThenElseIR (test, thenStm, elseStm) :Exp =
                                                              LABEL z;
                                                                elseStmFunc(t, f)])
 
-    | thenStm, elseStm -> let r = Temp.newTemp
-                          let t = Temp.newLabel
-                          let f = Temp.newLabel
+    | thenStm, elseStm -> let r = Temp.newTemp()
+                          let t = Temp.newLabel()
+                          let f = Temp.newLabel()
 
                           let thenExp = unEx thenStm
                           let elseExp = unEx elseStm
@@ -345,9 +345,9 @@ let ifThenElseIR (test, thenStm, elseStm) :Exp =
                                     TEMP r))
 
 let whileIR test =
-    let testLabel = Temp.newLabel
-    let bodyLabel = Temp.newLabel
-    let doneLabel = Temp.newLabel
+    let testLabel = Temp.newLabel()
+    let bodyLabel = Temp.newLabel()
+    let doneLabel = Temp.newLabel()
 
     let testStmFunc = unCx test
 
@@ -364,14 +364,14 @@ let whileIR test =
                               ])
 
 let forIR (var, lo, hi) =
-    let testLabel = Temp.newLabel
-    let bodyLabel = Temp.newLabel
+    let testLabel = Temp.newLabel()
+    let bodyLabel = Temp.newLabel()
 
     let varExp = unEx var
     let loExp = unEx lo
     let hiExp = unEx hi
 
-    let doneLabel = Temp.newLabel
+    let doneLabel = Temp.newLabel()
 
     fun body -> let bodyStm = unNx body
                 Nx (blockCode [ MOVE (varExp, loExp);

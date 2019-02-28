@@ -42,52 +42,52 @@ let WORDSIZE = 4
     $ra = $r31          return address
 *)
 
-let R0 = Temp.newTemp // always zero
-let AT = Temp.newTemp // assembler temporary, reserved
+let R0 = Temp.newTemp() // always zero
+let AT = Temp.newTemp() // assembler temporary, reserved
 
-let RV = Temp.newTemp // return value from procedure call
-let V1 = Temp.newTemp
+let RV = Temp.newTemp() // return value from procedure call
+let V1 = Temp.newTemp()
 
 // Used to pass the first four arguments to routines
 
-let A0 = Temp.newTemp
-let A1 = Temp.newTemp
-let A2 = Temp.newTemp
-let A3 = Temp.newTemp
+let A0 = Temp.newTemp()
+let A1 = Temp.newTemp()
+let A2 = Temp.newTemp()
+let A3 = Temp.newTemp()
 
 // Temporary - not preserved across call
 
-let T0 = Temp.newTemp
-let T1 = Temp.newTemp
-let T2 = Temp.newTemp
-let T3 = Temp.newTemp
-let T4 = Temp.newTemp
-let T5 = Temp.newTemp
-let T6 = Temp.newTemp
-let T7 = Temp.newTemp
+let T0 = Temp.newTemp()
+let T1 = Temp.newTemp()
+let T2 = Temp.newTemp()
+let T3 = Temp.newTemp()
+let T4 = Temp.newTemp()
+let T5 = Temp.newTemp()
+let T6 = Temp.newTemp()
+let T7 = Temp.newTemp()
 
 // Saved temporary - preserved across call
 
-let S0 = Temp.newTemp
-let S1 = Temp.newTemp
-let S2 = Temp.newTemp
-let S3 = Temp.newTemp
-let S4 = Temp.newTemp
-let S5 = Temp.newTemp
-let S6 = Temp.newTemp
-let S7 = Temp.newTemp
+let S0 = Temp.newTemp()
+let S1 = Temp.newTemp()
+let S2 = Temp.newTemp()
+let S3 = Temp.newTemp()
+let S4 = Temp.newTemp()
+let S5 = Temp.newTemp()
+let S6 = Temp.newTemp()
+let S7 = Temp.newTemp()
 
-let T8 = Temp.newTemp
-let T9 = Temp.newTemp
+let T8 = Temp.newTemp()
+let T9 = Temp.newTemp()
 
 // Reserved for kernel
-let K0 = Temp.newTemp
-let K1 = Temp.newTemp
+let K0 = Temp.newTemp()
+let K1 = Temp.newTemp()
 
-let GP = Temp.newTemp // Pointer to global area
-let SP = Temp.newTemp // Stack Pointer
-let FP = Temp.newTemp // Frame Pointer
-let RA = Temp.newTemp // Return Adderss
+let GP = Temp.newTemp() // Pointer to global area
+let SP = Temp.newTemp() // Stack Pointer
+let FP = Temp.newTemp() // Frame Pointer
+let RA = Temp.newTemp() // Return Adderss
 
 // ____________________________________________________________________________
 
@@ -191,7 +191,7 @@ let newFrame (frameRec: FrameRec) =
         | ([], _)               -> []
         | (first::rest, offset) -> if first
                                        then InFrame(offset) :: placeIn (rest, offset + WORDSIZE)
-                                       else InReg(Temp.newTemp) :: placeIn (rest, offset)
+                                       else InReg(Temp.newTemp()) :: placeIn (rest, offset)
 
     let funcParams :Access list = placeIn (frameRec.formalsEsc, WORDSIZE)
 
@@ -213,7 +213,7 @@ let allocLocal (frame: Frame) (escape: bool) =
         let ret = InFrame(offSet * (-WORDSIZE))
         frame.locals := !frame.locals + 1; ret
 
-    else InReg(Temp.newTemp)
+    else InReg(Temp.newTemp())
 
 let name (frame: Frame) = frame.name
 

@@ -16,12 +16,12 @@ module Table =
 
 type Label = Store.Symbol
 
-let private temps = ref 100
-
 let newTemp =
-    let t = !temps
-    temps := t + 1
-    t
+    let temp = ref 100
+    fun () ->
+        temp := !temp + 1
+        !temp
+
 let makeString t = string t
 
 let private postInc x =
@@ -29,6 +29,10 @@ let private postInc x =
     x := i + 1
     i
 
-let private labs = ref 0
-let newLabel = Store.symbol (sprintf "L_%d" (postInc labs))
+let newLabel =
+    let labs = ref 0
+    fun () ->
+        labs := !labs + 1
+        Store.symbol (sprintf "L_%d" !labs)
+
 let namedLabel = Store.symbol

@@ -13,15 +13,15 @@ let rec indent d =
     | i  -> say " "; indent (i - 1)
 
 let rec stm(i, d) =
-    match i with 
+    match i with
     | SEQ(a, b)            -> indent d; sayln "SEQ("; stm(a, d + 1); sayln ","; stm(b, d + 1); say ")"
     | LABEL lab            -> indent d; say "LABEL "; say (Store.name lab)
     | JUMP (e, _)          -> indent d; sayln "JUMP("; exp(e, d + 1); say ")"
 
     | CJUMP(r, a, b, t, f) -> indent d; say "CJUMP("
                               relop r; sayln ","
-                              exp(a, d + 1); sayln ","; exp(b,d+1); sayln ","
-                              indent(d + 1); say(Store.name t); 
+                              exp(a, d + 1); sayln ","; exp(b, d + 1); sayln ","
+                              indent(d + 1); say(Store.name t);
                               say ","; say (Store.name f); say ")"
 
     | MOVE(a, b)           -> indent d; sayln "MOVE("; exp(a, d + 1); sayln ","
@@ -75,3 +75,8 @@ and relop i =
 
 let printTree s =
     stm(s, 0); sayln ""
+
+let printProgram (frag: Frame.Frag list) =
+    List.iter (fun f -> match f with
+                        | Frame.Frag.PROC proc     -> printTree proc.body
+                        | Frame.Frag.STRING (_, s) -> printf "%s" s) frag
