@@ -26,36 +26,36 @@ let
     function readlist() :list =
         let
 	    var any := any{any=0}
-            var i := readint(any)
+        var i := readint(any)
 
         in
-             if any.any
-                 then list{first=i, rest=readlist()}
-                 else nil
+            if any.any
+                then list{first=i, rest=readlist()}
+                else nil
         end
 
     function merge(a: list, b: list) :list =
         if a = nil
-	    then b
+	        then b
             else
-	        if b = nil
-		    then a
+	            if b = nil
+		            then a
                     else
-	                if a.first < b.first
-			    then list{first=a.first, rest=merge(a.rest,b)}
+	                    if a.first < b.first
+			                then list{first=a.first, rest=merge(a.rest,b)}
                             else list{first=b.first, rest=merge(a,b.rest)}
 
     function printint(i: int) =
         let
-	    function f(i:int) =
-                if i > 0
-	            then (f(i/10); print(chr(i-i / 10*10 + ord("0"))))
+	    function f(i: int) =
+            if i > 0
+	        then (f(i/10); print(chr(i-i / 10*10 + ord("0"))))
         in
             if i < 0
                 then (print("-"); f(-i))
                 else
-		    if i > 0
-	                then f(i)
+		            if i > 0
+	                    then f(i)
                         else print("0")
         end
 
