@@ -16,8 +16,7 @@ type Access =
     | InReg of Temp.Temp
 
 // What the frame should contain
-type Frame = { name: Temp.Label; formals: Access list;
-               locals: int ref; viewShiftInstr: Tree.Stm list }
+type Frame = { name: Temp.Label; formals: Access list; curOffset: int ref }
 
 // Regeters are named
 type Register = string
@@ -37,17 +36,21 @@ val WORDSIZE : int
 // ____________________________________________________________________________
 //
 
+// Special registers
 val FP : Temp.Temp
 val SP : Temp.Temp
 val RV : Temp.Temp
 val RA : Temp.Temp
 
 val argRegs     : Temp.Temp list
-val callerSaves : Temp.Temp list
-val calleeSaves : Temp.Temp list
+val callerSaveRegs : Temp.Temp list
+val calleeSaveRegs : Temp.Temp list
 
-// List of all register name, which can be used for coloring
+// All available(allowed to use) registers
 val registers : Register list
+
+val tempMap   : Register Temp.Table
+val tempName  : Temp.Temp -> string
 
 // Tip: A variable escapes if its declared in a higher function and is used in a lower function.
 
@@ -66,9 +69,6 @@ val name       : Frame -> Temp.Label
 
 // Rotine formal parameters (where to find them)
 val formals   : Frame -> Access list
-
-val tempMap   : Register Temp.Table
-val tempName  : Temp.Temp -> string
 
 val string : Tree.Label * string -> string
 

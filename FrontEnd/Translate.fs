@@ -17,9 +17,9 @@ and CxFunc = Temp.Label * Temp.Label -> Tree.Stm
 // Main structure
 type Level =
     | Top
-    | Inner of  InnerRec * unit ref
+    | Nested of NestedRec * unit ref
 
-and InnerRec = { parent: Level; frame: Frame.Frame }
+and NestedRec = { parent: Level; frame: Frame.Frame }
 
 // Here Level(because of nesting) should be considered
 type Access = Level * Frame.Access
@@ -81,20 +81,20 @@ type FuncInfo = { parent: Level; name: Temp.Label; formals: bool list }
 
 // When enter a function new level should be set
 let newLevel (funInfo: FuncInfo) =
-    Inner ({ parent=funInfo.parent;
+    Nested ({ parent=funInfo.parent;
              frame=Frame.newFrame {name=funInfo.name; formalsEsc=true::funInfo.formals}
            }, ref () )
 
 // Return formals associated with the frame in this level,
 // excluding the static link (first element of the list p. 127)
 let formals (level: Level) = match level with
-                             | Top                -> []
-                             | Inner(innerRec, _) -> let formalParams = List.tail innerRec.frame.formals
-                                                     List.map (fun x -> (level, x)) formalParams
+                             | Top                 -> []
+                             | Nested(innerRec, _) -> let formalParams = List.tail innerRec.frame.formals
+                                                      List.map (fun x -> (level, x)) formalParams
 let allocLocal (level: Level) escape =
     match level with
-    | Top                 -> failwithf "ERROR: locals can't exist on top level."
-    | Inner (innerRec, _) -> (level, Frame.allocLocal innerRec.frame escape)
+    | Top                  -> failwithf "ERROR: locals can't exist on top level."
+    | Nested (innerRec, _) -> (level, Frame.allocLocal innerRec.frame escape)
 
 // ____________________________________________________________________________
 //                     IR is independent of the details of the source language
@@ -117,18 +117,18 @@ let simpleVarIR (access, varUsedLevel) :Exp =
     let (defLevel, defAccess) = access
 
     match defLevel with
-    | Top              -> failwithf "ERROR: can't pass Top level as current."
-    | Inner(_, defRef) -> let rec iter(curLevel, offsetAcc) =
-                              match curLevel with
-                              | Top                     -> failwithf "ERROR: failed to find level."
-                              | Inner(curLevel, curRef) -> if (defRef = curRef)
-                                                               then Frame.exp(defAccess) offsetAcc
-                                                               else let staticlink = List.head (Frame.formals curLevel.frame)
-                                                                    // MEM(BINOP(PLUS, (MEM(BINOP(PLUS, ... (MEM(BINOP(PLUS, TEMP(Frame.FP), CONST(k))...)
-                                                                    iter(curLevel.parent, Frame.exp(staticlink) offsetAcc)
+    | Top               -> failwithf "ERROR: can't pass Top level as current."
+    | Nested(_, defRef) -> let rec iter(curLevel, offsetAcc) =
+                               match curLevel with
+                               | Top                      -> failwithf "ERROR: failed to find level."
+                               | Nested(curLevel, curRef) -> if (defRef = curRef)
+                                                                 then Frame.exp(defAccess) offsetAcc
+                                                                 else let staticlink = List.head (Frame.formals curLevel.frame)
+                                                                      // MEM(BINOP(PLUS, (MEM(BINOP(PLUS, ... (MEM(BINOP(PLUS, TEMP(Frame.FP), CONST(k))...)
+                                                                      iter(curLevel.parent, Frame.exp(staticlink) offsetAcc)
 
-                          // access is defined as offset from the FP p. 156
-                          Ex (iter(varUsedLevel, TEMP(Frame.FP)))
+                           // access is defined as offset from the FP p. 156
+                           Ex (iter(varUsedLevel, TEMP(Frame.FP)))
 
 // MEM (BINOP (PLUS, ex1, ex2) as +(ex1, ex2)
 let private memplus (ex1:Tree.Exp, ex2:Tree.Exp) = MEM (BINOP (PLUS, ex1, ex2))
@@ -207,16 +207,16 @@ let strNEQ (str1, str2) = Ex (BINOP(XOR, unEx (strEQ(str1, str2)), CONST(1)))
 //      CALL(NAME l_f, [staticLink, arg_1, ..., arg_n])
 let callIR (useLevel, defLevel, label, exps, isProcedure) :Exp =
     match defLevel with
-    | Top                             -> failwithf "ERROR: can't call function from top level."
-    | Inner({parent=Top; frame=_}, _) -> if isProcedure
-                                             then Nx (EXP (Frame.externalCall(Store.name label, List.map unEx exps)))
-                                             else Ex (Frame.externalCall(Store.name label, List.map unEx exps))
+    | Top                              -> failwithf "ERROR: can't call function from top level."
+    | Nested({parent=Top; frame=_}, _) -> if isProcedure
+                                              then Nx (EXP (Frame.externalCall(Store.name label, List.map unEx exps)))
+                                              else Ex (Frame.externalCall(Store.name label, List.map unEx exps))
 
     | _                               -> // Find the difference of static nesting depth
                                          // between use level and definiton level
                                          let rec depth level = match level with
-                                                               | Top                            -> 0
-                                                               | Inner({parent=p; frame=_} , _) -> 1 + depth p
+                                                               | Top                             -> 0
+                                                               | Nested({parent=p; frame=_} , _) -> 1 + depth p
 
                                          // exclude Top level - so +1
                                          let diff = depth useLevel - depth defLevel + 1
@@ -225,8 +225,8 @@ let callIR (useLevel, defLevel, label, exps, isProcedure) :Exp =
                                              if d = 0 then TEMP Frame.FP
                                              else
                                                  match curLevel with
-                                                 | Top                -> failwithf "ERROR: can't find function definition."
-                                                 | Inner(innerRec, _) -> Frame.exp (List.head (Frame.formals innerRec.frame)) (staticLink(d - 1, innerRec.parent))
+                                                 | Top                 -> failwithf "ERROR: can't find function definition."
+                                                 | Nested(innerRec, _) -> Frame.exp (List.head (Frame.formals innerRec.frame)) (staticLink(d - 1, innerRec.parent))
 
                                          let call = CALL (NAME label, (staticLink(diff, useLevel)) :: (List.map unEx exps))
                                          if isProcedure
@@ -397,8 +397,12 @@ let letIR (decs, body) :Exp =
 // Function declaration
 // NOTE: Doesn't returns Exp, only cause side effect as changing 'fragList'
 let procEntryExit (level: Level, body) =
-    match level with
-    | Top                                -> failwithf "Function declaration should not happen in top level."
-    | Inner({parent=_; frame=frame'}, _) -> let body' =
-                                               Frame.procEntryExit1 (frame', MOVE (TEMP Frame.RV, unEx body))
-                                            fragList := Frame.PROC({body=body'; frame=frame'}) :: !fragList
+    let levelFrame =
+        match level with
+        | Top                                 -> failwithf "Function declaration should not happen in top level."
+        | Nested({parent=_; frame=frame'}, _) -> frame'
+
+    let returnStm = MOVE (TEMP Frame.RV, unEx body)
+    let bodyStm = Frame.procEntryExit1(levelFrame, returnStm)
+    
+    fragList := Frame.PROC({body=bodyStm; frame=levelFrame}) :: !fragList

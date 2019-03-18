@@ -6,8 +6,7 @@ type Access =
     | InFrame of int
     | InReg of Temp.Temp
 
-type Frame = { name: Temp.Label; formals: Access list;
-               locals: int ref; viewShiftInstr: Tree.Stm list }
+type Frame = { name: Temp.Label; formals: Access list; curOffset: int ref }
 
 type Register = string
 
@@ -20,22 +19,34 @@ type Frag =
 and ProcRec =
     { body: Tree.Stm; frame: Frame }
 
-// Tip: The static link escapes: it needs to be kept in memory(frame)
+// Tip: The static link escapes so it needs to be kept in memory
 
 type FrameRec = { name: Temp.Label; formalsEsc: bool list }
 
 let WORDSIZE = 4
 
+let private blockCode stmList =
+    let rec cons x xs =
+        match xs with
+        | []          -> x
+        | [s]         -> SEQ (x, s)
+        | stm :: stms -> SEQ (x, cons stm stms)
+
+    match stmList with
+    | []      -> EXP (CONST 0)
+    | x :: xs -> cons x xs
+
 // ____________________________________________________________________________
 //                            All 32 MIPS instructions
 
-(*
+(*  Here is what could be used:
+
     $zero  = $r0        always value of 0
-    $v0-v1 = $r2-r3     return values (only using 1 here)
+    $v0-v1 = $r2-r3     return values (only use only V0)
     $a0-a3 = $r4-r7     function args
     $t0-t7 = $r8-r15    temps (caller saves)
     $s0-s7 = $r16-23    saved temps (callee saves)
-    $t8-t9 = $r24-25    temps (caller saves)
+    $t8-t9 = $r24-25    temps (caller saves cont.)
 
     $sp = $r29          stack pointer
     $fp = $r30          frame pointer
@@ -126,7 +137,7 @@ let calleeSavesMap = [
     (S6, "$s6");
     (S7, "$s7")]
 
-let calleeSaves = List.map (fun (temp, _) -> temp) calleeSavesMap
+let calleeSaveRegs = List.map (fun (temp, _) -> temp) calleeSavesMap
 
 // May be overritten by called procedures
 let callerSavesMap = [
@@ -141,10 +152,19 @@ let callerSavesMap = [
     (T8, "$t8");
     (T9, "$t9")]
 
-let callerSaves = List.map (fun (temp, _) -> temp) callerSavesMap
+let callerSaveRegs = List.map (fun (temp, _) -> temp) callerSavesMap
 
 // A list of all register name, which can be used for coloring
 let registers = List.map (fun (_, name) -> name) (argRegsMap @ callerSavesMap @ calleeSavesMap)
+
+let tempMap =
+    (specialRegsMap @ argRegsMap @ callerSavesMap @ calleeSavesMap) |>
+        List.fold (fun table (k, v) -> Temp.Table.enter table k v) Temp.Table.empty
+
+let tempName t =
+    match Temp.Table.look tempMap t with
+    | Some name -> name
+    | None      -> Temp.makeString t
 
 (*
   MIPS frame
@@ -174,44 +194,43 @@ let registers = List.map (fun (_, name) -> name) (argRegsMap @ callerSavesMap @ 
 // Use it to reach a variable/expression result.
 //
 // For a simple variable 'v' declared in the current procedure's stack frame,
-// 'k' is the offset of 'v' within the frame and 'tempFP' is the frame pointer register (p. 154).
-let exp loc tempFP :Exp =
+// 'k' is the offset of 'v' within the frame and 'fp' is the frame pointer register (p. 154).
+let exp loc fp :Exp =
     match loc with
-    | InFrame(k) -> MEM (BINOP (PLUS, tempFP, CONST k))
+    | InFrame(k) -> MEM (BINOP (PLUS, fp, CONST k))
     | InReg(r)   -> TEMP r
+
+// First slot is to save old $fp
+let initialOffset = -4
 
 // 'newFrame' must calculate two things:
 //   1. How the parameter will be seen from inside the function (in a register, or in a frame location);
 //   2. What instructions must be produced to implement the "view shift."
 let newFrame (frameRec: FrameRec) =
-    let n = List.length frameRec.formalsEsc
+    let offset = ref initialOffset
 
-    let rec placeIn (escapes, size) =
-        match (escapes, size) with
-        | ([], _)               -> []
-        | (first::rest, offset) -> if first
-                                       then InFrame(offset) :: placeIn (rest, offset + WORDSIZE)
-                                       else InReg(Temp.newTemp()) :: placeIn (rest, offset)
+    let rec allocLocals formalsEsc =
+        match formalsEsc with
+        | []   -> []
+        | h::t -> // Local allocs on top of stack starting from 0
+                  let access = if h
+                                   then
+                                        let ret = InFrame(!offset)
+                                        offset := !offset - WORDSIZE
+                                        ret
+                                   else InReg(Temp.newTemp())
 
-    let funcParams :Access list = placeIn (frameRec.formalsEsc, WORDSIZE)
+                  access :: allocLocals t
+    let formalAccesses = allocLocals frameRec.formalsEsc
+    { name = frameRec.name; formals = formalAccesses; curOffset = offset }
 
-    // calculate offset from FP
-    let calcOffset (param, reg) = MOVE (exp param (TEMP FP), TEMP reg)
-    let shiftInstrs = Seq.zip funcParams argRegs   // could be with different length
-                      |> Seq.map calcOffset
-                      |> Seq.toList
-
-    // For functions with more than 4 paramters, we just give up
-    if n <= argRegsNum
-        then { name=frameRec.name; formals=funcParams; locals=ref 0; viewShiftInstr=shiftInstrs }
-        else failwithf "ERROR: Too many function arguments: %d." n
-
-// Allocate a local variable in given frame or in register if not escapes
+// Allocate a local variable in given frame or in a register if not escapes
 let allocLocal (frame: Frame) (escape: bool) =
+
     if (escape) then
-        let offSet = !frame.locals + 1
-        let ret = InFrame(offSet * (-WORDSIZE))
-        frame.locals := !frame.locals + 1; ret
+        // grows from high addr to low addr
+        let offSet = !frame.curOffset - WORDSIZE
+        InFrame(offSet)
 
     else InReg(Temp.newTemp())
 
@@ -219,39 +238,39 @@ let name (frame: Frame) = frame.name
 
 let formals (frame: Frame) = frame.formals
 
-let tempMap =
-    (argRegsMap @ callerSavesMap @ calleeSavesMap) |>
-        List.fold (fun table (k, v) -> Temp.Table.enter table k v) Temp.Table.empty
-
-let tempName t =
-    match Temp.Table.look tempMap t with
-    | Some name -> name
-    | None      -> Temp.makeString t
-
-let string (label, str) =  sprintf "%s: .asciiz \"%s\"\n" (Store.name label) str
+let string (label, str) = sprintf ".data\n %s: .asciiz \"%s\"\n.text\n\n" (Store.name label) str
 
 let externalCall (name, args) = CALL (NAME (Temp.namedLabel name), args)
 
-let private blockCode stmList =
-    let rec cons x xs =
-        match xs with
-        | []          -> x
-        | [s]         -> SEQ (x, s)
-        | stm :: stms -> SEQ (x, cons stm stms)
-
-    match stmList with
-    | []      -> EXP (CONST 0)
-    | x :: xs -> cons x xs
-
 // For each incoming register parameter, move it to the place
-// from which it is seen from within the function. This could be
-// a frame location (for escaping parameters) or a fresh temporary.
-let procEntryExit1 (frame: Frame, body: Stm) :Stm =
-    let args = frame.viewShiftInstr   // see args using "veiw shift" instructions
+// from which it is seen from within the function.
+//
+// NOTICE: bodyStm already include move to save bodyResult to RV register
+let procEntryExit1 (frame: Frame, bodyStm: Stm) :Stm =
+    let saveToFrame = true
 
-    let pairs = List.map (fun reg -> (allocLocal frame false, reg)) (RA::calleeSaves)
-    let savedRegs = List.map (fun (localInFrame, reg) -> MOVE (exp localInFrame (TEMP FP), TEMP reg)) pairs
-    let restores =
-        List.map (fun (localInFrame, reg) -> MOVE (TEMP reg, exp localInFrame (TEMP FP))) (List.rev pairs)
+    let argsMoves =
+        let allocArgToLoc i access =
+            let dstLoc = exp access (TEMP FP)
+            let argOffset = i * WORDSIZE          // Starting at -16 (initialOffset * 4)
+            if i < 3
+                then
+                    MOVE (dstLoc, TEMP (List.item i argRegs))
+                else
+                    MOVE (dstLoc, MEM (BINOP(PLUS, TEMP(FP), CONST(argOffset))))
 
-    blockCode (args @ savedRegs @ [body] @ restores)
+        List.mapi allocArgToLoc frame.formals
+
+    let returnAddress = exp (allocLocal frame saveToFrame) (TEMP FP)
+    let saveRA = MOVE (returnAddress, TEMP RA)
+    let restoreRA = MOVE (TEMP RA, returnAddress)
+
+    let regLocMapping = List.map (fun reg -> (reg, exp (allocLocal frame saveToFrame) (TEMP FP))) calleeSaveRegs
+
+    let generateSaveMove = function (reg, loc) ->  MOVE (loc, TEMP reg)
+    let generateRestoreMove = function (reg, loc) -> MOVE (TEMP reg, loc)
+
+    let calleeSaveMoves = List.map generateSaveMove regLocMapping
+    let calleeRestoreMoves = List.map generateRestoreMove regLocMapping
+
+    blockCode (calleeSaveMoves @ [saveRA] @ argsMoves @ [bodyStm] @ calleeRestoreMoves @ [restoreRA])
