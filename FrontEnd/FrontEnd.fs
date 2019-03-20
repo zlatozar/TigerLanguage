@@ -17,27 +17,21 @@ module FrontEnd =
         // clear fragment list and define entry point (main function)
         fragList := []
 
-        let mainMethod = { parent=Top; name=Temp.namedLabel "__main"; formals=[] }
-        let mainLevel = newLevel(mainMethod)
-
         let {exp=exp; ty=_} = transExp (baseVarEnv, baseFunEnv,
-                                  baseTyEnv, mainLevel,
-                                  Temp.newLabel(), (Tiger.Parser.fromString str))
+                                  baseTyEnv, outermost, Temp.newLabel(),
+                                  (Tiger.Parser.fromString str))
 
         // translate to IR
-        procEntryExit(mainLevel, exp)
+        procEntryExit(outermost, exp)
         !fragList
 
     let transFromFile (filename: string) =
         fragList := []
 
-        let mainMethod = { parent=Top; name=Temp.namedLabel "__main"; formals=[] }
-        let mainLevel = newLevel(mainMethod)
-
         let {exp=exp; ty=_} = transExp (baseVarEnv, baseFunEnv,
-                                  baseTyEnv, mainLevel,
-                                  Temp.newLabel(), (Tiger.Parser.fromFile filename))
+                                  baseTyEnv, outermost, Temp.newLabel(),
+                                  (Tiger.Parser.fromFile filename))
 
         // translate to IR
-        procEntryExit(mainLevel, exp)
+        procEntryExit(outermost, exp)
         !fragList

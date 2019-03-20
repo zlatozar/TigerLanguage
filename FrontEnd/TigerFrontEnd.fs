@@ -126,14 +126,15 @@ let rec transVar ((venv: VEnv), fenv, tenv, level, breakpoint, (var: Absyn.TVar)
                             let variable = transVar (venv, fenv, tenv, level, breakpoint, tVar)
 
                             match variable.ty with
-                            | RECORD (fieldTys, _) -> let rec findField record fieldList =
-                                                          match fieldList with
+                            | RECORD (fieldTys, _) -> let rec findField record fieldTyList =
+                                                          match fieldTyList with
                                                           | []           -> error pos (sprintf "field `%s` is not a member of that record type." (Store.name record))
                                                                             errorTransExp
                                                           | (s, t)::rest -> if (s = record)
                                                                                 then { exp=Translate.fieldVarIR(variable.exp, sym, fieldTys);
                                                                                        ty=actualTy (getRecType (tenv, t, pos), pos); name=None }
-                                                                                else findField record rest
+                                                                                else
+                                                                                     findField record rest
 
                                                       findField sym fieldTys
 
@@ -228,7 +229,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
                                                         let actualParams = List.map (fun elm -> elm.exp) argExps
 
                                                         // call the function
-                                                        { exp=Translate.callIR(level, funEntry.level, funEntry.label, actualParams, isProcedure);
+                                                        { exp=Translate.callIR(funEntry.level, level, funEntry.label, actualParams, isProcedure);
                                                           ty=actualTy (funEntry.result, callRec.pos); name=None }
 
     | RecordExp recRec   -> printfn "    !RecordExp. Type: %A" recRec.typ
@@ -347,7 +348,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
 
                             { exp=Translate.letIR(newProgEnv.exps, bodyExp); ty=bodyTy; name=None }
 
-// change environment
+// this section changes the environment
 and transDec (venv, fenv, tenv, level, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
     match dec with
     | TypeDec typeRecList

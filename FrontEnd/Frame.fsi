@@ -33,6 +33,9 @@ and ProcRec =
 // Architecture word size
 val WORDSIZE : int
 
+// First slot is to save old $fp
+val initialOffset : int
+
 // ____________________________________________________________________________
 //
 

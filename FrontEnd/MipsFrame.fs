@@ -25,6 +25,8 @@ type FrameRec = { name: Temp.Label; formalsEsc: bool list }
 
 let WORDSIZE = 4
 
+let initialOffset = -4
+
 let private blockCode stmList =
     let rec cons x xs =
         match xs with
@@ -200,9 +202,6 @@ let exp loc fp :Exp =
     | InFrame(k) -> MEM (BINOP (PLUS, fp, CONST k))
     | InReg(r)   -> TEMP r
 
-// First slot is to save old $fp
-let initialOffset = -4
-
 // 'newFrame' must calculate two things:
 //   1. How the parameter will be seen from inside the function (in a register, or in a frame location);
 //   2. What instructions must be produced to implement the "view shift."
@@ -224,7 +223,8 @@ let newFrame (frameRec: FrameRec) =
     let formalAccesses = allocLocals frameRec.formalsEsc
     { name = frameRec.name; formals = formalAccesses; curOffset = offset }
 
-// Allocate a local variable in given frame or in a register if not escapes
+// Allocate a local variable in given frame or in a register if not escapes.
+// Called whenever a local variable is declared.
 let allocLocal (frame: Frame) (escape: bool) =
 
     if (escape) then

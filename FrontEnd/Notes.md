@@ -43,13 +43,12 @@ that allocates a new stack frame. However, register `$ra` only needs to be saved
 callee itself makes a call. The other calleesaved registers that are used also must be
 saved.
 
-3. Establish the frame pointer by adding the stack frame's size **minus WORD_SIZE** to `$sp` and
+3. Establish the frame pointer by adding the stack frame's size **minus WORDSIZE** to `$sp` and
 storing the sum in register `$fp`.
 
 #### Immediately before the callee returns to the caller (function exit)
 
-1. If the callee is a function that returns a value, place the returned value in register
-`$v0`.
+1. If the callee is a function that returns a value, place the returned value in register `$v0`.
 
 2. Restore all callee-saved registers that were saved upon procedure entry.
 
@@ -156,6 +155,8 @@ SEQ(
 ```
 
 ### Function IR definition
+
+NOTE: In this **first** version of IR is not optimal and there is a lot of room for optimization.
 
 Each Tiger function is translated into a _prologue_, a _body_  and an _epilogue_:
 
