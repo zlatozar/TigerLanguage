@@ -15,6 +15,8 @@
     <Compile Include="StandardLibrary.fs" />
     <Compile Include="ErrorMsg.fs" />
 
+
+    <Compile Include="FindEscape.fs" />
     <Compile Include="TigerFrontEnd.fs" />
     <Compile Include="PrintTree.fs" />
     <Compile Include="FrontEnd.fs" />
