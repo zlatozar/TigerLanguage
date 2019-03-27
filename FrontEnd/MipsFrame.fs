@@ -20,10 +20,11 @@ type Frag =
 and ProcRec =
     { body: Tree.Stm; frame: Frame }
 
-// Tip: The static link escapes: it needs to be kept in memory(frame)
+// Tip: The static link always escapes so it needs to be kept in memory
 
 type FrameRec = { name: Temp.Label; formalsEsc: bool list }
 
+// 32 bit architecture
 let WORDSIZE = 4
 
 // ____________________________________________________________________________
@@ -31,11 +32,11 @@ let WORDSIZE = 4
 
 (*
     $zero  = $r0        always value of 0
-    $v0-v1 = $r2-r3     return values (only using 1 here)
+    $v0-v1 = $r2-r3     return values (use only v0 as RV)
     $a0-a3 = $r4-r7     function args
     $t0-t7 = $r8-r15    temps (caller saves)
     $s0-s7 = $r16-23    saved temps (callee saves)
-    $t8-t9 = $r24-25    temps (caller saves)
+    $t8-t9 = $r24-25    temps (caller saves cont.)
 
     $sp = $r29          stack pointer
     $fp = $r30          frame pointer
@@ -45,7 +46,7 @@ let WORDSIZE = 4
 let R0 = Temp.newTemp() // always zero
 let AT = Temp.newTemp() // assembler temporary, reserved
 
-let RV = Temp.newTemp() // return value from procedure call
+let RV = Temp.newTemp() // a.k.a V0, return value from function call
 let V1 = Temp.newTemp()
 
 // Used to pass the first four arguments to routines
@@ -126,7 +127,7 @@ let calleeSavesMap = [
     (S6, "$s6");
     (S7, "$s7")]
 
-let calleeSaves = List.map (fun (temp, _) -> temp) calleeSavesMap
+let calleeSavesRegs = List.map (fun (temp, _) -> temp) calleeSavesMap
 
 // May be overritten by called procedures
 let callerSavesMap = [
@@ -141,7 +142,7 @@ let callerSavesMap = [
     (T8, "$t8");
     (T9, "$t9")]
 
-let callerSaves = List.map (fun (temp, _) -> temp) callerSavesMap
+let callerSavesRegs = List.map (fun (temp, _) -> temp) callerSavesMap
 
 // A list of all register name, which can be used for coloring
 let registers = List.map (fun (_, name) -> name) (argRegsMap @ callerSavesMap @ calleeSavesMap)
@@ -155,34 +156,36 @@ let registers = List.map (fun (_, name) -> name) (argRegsMap @ callerSavesMap @ 
 |   arg_1    |  8               CALLER frame
 |static link |  4
 |            |
-|saved old FP|  FP              -------------
+|saved old FP|  0               -------------
 |            |
 |  local_1   |  FP - 4
 |  local_2   |  FP - 8
-|   ...      |
+|   ...      |                  CALLEE (current) frame
 |  local_N   |  FP - 4*N
 |            |
-|return addr |                 CALLEE (current) frame
+|return addr |
 |            |
 |temporaries |
 |            |
-|saved regs  |
+| saved regs |
                                lower addresses
+
+NOTE: For return address, RA register will be used
 *)
 
 // Turns a Frame.Access into the Tree expression.
 // Use it to reach a variable/expression result.
 //
 // For a simple variable 'v' declared in the current procedure's stack frame,
-// 'k' is the offset of 'v' within the frame and 'tempFP' is the frame pointer register (p. 154).
-let exp loc tempFP :Exp =
+// 'k' is the offset of 'v' within the frame and 'fp' is the frame pointer register (p. 154).
+let exp loc fp :Exp =
     match loc with
-    | InFrame(k) -> MEM (BINOP (PLUS, tempFP, CONST k))
+    | InFrame(k) -> MEM (BINOP (PLUS, fp, CONST k))
     | InReg(r)   -> TEMP r
 
 // 'newFrame' must calculate two things:
 //   1. How the parameter will be seen from inside the function (in a register, or in a frame location);
-//   2. What instructions must be produced to implement the "view shift."
+//   2. What instructions must be produced arguments to be seen ("view shift")
 let newFrame (frameRec: FrameRec) =
     let n = List.length frameRec.formalsEsc
 
@@ -206,7 +209,7 @@ let newFrame (frameRec: FrameRec) =
         then { name=frameRec.name; formals=funcParams; locals=ref 0; viewShiftInstr=shiftInstrs }
         else failwithf "ERROR: Too many function arguments: %d." n
 
-// Allocate a local variable in given frame or in register if not escapes
+// Return one word in memory in given frame or a register if not escapes
 let allocLocal (frame: Frame) (escape: bool) =
     if (escape) then
         let offSet = !frame.locals + 1
@@ -246,10 +249,12 @@ let private blockCode stmList =
 // For each incoming register parameter, move it to the place
 // from which it is seen from within the function. This could be
 // a frame location (for escaping parameters) or a fresh temporary.
+//
+// ATTENTION: In this **first** version is not optimal and there is a lot of room for optimization.
 let procEntryExit1 (frame: Frame, body: Stm) :Stm =
     let args = frame.viewShiftInstr   // see args using "veiw shift" instructions
 
-    let pairs = List.map (fun reg -> (allocLocal frame false, reg)) (RA::calleeSaves)
+    let pairs = List.map (fun reg -> (allocLocal frame false, reg)) (RA::calleeSavesRegs)
     let savedRegs = List.map (fun (localInFrame, reg) -> MOVE (exp localInFrame (TEMP FP), TEMP reg)) pairs
     let restores =
         List.map (fun (localInFrame, reg) -> MOVE (TEMP reg, exp localInFrame (TEMP FP))) (List.rev pairs)

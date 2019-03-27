@@ -1,5 +1,7 @@
 ## Chapter 6
 
+Describes the data structures that should be created on top of memory and registers.
+
 In this and next chapter we work only with addresses - calculate or modify and then
 translate to a Tree language.
 
@@ -43,13 +45,12 @@ that allocates a new stack frame. However, register `$ra` only needs to be saved
 callee itself makes a call. The other calleesaved registers that are used also must be
 saved.
 
-3. Establish the frame pointer by adding the stack frame's size **minus WORD_SIZE** to `$sp` and
+3. Establish the frame pointer by adding the stack frame's size **minus WORDSIZE** to `$sp` and
 storing the sum in register `$fp`.
 
 #### Immediately before the callee returns to the caller (function exit)
 
-1. If the callee is a function that returns a value, place the returned value in register
-`$v0`.
+1. If the callee is a function that returns a value, place the returned value in register `$v0`.
 
 2. Restore all callee-saved registers that were saved upon procedure entry.
 
@@ -58,6 +59,9 @@ storing the sum in register `$fp`.
 4. Return by jumping to the address in register `$ra`.
 
 ## Chapter 7
+
+Describes the steps that should be made to transfrom AST to IR using the data structures(frames)
+defined in previous chapter.
 
 _Tree language_ instructions should be understood very well before start implementing translation.
 
