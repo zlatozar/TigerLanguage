@@ -115,15 +115,13 @@ let rec transVar ((venv: VEnv), fenv, tenv, level, breakpoint, (var: Absyn.TVar)
     // do not forget to return actual type
     match var with
     | SimpleVar (sym, pos)
-                         -> printfn "        !SimpleVar"
-                            match Store.lookup (venv, sym) with
+                         -> match Store.lookup (venv, sym) with
                             | None   -> error pos (sprintf "undefined variable `%s`." (Store.name sym))
                                         errorTransExp
                             | Some v -> { exp=Translate.simpleVarIR(v.access, level); ty=actualTy (v.ty, pos); name=None }
 
     | FieldVar (tVar, sym, pos)
-                         -> printfn "    !FieldVar"
-                            let variable = transVar (venv, fenv, tenv, level, breakpoint, tVar)
+                         -> let variable = transVar (venv, fenv, tenv, level, breakpoint, tVar)
 
                             match variable.ty with
                             | RECORD (fieldTys, _) -> let rec findField record fieldList =
@@ -141,8 +139,7 @@ let rec transVar ((venv: VEnv), fenv, tenv, level, breakpoint, (var: Absyn.TVar)
                                                       errorTransExp
 
     | SubscriptVar (tVar, e, pos)
-                         -> printfn "    !SubscriptVar"
-                            let index = transExp (venv, fenv, tenv, level, breakpoint, e)
+                         -> let index = transExp (venv, fenv, tenv, level, breakpoint, e)
                             checkInt (actualTy (index.ty, pos), pos)
 
                             let subcript = transVar (venv, fenv, tenv, level, breakpoint, tVar)
@@ -155,34 +152,27 @@ let rec transVar ((venv: VEnv), fenv, tenv, level, breakpoint, (var: Absyn.TVar)
 
 and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp: Absyn.TExp)) :TreeExp =
     match exp with
-    | IntExp i           -> printfn "        !IntExp"
-                            { exp=Translate.intIR(i); ty=INT; name=None }
+    | IntExp i           -> { exp=Translate.intIR(i); ty=INT; name=None }
 
     | StringExp (str, pos)
-                         -> printfn "        !StringExp"
-                            { exp=Translate.strIR(str); ty=STRING; name=None }
+                         -> { exp=Translate.strIR(str); ty=STRING; name=None }
 
-    | NilExp             -> printfn "        !NilExp"
-                            { exp=Translate.nilIR; ty=NIL; name=None }
+    | NilExp             -> { exp=Translate.nilIR; ty=NIL; name=None }
 
-    | BreakExp pos       -> printfn "         !BreakExp"
-                            if (!breakLevel > 0) then ()
+    | BreakExp pos       -> if (!breakLevel > 0) then ()
                                 else error pos "`break` not properly nested."
                             { exp=Translate.breakIR(breakpoint); ty=UNIT; name=None}
 
-    | VarExp tVar        -> printfn "        !VarExp"
-                            transVar (venv, fenv, tenv, level, breakpoint, tVar)
+    | VarExp tVar        -> transVar (venv, fenv, tenv, level, breakpoint, tVar)
 
     | AssignExp assignRec
-                         -> printf "         !AssignExp"
-                            let variable = transVar (venv, fenv, tenv, level, breakpoint, assignRec.var)
+                         -> let variable = transVar (venv, fenv, tenv, level, breakpoint, assignRec.var)
                             let expression = transExp (venv, fenv, tenv, level, breakpoint, assignRec.exp)
 
                             checkSame (variable.ty, expression.ty, assignRec.pos)
                             { exp=Translate.assignIR(variable.exp, expression.exp); ty=UNIT; name=None }
 
-    | OpExp opRec        -> printf "         !OpExp"
-                            let {exp=leftEx; ty=tyleft; name=_ } = transExp (venv, fenv, tenv, level, breakpoint, opRec.left)
+    | OpExp opRec        -> let {exp=leftEx; ty=tyleft; name=_ } = transExp (venv, fenv, tenv, level, breakpoint, opRec.left)
                             let {exp=rightEx; ty=tyright; name=_ } = transExp (venv, fenv, tenv, level, breakpoint, opRec.right)
 
                             match opRec.oper with
@@ -200,8 +190,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
                                                                         { exp=Translate.relopIR(opRec.oper, leftEx, rightEx); ty=INT; name=None }
 
 
-    | CallExp callRec    -> printfn "         !CallExp. %A" callRec.func
-                            match Store.lookup (fenv, callRec.func) with
+    | CallExp callRec    -> match Store.lookup (fenv, callRec.func) with
                             | None          -> error callRec.pos (sprintf "undefined function `%s`." (Store.name callRec.func))
                                                errorTransExp
 
@@ -231,8 +220,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
                                                         { exp=Translate.callIR(level, funEntry.level, funEntry.label, actualParams, isProcedure);
                                                           ty=actualTy (funEntry.result, callRec.pos); name=None }
 
-    | RecordExp recRec   -> printfn "    !RecordExp. Type: %A" recRec.typ
-                            match Store.lookup (tenv, recRec.typ) with
+    | RecordExp recRec   -> match Store.lookup (tenv, recRec.typ) with
                             | None       -> error recRec.pos (sprintf "record type `%s` is not defined." (Store.name recRec.typ))
                                             errorTransExp
 
@@ -257,8 +245,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
                                             | _                    -> error recRec.pos "expecting a record type."
                                                                       errorTransExp
 
-    | ArrayExp arrayRec  -> printfn "    !ArrayExp. Type: %A" arrayRec.typ
-                            match Store.lookup (tenv, arrayRec.typ) with
+    | ArrayExp arrayRec  -> match Store.lookup (tenv, arrayRec.typ) with
                             | None         -> error arrayRec.pos (sprintf "type `%s` is not defined." (Store.name arrayRec.typ))
                                               errorTransExp
 
@@ -275,16 +262,14 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
                                               | _             -> error arrayRec.pos "expecting an array type."
                                                                  errorTransExp
 
-    | SeqExp expList     -> printfn "![SeqExp] (check semantics)"
-                            let exps = List.map (fun (exp, _) -> (transExp (venv, fenv, tenv, level, breakpoint, exp)).exp) expList
+    | SeqExp expList     -> let exps = List.map (fun (exp, _) -> (transExp (venv, fenv, tenv, level, breakpoint, exp)).exp) expList
                             let ty' = match exps with
                                       | [] -> UNIT
                                       | _  -> (transExp (venv, fenv, tenv, level, breakpoint, fst (List.last expList))).ty
 
                             {exp=Translate.sequenceIR(exps); ty=ty'; name=None}
 
-    | IfExp ifRec        -> printfn "    !IfExp"
-                            let test = transExp (venv, fenv, tenv, level, breakpoint, ifRec.test)
+    | IfExp ifRec        -> let test = transExp (venv, fenv, tenv, level, breakpoint, ifRec.test)
                             if test.ty = INT then ()
                                 else error ifRec.pos "test clause expression should be an integer."
 
@@ -300,8 +285,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
                                         { exp=Translate.ifThenIR(test.exp, then'.exp); ty=UNIT; name=None }
 
     // 'break' should know that it is in a cycle
-    | WhileExp whileRec  -> printfn "    !WhileExp"
-                            breakLevel := !breakLevel + 1
+    | WhileExp whileRec  -> breakLevel := !breakLevel + 1
 
                             let test = transExp (venv, fenv, tenv,  level, breakpoint, whileRec.test)
                             if test.ty = INT then ()
@@ -314,8 +298,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
                             breakLevel := !breakLevel - 1
                             { exp=Translate.whileIR(test.exp) body.exp; ty=UNIT; name=None }
 
-    | ForExp forRec      -> printfn "    !ForExp"
-                            breakLevel := !breakLevel + 1
+    | ForExp forRec      -> breakLevel := !breakLevel + 1
 
                             let lo = transExp (venv, fenv, tenv, level, breakpoint, forRec.lo)
                             let hi = transExp (venv, fenv, tenv, level, breakpoint, forRec.hi)
@@ -325,6 +308,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
                             let idExpPos = (fst forRec.pos + 4, snd forRec.pos)
                             let id = VarDec { name=forRec.var; escape=forRec.escape;
                                               typ=Some (Store.symbol "int", idExpPos); init=forRec.lo; pos=idExpPos}
+
                             let {venv=venv'; fenv=_; tenv=_} = transDec (venv, fenv, tenv, level, breakpoint, id)
 
                             let body = transExp (venv', fenv, tenv, level, Translate.newBreakpoint, forRec.body)
@@ -337,8 +321,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
                                         errorTransExp
                             | Some v -> { exp=Translate.forIR(Translate.simpleVarIR(v.access, level), lo.exp, hi.exp) body.exp; ty=UNIT; name=None }
 
-    | LetExp letRec      -> printfn "!LetExp"
-                            let transCurrentDec progEnv dec =
+    | LetExp letRec      -> let transCurrentDec progEnv dec =
                                let decl = transDec (progEnv.venv, progEnv.fenv, progEnv.tenv, level, breakpoint, dec)
                                {venv=decl.venv; fenv=decl.fenv; tenv=decl.tenv; exps=(progEnv.exps @ decl.exps)}
 
@@ -351,8 +334,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
 and transDec (venv, fenv, tenv, level, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
     match dec with
     | TypeDec typeRecList
-                         -> printfn "   !TypeDec"
-                            let addHeader iniTEnv (dec: TypeDecRec) =
+                         -> let addHeader iniTEnv (dec: TypeDecRec) =
                                 Store.enter (iniTEnv, dec.name, NAME (dec.name, ref None))  // !!
 
                             // 1. Enter types heads
@@ -401,8 +383,7 @@ and transDec (venv, fenv, tenv, level, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
 
                             { venv=venv; fenv=fenv; tenv=tenv'''; exps=[] }
 
-    | VarDec varDecRec   -> printf "    !VarDec"
-                            let {exp=varExp; ty=expTy; name=expName } = transExp (venv, fenv, tenv, level, breakpoint, varDecRec.init)
+    | VarDec varDecRec   -> let {exp=varExp; ty=expTy; name=expName } = transExp (venv, fenv, tenv, level, breakpoint, varDecRec.init)
 
                             let acc = Translate.allocLocal level !varDecRec.escape
                             let var = Translate.simpleVarIR(acc, level)
@@ -452,9 +433,7 @@ and transDec (venv, fenv, tenv, level, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
     //   3. Formal type exists and match
     //   4. Body type checks
     | FunctionDec funDecRecList
-                         -> printfn "   !!FunctionDec"
-
-                            // Should not contain duplicate functions name
+                         -> // Should not contain duplicate functions name
                             let allFuncNames = List.map (fun (x: FunDecRec) -> x.name) funDecRecList
                             let allFuncPos = List.map (fun (x: FunDecRec) -> x.pos) funDecRecList
                             checkDup (allFuncNames, allFuncPos)
@@ -524,15 +503,13 @@ and transDec (venv, fenv, tenv, level, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
 
 and transTy (tenv, (ty: Absyn.TType)) :Ty =
     match ty with
-    | NameTy (sym, p)    -> printfn "        !NameTy"
-                            match Store.lookup (tenv, sym) with
+    | NameTy (sym, p)    -> match Store.lookup (tenv, sym) with
                             | None         -> error p (sprintf "type `%s` is not defined." (Store.name sym))
                                               NIL
                             | Some symType -> NAME (sym, ref (Some symType))  // Create an alias
 
     | RecordTy fieldRecList
-                         -> printfn "          !RecordTy"
-                            let allFieldNames = List.map (fun (x: FieldRec) -> x.name) fieldRecList
+                         -> let allFieldNames = List.map (fun (x: FieldRec) -> x.name) fieldRecList
                             let allFieldPos = List.map (fun (x: FieldRec) -> x.pos) fieldRecList
                             checkDup (allFieldNames, allFieldPos)
 
@@ -546,8 +523,7 @@ and transTy (tenv, (ty: Absyn.TType)) :Ty =
                             RECORD (fieldsList, ref ())
 
     | ArrayTy (sym, pos)
-                         -> printfn "    !ArrayTy"
-                            match Store.lookup (tenv, sym) with
+                         -> match Store.lookup (tenv, sym) with
                             | None ->          error pos (sprintf "type `%s` is not defined." (Store.name sym))
                                                NIL
                             | Some symType ->  ARRAY (symType, ref ())
