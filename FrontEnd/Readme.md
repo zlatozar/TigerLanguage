@@ -1,6 +1,6 @@
 ## Intermediate code generation
 
-Includes _Chapter 6_ and _Chapter 7_
+Includes _Chapter 6_ and _Chapter 7_. See **Notes.md** for more information.
 
 Before writing a code generator, however, we must decide how to marshal the resources of
 the target machine (instructions, storage, and system software) in order to implement the

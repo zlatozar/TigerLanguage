@@ -385,7 +385,7 @@ and transDec (venv, fenv, tenv, level, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
 
     | VarDec varDecRec   -> let {exp=varExp; ty=expTy; name=expName } = transExp (venv, fenv, tenv, level, breakpoint, varDecRec.init)
 
-                            let acc = Translate.allocLocal level !varDecRec.escape
+                            let acc = Translate.allocLocal level !varDecRec.escape // FindEscape sets if variable escape
                             let var = Translate.simpleVarIR(acc, level)
 
                             // Is type specified?

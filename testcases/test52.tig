@@ -1,6 +1,6 @@
 /* break in a while cycle */
 let
-    var a:= 0
+    var a := 0
 in
-    while a<10 do (a:=a+1; break; ())
+    while a < 1 0 do (a := a + 1; break; ())
 end

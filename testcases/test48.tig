@@ -6,9 +6,9 @@
   See also incorrect test39
 */
 let
-    function g(a:int):int = a
+    function g(a:int) :int = a
     type t = int
-    function g(a:int):int = a
+    function g(a:int) :int = a
 in
     0
 end

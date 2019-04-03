@@ -16,8 +16,9 @@ type Access =
     | InReg of Temp.Temp
 
 // What the routine frame should contain
-type Frame = { name: Temp.Label; formals: Access list;
-               locals: int ref; viewShiftInstr: Tree.Stm list }
+type Frame = { name: Temp.Label; formals: Access list; fpaccess: Access;
+               mutable allocated: int; viewshift: Tree.Stm list; mutable maxOutgoing: int }
+
 
 // Regeters are named
 type Register = string
@@ -64,7 +65,7 @@ val allocLocal : Frame -> bool -> Access
 // Routine name is used as label
 val name       : Frame -> Temp.Label
 
-// Rotine formal parameters (where to find them)
+// Routine formal parameters (where to find them)
 val formals   : Frame -> Access list
 
 val tempMap   : Register Temp.Table

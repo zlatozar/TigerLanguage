@@ -11,7 +11,7 @@ type Exp =
     | Nx of Tree.Stm   // no value, can't assing
     | Cx of CxFunc     // represents condition
 
-// Function is used to postpone the execution. Needed parameters are known at runtime.
+// Function is used to delay the execution. Needed parameters are known at runtime.
 and CxFunc = Temp.Label * Temp.Label -> Tree.Stm
 
 // Main structure
@@ -21,7 +21,7 @@ type Level =
 
 and NestedRec = { parent: Level; frame: Frame.Frame }
 
-// Here Level(because of nesting) should be considered
+// In this abstraction layer Frame.access is no enough - Level should be considered
 type Access = Level * Frame.Access
 
 // ____________________________________________________________________________
@@ -55,7 +55,7 @@ let unEx e =
                                        LABEL t],
                             TEMP r)                              // result
 
-    | Nx s          -> ESEQ (s, CONST 0) // CONST 0, because s do not return value.
+    | Nx s          -> ESEQ (s, CONST 0) // CONST 0, because 's' do not return value.
                                          // Could be interpret as false.
 
 //  To use an IR as an Nx, call this function
@@ -276,8 +276,8 @@ let ifThenIR (test, then') :Exp =
                     unNx then';
                   LABEL f])
 
-// NOTE: We don't need to store the value of the expression, which is computed for
-//       it's side effect
+// NOTE: We don't need to store the value of the expression (Nx), which is computed for
+//       it's side effect.
 let ifThenElseIR (test, thenStm, elseStm) :Exp =
     let t = Temp.newLabel()
     let f = Temp.newLabel()
@@ -308,9 +308,9 @@ let ifThenElseIR (test, thenStm, elseStm) :Exp =
                                                                      LABEL y;
                                                                        elseStmFunc(t, f)])
 
-
     | Cx thenStmFunc, elseStm -> let y = Temp.newLabel()
                                  let z = Temp.newLabel()
+
                                  let elseExp = unEx elseStm
 
                                  Cx (fun (t, f) -> blockCode [ testStmFunc z y;
@@ -321,9 +321,9 @@ let ifThenElseIR (test, thenStm, elseStm) :Exp =
                                                              LABEL y;
                                                                CJUMP (NE, CONST 0, elseExp, t, f)])
 
-
     | thenStm, Cx elseStmFunc -> let y = Temp.newLabel()
                                  let z = Temp.newLabel()
+
                                  let thenExp = unEx thenStm
 
                                  Cx (fun (t, f) -> blockCode [ testStmFunc z y;
@@ -406,5 +406,6 @@ let procEntryExit (level: Level, body) =
     match level with
     | Top                                 -> failwithf "ERROR: Function declaration should not happen in top level."
     | Nested({parent=_; frame=frame'}, _) -> let body' =
+                                                 // Procedures do no return values. How to deal with RV?
                                                  Frame.procEntryExit1 (frame', MOVE (TEMP Frame.RV, unEx body))
                                              fragList := Frame.PROC({body=body'; frame=frame'}) :: !fragList

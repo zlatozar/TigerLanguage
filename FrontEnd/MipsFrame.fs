@@ -6,8 +6,8 @@ type Access =
     | InFrame of int
     | InReg of Temp.Temp
 
-type Frame = { name: Temp.Label; formals: Access list;
-               locals: int ref; viewShiftInstr: Tree.Stm list }
+type Frame = { name: Temp.Label; formals: Access list; fpaccess: Access;
+               mutable allocated: int; viewshift: Tree.Stm list; mutable maxOutgoing: int }
 
 type Register = string
 
@@ -33,10 +33,12 @@ let WORDSIZE = 4
 (*
     $zero  = $r0        always value of 0
     $v0-v1 = $r2-r3     return values (use only v0 as RV)
+
     $a0-a3 = $r4-r7     function args
+
     $t0-t7 = $r8-r15    temps (caller saves)
-    $s0-s7 = $r16-23    saved temps (callee saves)
-    $t8-t9 = $r24-25    temps (caller saves cont.)
+    $s0-s7 = $r16-23    preserved across calls temps (callee-saves)
+    $t8-t9 = $r24-25    temps (caller-saves cont.)
 
     $sp = $r29          stack pointer
     $fp = $r30          frame pointer
@@ -46,7 +48,7 @@ let WORDSIZE = 4
 let R0 = Temp.newTemp() // always zero
 let AT = Temp.newTemp() // assembler temporary, reserved
 
-let RV = Temp.newTemp() // a.k.a V0, return value from function call
+let RV = Temp.newTemp() // a.k.a 'V0', return value from function call
 let V1 = Temp.newTemp()
 
 // Used to pass the first four arguments to routines
@@ -151,7 +153,8 @@ let registers = List.map (fun (_, name) -> name) (argRegsMap @ callerSavesMap @ 
   MIPS frame
 
     ...                        higher addresses
-|   arg_N    |  4 + 4*N
+
+|   arg_N    |  4 + 4*N   <---- incomming args that could be seen using "view shift" code
 |   ...      |
 |   arg_1    |  8               CALLER frame
 |static link |  4
@@ -168,6 +171,10 @@ let registers = List.map (fun (_, name) -> name) (argRegsMap @ callerSavesMap @ 
 |temporaries |
 |            |
 | saved regs |
+|            |
+|  arg2      |           <---- outgoing args
+|  arg1      |
+| static link|
                                lower addresses
 
 NOTE: For return address, RA register will be used
@@ -178,8 +185,8 @@ NOTE: For return address, RA register will be used
 //
 // For a simple variable 'v' declared in the current procedure's stack frame,
 // 'k' is the offset of 'v' within the frame and 'fp' is the frame pointer register (p. 154).
-let exp loc fp :Exp =
-    match loc with
+let exp access fp :Exp =
+    match access with
     | InFrame(k) -> MEM (BINOP (PLUS, fp, CONST k))
     | InReg(r)   -> TEMP r
 
@@ -187,34 +194,33 @@ let exp loc fp :Exp =
 //   1. How the parameter will be seen from inside the function (in a register, or in a frame location);
 //   2. What instructions must be produced arguments to be seen ("view shift")
 let newFrame (frameRec: FrameRec) =
-    let n = List.length frameRec.formalsEsc
+    let calcAccess access = exp access (Tree.TEMP FP)
 
-    let rec placeIn (escapes, size) =
-        match (escapes, size) with
-        | ([], _)               -> []
-        | (first::rest, offset) -> if first
-                                       then InFrame(offset) :: placeIn (rest, offset + WORDSIZE)
-                                       else InReg(Temp.newTemp()) :: placeIn (rest, offset)
+    let allocateFormals formalParams =
 
-    let funcParams :Access list = placeIn (frameRec.formalsEsc, WORDSIZE)
+        let rec allocFormal i allocated viewshift accesses = function
+            | []                -> (allocated, List.rev viewshift, List.rev accesses)
+            | formal :: formals -> let incoming = if i < List.length argRegs
+                                                      then InReg (List.item i argRegs)
+                                                      else InFrame ((i - List.length argRegs + 1) * WORDSIZE)
 
-    // calculate offset from FP
-    let calcOffset (param, reg) = MOVE (exp param (TEMP FP), TEMP reg)
-    let shiftInstrs = Seq.zip funcParams argRegs   // could be with different length
-                      |> Seq.map calcOffset
-                      |> Seq.toList
+                                   let access = if formal then InFrame (-allocated * WORDSIZE) else InReg (Temp.newTemp())
+                                   let instr = Tree.MOVE (calcAccess access, calcAccess incoming)
 
-    // For functions with more than 4 paramters, we just give up
-    if n <= argRegsNum
-        then { name=frameRec.name; formals=funcParams; locals=ref 0; viewShiftInstr=shiftInstrs }
-        else failwithf "ERROR: Too many function arguments: %d." n
+                                   allocFormal (i + 1) (if formal then allocated + 1 else allocated) (instr :: viewshift) (access :: accesses) formals
+
+        allocFormal 0 0 [] [] formalParams
+
+    let (allocated, viewshift, formals) = allocateFormals frameRec.formalsEsc
+    { name=frameRec.name; allocated=allocated + 1; viewshift=viewshift; formals=formals;
+      maxOutgoing=0; fpaccess=InFrame (-allocated * WORDSIZE) }
 
 // Return one word in memory in given frame or a register if not escapes
-let allocLocal (frame: Frame) (escape: bool) =
-    if (escape) then
-        let offSet = !frame.locals + 1
-        let ret = InFrame(offSet * (-WORDSIZE))
-        frame.locals := !frame.locals + 1; ret
+let allocLocal (frame: Frame) escape =
+    if escape then
+        let access = InFrame(-frame.allocated  * WORDSIZE)
+        frame.allocated <- frame.allocated + 1
+        access
 
     else InReg(Temp.newTemp())
 
@@ -246,17 +252,15 @@ let private blockCode stmList =
     | []      -> EXP (CONST 0)
     | x :: xs -> cons x xs
 
-// For each incoming register parameter, move it to the place
-// from which it is seen from within the function. This could be
-// a frame location (for escaping parameters) or a fresh temporary.
+// Defines what should be done before execute function body and after it's exit.
 //
-// ATTENTION: In this **first** version is not optimal and there is a lot of room for optimization.
+// ATTENTION: This first version is not optimal and there is a lot of room for optimization.
 let procEntryExit1 (frame: Frame, body: Stm) :Stm =
-    let args = frame.viewShiftInstr   // see args using "veiw shift" instructions
+    let args = frame.viewshift   // how to "see" args
 
-    let pairs = List.map (fun reg -> (allocLocal frame false, reg)) (RA::calleeSavesRegs)
-    let savedRegs = List.map (fun (localInFrame, reg) -> MOVE (exp localInFrame (TEMP FP), TEMP reg)) pairs
-    let restores =
-        List.map (fun (localInFrame, reg) -> MOVE (TEMP reg, exp localInFrame (TEMP FP))) (List.rev pairs)
+    let localsRA = List.map (fun reg -> (allocLocal frame false, reg)) (calleeSavesRegs@[RA])
+    let calleeSaveRegs = List.map (fun (localVar, reg) -> MOVE (exp localVar (TEMP FP), TEMP reg)) localsRA
+    let restoreCalleeSaveRegs =
+        List.map (fun (localInFrame, reg) -> MOVE (TEMP reg, exp localInFrame (TEMP FP))) (List.rev localsRA)
 
-    blockCode (args @ savedRegs @ [body] @ restores)
+    blockCode (args @ calleeSaveRegs @ [body] @ restoreCalleeSaveRegs)

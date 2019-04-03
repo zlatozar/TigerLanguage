@@ -1,8 +1,9 @@
 ## Chapter 6
 
-Describes the data structures that should be created on top of memory and registers.
+_Describes the data structures that should be created on top of memory and registers._
+_First data should be placed on frame or register(Frame.Access) then we must define a way to access the data (Stm)._
 
-In this and next chapter we work only with addresses - calculate or modify and then
+In this and next chapter we work only with _addresses_ - calculate or modify and then
 translate to a Tree language.
 
 **Frame** is used for a variety of purposes:
@@ -20,6 +21,25 @@ stack.
 The steps below describe the calling convention used on most **MIPS** machines.
 
 Tip: Function calling conventions try to ensure to generate as few memory traffic as possible.
+
+#### Registers
+
+We know the location in the frame for _arguments_ and that _result_ is in `RV`. But how to proceed with registers?
+They are common for caller and the callee and the main task is to prevent them from **overwriting** each other's regiters.
+
+**Caller-saved** registers (volatile registers) are used to hold temporary quantities that need not be preserved across calls.
+For that reason, it is the caller's responsibility to push these registers onto the stack if it wants to restore this value after
+a procedure call.
+
+**Callee-saved** registers (non-volatile registers) are used to hold long-lived values that should be preserved across calls.
+When the caller makes a procedure call, it can expect that those registers will hold the same value after the callee returns,
+making it the _responsibility of the callee_ to save them and restore them before returning to the caller. Callee function
+should do some extra work.
+
+For example let say that we enter a function `f(int a)`. Function could use all registers for local variables to be operations fast.
+If there is call to another function `g()` all the register should be saved. When you call a function, you should assume that
+everything currently in your registers will be wiped out. This is overhead so it is good idea to define which one to save before
+call because they are needed after the `g()` returns. That's way register are divided.
 
 #### Immediately before the caller invokes the callee (function starts)
 
