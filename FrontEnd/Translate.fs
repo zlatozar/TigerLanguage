@@ -2,6 +2,9 @@ module Translate
 
 open Tree
 
+// Tip: Here we do not work with variable but with "memory places".
+//      That's why when a variable is needed, instructions(Exp type) how to reach it are required.
+
 // ____________________________________________________________________________
 //                                                                       Types
 
@@ -9,7 +12,7 @@ open Tree
 type Exp =
     | Ex of Tree.Exp   // value that could be assigned
     | Nx of Tree.Stm   // no value, can't assing
-    | Cx of CxFunc     // represents condition
+    | Cx of CxFunc     // represents condition, that's why is a function
 
 // Function is used to delay the execution. Needed parameters are known at runtime.
 and CxFunc = Temp.Label * Temp.Label -> Tree.Stm
@@ -21,7 +24,8 @@ type Level =
 
 and NestedRec = { parent: Level; frame: Frame.Frame }
 
-// In this abstraction layer Frame.access is no enough - Level should be considered
+// In this abstraction layer Frame.access is no enough - Level should be considered.
+// Level is used to calculate static links.
 type Access = Level * Frame.Access
 
 // ____________________________________________________________________________
@@ -35,7 +39,7 @@ let private blockCode stmList =
         | stm :: stms -> SEQ (x, cons stm stms)
 
     match stmList with
-    | []      -> EXP (CONST 0)
+    | []      -> failwith "ERROR: Block code should be not empty."
     | x :: xs -> cons x xs
 
 // To use an IR as an Ex, call this function
@@ -81,10 +85,11 @@ type FuncInfo = { parent: Level; name: Temp.Label; formals: bool list }
 
 // When enter a function new level should be set
 let newLevel (funInfo: FuncInfo) =
-    Nested ({ parent=funInfo.parent;
-              // 'true': static link, which always escapes
-              frame=Frame.newFrame {name=funInfo.name; formalsEsc=true::funInfo.formals}
-           }, ref () )
+    // 'true': static link, which always escapes
+    let formals' = true :: funInfo.formals
+    let frame' = Frame.newFrame {name=funInfo.name; formalsEsc=formals'}
+
+    Nested ({ parent=funInfo.parent; frame=frame'}, ref () )
 
 // Return formals associated with the frame in this level,
 // excluding the static link (first element of the list p. 127)
@@ -92,6 +97,7 @@ let formals (level: Level) = match level with
                              | Top                  -> []
                              | Nested(nestedRec, _) -> let formalParams = List.tail nestedRec.frame.formals
                                                        List.map (fun x -> (level, x)) formalParams
+
 let allocLocal (level: Level) escape =
     match level with
     | Top                   -> failwithf "ERROR: Locals can't exist on top level."
@@ -112,8 +118,7 @@ let newBreakpoint = Temp.newLabel()
 //                                                            transVar section
 
 // Must produce a chain of MEMs as fetch static links between the level of use
-// (the level passed to simpleVarIR) and the level of definition - the level
-// within the variable's access.
+// and the level of definition - the level within the variable's access.
 let simpleVarIR (access, varUsedLevel) :Exp =
     let (defLevel, defAccess) = access
 
@@ -132,26 +137,28 @@ let simpleVarIR (access, varUsedLevel) :Exp =
                            Ex (iter(varUsedLevel, TEMP(Frame.FP)))
 
 // MEM (BINOP (PLUS, ex1, ex2) as +(ex1, ex2)
-let private memplus (ex1:Tree.Exp, ex2:Tree.Exp) = MEM (BINOP (PLUS, ex1, ex2))
+let private memplus ex1 ex2 = MEM (BINOP (PLUS, ex1, ex2))
 
 // All records and array values are pointers to record and array structures.
-// The base address(pBase) of the array is really the contents of a pointer variable,
+// The base address(r) of the array is really the contents of a pointer variable,
 // so MEM is required to fetch this base address p. 159
-let fieldVarIR (pBase, sym, fieldList) :Exp =
-    // Pre-condition: sym should be member of the record (fieldList) is handled
+let fieldVarIR (r, sym, fieldList) :Exp =
+    // Pre-condition: 'sym' should be member of the record (fieldList) is handled
     // by type checker. We assume that function return index in any cases.
-    let findindex (list) = List.findIndex (fun (elm, _) ->
-                                                           elm = sym) list
+    let findindex list = List.findIndex (fun (elm, _) -> elm = sym) list
+    Ex (memplus (unEx r) (BINOP (MUL, CONST (findindex fieldList), CONST Frame.WORDSIZE)))
 
-    Ex (memplus (unEx pBase, BINOP(MUL, CONST(findindex(fieldList)), CONST(Frame.WORDSIZE))))
-
-let subscriptVarIR (pBase, offset) :Exp =
-    Ex (memplus (unEx pBase, BINOP (MUL, unEx offset, CONST(Frame.WORDSIZE))))
+let subscriptVarIR (a, idx) :Exp =
+    let t = Temp.newTemp()
+    Ex (ESEQ (blockCode [EXP (Frame.externalCall ("checkArrayBounds", [unEx a; unEx idx]));
+                         MOVE (TEMP t, BINOP (PLUS, unEx a, CONST Frame.WORDSIZE))
+                        ],
+              MEM (BINOP (PLUS, TEMP t, BINOP (MUL, unEx idx, CONST Frame.WORDSIZE)))))
 
 // ____________________________________________________________________________
 //                                                            transExp section
 
-let errExp = Ex (CONST 0)
+let unitExp = Nx (EXP (CONST 0))
 
 // CONST represents integer
 let intIR (n: int) :Exp = Ex (CONST n)
@@ -202,8 +209,12 @@ let relopIR (oper, e1, e2) :Exp =
     | Absyn.GeOp   -> Cx (fun (t, f) -> CJUMP (GE, left, right, t, f))
     | _            -> failwithf "ERROR: Relational operator is expected not a binary."
 
-let strEQ (str1, str2) = Ex (Frame.externalCall("stringEqual", [unEx str1; unEx str2]))
-let strNEQ (str1, str2) = Ex (BINOP(XOR, unEx (strEQ(str1, str2)), CONST(1)))
+let strEQ (a, b) =
+    let r = Frame.externalCall("stringEqual", [unEx a; unEx b])
+    Cx (fun (t, f) -> CJUMP (EQ, r, (CONST 1), t, f))
+
+let strNEQ (a, b) = let genStm = unCx (strEQ (a, b))
+                    Cx (fun (t, f) ->  genStm f t)
 
 // Translate a function call f(a1, ..., an) is simple, except that the static
 // link must be added as an implicit extra argument p. 166:
@@ -218,7 +229,7 @@ let callIR (useLevel, defLevel, label, exps, isProcedure) :Exp =
     | _                               -> // Find the difference of static nesting depth
                                          // between use level and definiton level
                                          let rec depth level = match level with
-                                                               | Top                            -> 0
+                                                               | Top                             -> 0
                                                                | Nested({parent=p; frame=_} , _) -> 1 + depth p
 
                                          // exclude Top level - so +1
@@ -239,14 +250,16 @@ let callIR (useLevel, defLevel, label, exps, isProcedure) :Exp =
 // See the picture on p. 164
 let recordIR (fields) :Exp =
     let r = Temp.newTemp()
-    let init = MOVE(TEMP r, Frame.externalCall("allocRecord", [CONST(List.length(fields) * Frame.WORDSIZE)]))
+    let len = List.length fields
+
+    let init = MOVE(TEMP r, Frame.externalCall("allocRecord", [CONST (len * Frame.WORDSIZE)]))
 
     let rec loop (fields, index) =
         match fields with
         | []            -> []
-        | first :: rest -> MOVE (memplus(TEMP r, CONST(index * Frame.WORDSIZE)), unEx first) :: loop(rest, index + 1)
+        | first :: rest -> MOVE (memplus (TEMP r) (CONST (index * Frame.WORDSIZE)), unEx first) :: loop(rest, index + 1)
 
-    Ex (ESEQ (blockCode(init :: loop(fields, 0)), TEMP r))
+    Ex (ESEQ (blockCode (init :: loop(fields, 0)), TEMP r))
 
 let arrayIR (size, init) :Exp =
     Ex (Frame.externalCall("initArray", [unEx size; unEx init]))
@@ -257,7 +270,7 @@ let sequenceIR (exps: Exp list) :Exp =
     let len = List.length exps
 
     match exps with
-    | []  -> Nx (EXP (CONST 0))  // () is a statement !
+    | []  -> unitExp  // () is a statement !
     | [e] -> e
     | _   -> let firstN = blockCode(List.map unNx (List.take (len - 1) exps))
              let last = List.last exps

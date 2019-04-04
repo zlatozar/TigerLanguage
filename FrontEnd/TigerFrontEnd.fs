@@ -24,7 +24,7 @@ type ProgEnv = {venv: VEnv; fenv: FEnv; tenv: TEnv; exps: Translate.Exp list}
 let breakLevel = ref 0
 
 // Use it to continue analysis
-let errorTransExp = { exp=Translate.errExp; ty=NIL; name=None }
+let errorTransExp = { exp=Translate.unitExp; ty=NIL; name=None }
 
 // ______________________________________________________________________________
 //                                                              Helper functions

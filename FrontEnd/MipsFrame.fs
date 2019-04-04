@@ -48,7 +48,7 @@ let WORDSIZE = 4
 let R0 = Temp.newTemp() // always zero
 let AT = Temp.newTemp() // assembler temporary, reserved
 
-let RV = Temp.newTemp() // a.k.a 'V0', return value from function call
+let V0 = Temp.newTemp() // return value from function call
 let V1 = Temp.newTemp()
 
 // Used to pass the first four arguments to routines
@@ -87,6 +87,7 @@ let T9 = Temp.newTemp()
 let K0 = Temp.newTemp()
 let K1 = Temp.newTemp()
 
+let RV = V0
 let GP = Temp.newTemp() // Pointer to global area
 let SP = Temp.newTemp() // Stack Pointer
 let FP = Temp.newTemp() // Frame Pointer
@@ -99,7 +100,6 @@ let ZERO = R0
 
 let specialRegsMap = [
     (RV, "$v0");
-    (V1, "$v1");
     (R0, "$zero");
     (AT, "$at");
     (K0, "$k0")
@@ -109,13 +109,14 @@ let specialRegsMap = [
     (FP, "$fp");
     (RA, "$ra")]
 
+let specialRegs = List.map (fun (r, _) -> r) specialRegsMap
+
 let argRegsMap = [
     (A0, "$a0");
     (A1, "$a1");
     (A2, "$a2");
     (A3, "$a3")]
 
-let argRegsNum = List.length argRegsMap
 let argRegs = List.map (fun (r, _) -> r) argRegsMap
 
 // May be NOT overritten by called procedures
@@ -142,7 +143,8 @@ let callerSavesMap = [
     (T6, "$t6");
     (T7, "$t7");
     (T8, "$t8");
-    (T9, "$t9")]
+    (T9, "$t9");
+    (V1, "$v1")]
 
 let callerSavesRegs = List.map (fun (temp, _) -> temp) callerSavesMap
 
@@ -200,14 +202,14 @@ let newFrame (frameRec: FrameRec) =
 
         let rec allocFormal i allocated viewshift accesses = function
             | []                -> (allocated, List.rev viewshift, List.rev accesses)
-            | formal :: formals -> let incoming = if i < List.length argRegs
-                                                      then InReg (List.item i argRegs)
-                                                      else InFrame ((i - List.length argRegs + 1) * WORDSIZE)
+            | formal :: formals -> let place = if i < List.length argRegs
+                                                    then InReg (List.item i argRegs)
+                                                    else InFrame ((i - List.length argRegs + 1) * WORDSIZE)
 
-                                   let access = if formal then InFrame (-allocated * WORDSIZE) else InReg (Temp.newTemp())
-                                   let instr = Tree.MOVE (calcAccess access, calcAccess incoming)
+                                   let argAcc = if formal then InFrame (-allocated * WORDSIZE) else InReg (Temp.newTemp())
+                                   let instr = Tree.MOVE (calcAccess argAcc, calcAccess place)
 
-                                   allocFormal (i + 1) (if formal then allocated + 1 else allocated) (instr :: viewshift) (access :: accesses) formals
+                                   allocFormal (i + 1) (if formal then allocated + 1 else allocated) (instr :: viewshift) (argAcc :: accesses) formals
 
         allocFormal 0 0 [] [] formalParams
 
@@ -249,16 +251,16 @@ let private blockCode stmList =
         | stm :: stms -> SEQ (x, cons stm stms)
 
     match stmList with
-    | []      -> EXP (CONST 0)
+    | []      -> failwith "ERROR: Block code should be not empty."
     | x :: xs -> cons x xs
 
 // Defines what should be done before execute function body and after it's exit.
 //
 // ATTENTION: This first version is not optimal and there is a lot of room for optimization.
 let procEntryExit1 (frame: Frame, body: Stm) :Stm =
-    let args = frame.viewshift   // how to "see" args
+    let args = frame.viewshift   // how to "see" function actual parameters
 
-    let localsRA = List.map (fun reg -> (allocLocal frame false, reg)) (calleeSavesRegs@[RA])
+    let localsRA = List.map (fun reg -> (allocLocal frame false, reg)) (calleeSavesRegs @ [RA])
     let calleeSaveRegs = List.map (fun (localVar, reg) -> MOVE (exp localVar (TEMP FP), TEMP reg)) localsRA
     let restoreCalleeSaveRegs =
         List.map (fun (localInFrame, reg) -> MOVE (TEMP reg, exp localInFrame (TEMP FP))) (List.rev localsRA)
