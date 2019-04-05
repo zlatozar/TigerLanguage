@@ -129,8 +129,12 @@ let rec transVar ((venv: VEnv), fenv, tenv, level, breakpoint, (var: Absyn.TVar)
                                                           | []           -> error pos (sprintf "field `%s` is not a member of that record type." (Store.name record))
                                                                             errorTransExp
                                                           | (s, t)::rest -> if (s = record)
-                                                                                then { exp=Translate.fieldVarIR(variable.exp, sym, fieldTys);
+                                                                                then
+                                                                                     let findIndex symbol = List.findIndex (fun (elm, _) -> elm = symbol) fieldTys
+
+                                                                                     { exp=Translate.fieldVarIR(variable.exp, findIndex s);
                                                                                        ty=actualTy (getRecType (tenv, t, pos), pos); name=None }
+
                                                                                 else findField record rest
 
                                                       findField sym fieldTys

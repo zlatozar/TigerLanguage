@@ -42,7 +42,6 @@ let private blockCode stmList =
     | []      -> failwith "ERROR: Block code should be not empty."
     | x :: xs -> cons x xs
 
-// To use an IR as an Ex, call this function
 let unEx e =
     match e with
     | Ex exp        -> exp
@@ -62,7 +61,6 @@ let unEx e =
     | Nx s          -> ESEQ (s, CONST 0) // CONST 0, because 's' do not return value.
                                          // Could be interpret as false.
 
-//  To use an IR as an Nx, call this function
 let unNx e =
     match e with
     | Ex exp        -> EXP exp
@@ -70,7 +68,6 @@ let unNx e =
                        SEQ (genStmFunc(t, t), LABEL t) // call function and go to the end
     | Nx s          -> s
 
-//  To use an IR as an Cx, call this function
 let unCx e =
     match e with
     | Ex (CONST 0)  -> fun _ f -> JUMP (NAME f, [f])  // Tip: This two are needed because CJUMP requires two expressions
@@ -140,14 +137,13 @@ let simpleVarIR (access, varUsedLevel) :Exp =
 let private memplus ex1 ex2 = MEM (BINOP (PLUS, ex1, ex2))
 
 // All records and array values are pointers to record and array structures.
-// The base address(r) of the array is really the contents of a pointer variable,
+// The base address of the array is really the contents of a pointer variable,
 // so MEM is required to fetch this base address p. 159
-let fieldVarIR (r, sym, fieldList) :Exp =
-    // Pre-condition: 'sym' should be member of the record (fieldList) is handled
-    // by type checker. We assume that function return index in any cases.
-    let findindex list = List.findIndex (fun (elm, _) -> elm = sym) list
-    Ex (memplus (unEx r) (BINOP (MUL, CONST (findindex fieldList), CONST Frame.WORDSIZE)))
 
+let fieldVarIR (r, idx) :Exp =
+    Ex (memplus (unEx r) (BINOP (MUL, CONST idx, CONST Frame.WORDSIZE)))
+
+// If index is out of bounds result is inpredictable so check it
 let subscriptVarIR (a, idx) :Exp =
     let t = Temp.newTemp()
     Ex (ESEQ (blockCode [EXP (Frame.externalCall ("checkArrayBounds", [unEx a; unEx idx]));
@@ -421,4 +417,5 @@ let procEntryExit (level: Level, body) =
     | Nested({parent=_; frame=frame'}, _) -> let body' =
                                                  // Procedures do no return values. How to deal with RV?
                                                  Frame.procEntryExit1 (frame', MOVE (TEMP Frame.RV, unEx body))
-                                             fragList := Frame.PROC({body=body'; frame=frame'}) :: !fragList
+
+                                             fragList := !fragList @ [Frame.PROC ({body=body'; frame=frame'})]

@@ -8,19 +8,23 @@
     <Compile Include="Types.fs" />
     <Compile Include="Temp.fs" />
     <Compile Include="Tree.fs" />
+
     <Compile Include="Frame.fsi" />
     <Compile Include="MipsFrame.fs" />
+
+    <Compile Include="Translate.fsi" />
     <Compile Include="Translate.fs" />
+
     <Compile Include="Env.fs" />
     <Compile Include="StandardLibrary.fs" />
     <Compile Include="ErrorMsg.fs" />
-
 
     <Compile Include="FindEscape.fs" />
     <Compile Include="TigerFrontEnd.fs" />
     <Compile Include="PrintTree.fs" />
     <Compile Include="FrontEnd.fs" />
-    <None Include="Readme.md" />
+
+<None Include="Readme.md" />
   </ItemGroup>
 
   <ItemGroup>
