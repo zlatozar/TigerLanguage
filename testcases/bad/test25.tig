@@ -1,4 +1,4 @@
-/* Error : variable not record */
+/* Error: variable not record */
 
 let
     var d := 0

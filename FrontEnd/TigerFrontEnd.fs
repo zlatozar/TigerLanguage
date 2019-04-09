@@ -55,11 +55,11 @@ let checkBothInt (ty1, ty2, pos) =
     checkInt (ty2, pos)
 
 let checkBothIntOrString (ty1, ty2, pos) =
-    match (ty1, ty2) with
-    | (INT, INT)       -> ()
-    | (INT, _)         -> error pos (sprintf "expected an integer but given `%A`." ty2)
-    | (STRING, STRING) -> ()
-    | (STRING, _)      -> error pos (sprintf "expected a string but given `%A`." ty2)
+    match ty1, ty2 with
+    | INT, INT       -> ()
+    | INT, _         -> error pos (sprintf "expected an integer but given `%A`." ty2)
+    | STRING, STRING -> ()
+    | STRING, _      -> error pos (sprintf "expected a string but given `%A`." ty2)
     | _                -> error pos "expecting an integer or string."
 
 // Tip: NIL is a type and it is equal to every other p. 113
@@ -68,12 +68,16 @@ let checkType (t1:Ty, t2:Ty, pos) =
     let ty1 = actualTy (t1, pos)
     let ty2 = actualTy (t2, pos)
 
-    if (ty1 <> ty2) then
-        match (ty1, ty2) with
-        | (RECORD(_), NIL) -> ()
-        | (NIL, RECORD(_)) -> ()
-        | _                -> error pos "type mismatched."
-    else ()
+    match ty1, ty2 with
+    | RECORD(_), NIL -> ()
+    | NIL, RECORD(_) -> ()
+
+    | RECORD (_, unique1), RECORD (_, unique2) -> if (unique1 = unique2) then ()
+                                                    else error pos "records differ."
+    | ARRAY (_, unique1), ARRAY (_, unique2)   -> if (unique1 = unique2) then ()
+                                                    else error pos "arrays differ."
+    | _              -> if (ty1 = ty2) then ()
+                         else error pos "types mismatched."
 
 // Ensure both results can be compared by equality
 let checkBothEq (lt, rt, pos) =
@@ -87,13 +91,13 @@ let checkBothEq (lt, rt, pos) =
 let checkSame (lt, rt, pos) =
     let t = actualTy (lt, pos)
     match (t, rt) with
-    | (NIL, NIL)   -> ()
-    | (UNIT, UNIT) -> ()
-    | (_, UNIT)    -> error pos "expecting unit."
-    | _            -> checkBothEq (t, rt, pos)
+    | NIL, NIL   -> ()
+    | UNIT, UNIT -> ()
+    | _, UNIT    -> error pos "expecting unit."
+    | _          -> checkBothEq (t, rt, pos)
 
 let rec checkDup ((decNameList: Store.Symbol list), positions) =
-    match (decNameList, positions) with
+    match decNameList, positions with
     | (name::rest, pos::poss) -> if (List.exists (fun x -> name = x) rest)
                                      then error pos (sprintf "duplicated definition `%s`." (Store.name name))
                                      else checkDup(rest, poss)
@@ -120,33 +124,33 @@ let rec transVar ((venv: VEnv), fenv, tenv, level, breakpoint, (var: Absyn.TVar)
                                         errorTransExp
                             | Some v -> { exp=Translate.simpleVarIR(v.access, level); ty=actualTy (v.ty, pos); name=None }
 
-    | FieldVar (tVar, sym, pos)
-                         -> let variable = transVar (venv, fenv, tenv, level, breakpoint, tVar)
+    | FieldVar (rVar, fieldName, pos)
+                         -> let recVar = transVar (venv, fenv, tenv, level, breakpoint, rVar)
 
-                            match variable.ty with
+                            match recVar.ty with
                             | RECORD (fieldTys, _) -> let rec findField record fieldList =
                                                           match fieldList with
                                                           | []           -> error pos (sprintf "field `%s` is not a member of that record type." (Store.name record))
                                                                             errorTransExp
-                                                          | (s, t)::rest -> if (s = record)
+                                                          | (r, t)::rest -> if (r = record)
                                                                                 then
                                                                                      let findIndex symbol = List.findIndex (fun (elm, _) -> elm = symbol) fieldTys
 
-                                                                                     { exp=Translate.fieldVarIR(variable.exp, findIndex s);
+                                                                                     { exp=Translate.fieldVarIR(recVar.exp, findIndex r);
                                                                                        ty=actualTy (getRecType (tenv, t, pos), pos); name=None }
 
                                                                                 else findField record rest
 
-                                                      findField sym fieldTys
+                                                      findField fieldName fieldTys
 
                             | _                    -> error pos "expecting a record variable."
                                                       errorTransExp
 
-    | SubscriptVar (tVar, e, pos)
-                         -> let index = transExp (venv, fenv, tenv, level, breakpoint, e)
+    | SubscriptVar (arrVar, idx, pos)
+                         -> let index = transExp (venv, fenv, tenv, level, breakpoint, idx)
                             checkInt (actualTy (index.ty, pos), pos)
 
-                            let subcript = transVar (venv, fenv, tenv, level, breakpoint, tVar)
+                            let subcript = transVar (venv, fenv, tenv, level, breakpoint, arrVar)
                             let arrayTy = actualTy (subcript.ty, pos)
 
                             match arrayTy with
@@ -158,7 +162,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
     match exp with
     | IntExp i           -> { exp=Translate.intIR(i); ty=INT; name=None }
 
-    | StringExp (str, pos)
+    | StringExp (str, _)
                          -> { exp=Translate.strIR(str); ty=STRING; name=None }
 
     | NilExp             -> { exp=Translate.nilIR; ty=NIL; name=None }
@@ -269,7 +273,8 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
     | SeqExp expList     -> let exps = List.map (fun (exp, _) -> (transExp (venv, fenv, tenv, level, breakpoint, exp)).exp) expList
                             let ty' = match exps with
                                       | [] -> UNIT
-                                      | _  -> (transExp (venv, fenv, tenv, level, breakpoint, fst (List.last expList))).ty
+                                      | _  -> let (lastExp, _) = List.last expList
+                                              (transExp (venv, fenv, tenv, level, breakpoint, lastExp)).ty
 
                             {exp=Translate.sequenceIR(exps); ty=ty'; name=None}
 
@@ -321,7 +326,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
 
                             breakLevel := !breakLevel - 1
                             match Store.lookup (venv', forRec.var) with
-                            | None   -> error forRec.pos (sprintf "Compiler bug: Can't find '%s' inital variable of `for..to..do` cycle" (Store.name forRec.var))
+                            | None   -> error forRec.pos (sprintf "ERROR: Can't find '%s' inital variable of `for..to..do` cycle" (Store.name forRec.var))
                                         errorTransExp
                             | Some v -> { exp=Translate.forIR(Translate.simpleVarIR(v.access, level), lo.exp, hi.exp) body.exp; ty=UNIT; name=None }
 
@@ -363,8 +368,7 @@ and transDec (venv, fenv, tenv, level, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
                                 | None   -> error pos "can't find type definition."
                                             true
                                 | Some t -> match t with
-                                            | NAME (s2, tr) -> if (List.exists (fun x -> x = s2) seen)
-                                                                  then true
+                                            | NAME (s2, tr) -> if (List.exists (fun x -> x = s2) seen) then true
                                                                   else inCycle (s2::seen, !tr, pos)
                                             | _             -> false
 
@@ -389,12 +393,12 @@ and transDec (venv, fenv, tenv, level, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
 
     | VarDec varDecRec   -> let {exp=varExp; ty=expTy; name=expName } = transExp (venv, fenv, tenv, level, breakpoint, varDecRec.init)
 
-                            let acc = Translate.allocLocal level !varDecRec.escape // FindEscape sets if variable escape
+                            let acc = Translate.allocLocal level !varDecRec.escape // FindEscape sets it if variable escape
                             let var = Translate.simpleVarIR(acc, level)
 
                             // Is type specified?
                             match varDecRec.typ with
-                            | Some (sym, p) -> // Records and arrays are equal if there names are also equal
+                            | Some (sym, p) -> // Records and arrays are equal if there names are also equal (see bad/test(28/29).tig)
                                                let areAlias (ty1, ty2, pos) =
                                                    let rec actualAlias (ty, p, n) =
                                                        match ty with
@@ -447,6 +451,7 @@ and transDec (venv, fenv, tenv, level, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
                                 match Store.lookup (env, fieldRec.typ) with
                                 | None   -> error fieldRec.pos (sprintf "the type of the parameter `%s` is undefined." (Store.name fieldRec.name))
                                             { name=fieldRec.name; ty=NIL; escape=fieldRec.escape }
+
                                 | Some t -> { name=fieldRec.name; ty=actualTy (t, fieldRec.pos); escape=fieldRec.escape }
 
                             let functionHeader ((env: TEnv), funDecRec) :FunEntry =
@@ -499,7 +504,7 @@ and transDec (venv, fenv, tenv, level, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
                                                                      checkDup (allParmNames, allParamPos)
 
                                                                      match Store.lookup (fenv', funDecRec.name) with
-                                                                     | None          -> error funDecRec.pos "Tiger Semantic Analysis did not find function head."
+                                                                     | None          -> error funDecRec.pos "ERROR: Tiger Semantic Analysis did not find function head."
                                                                      | Some funEntry -> transBody (venv, fenv', tenv, breakpoint, funDecRec, funEntry)
 
                             List.iter checkFunDec funDecRecList

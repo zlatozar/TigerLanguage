@@ -1,4 +1,4 @@
-/* Error : definition of recursive functions is interrupted */
+/* Error: definition of recursive functions is interrupted */
 
 let
     function do_nothing1(a: int, b: string) :int =

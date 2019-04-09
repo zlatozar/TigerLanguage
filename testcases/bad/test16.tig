@@ -1,4 +1,4 @@
-/* Error: mutually recursive types thet do not pass through record or array */
+/* Error: type `a` is involved in cyclic definition */
 
 let
     type a=c

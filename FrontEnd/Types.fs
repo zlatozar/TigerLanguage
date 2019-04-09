@@ -2,7 +2,7 @@ module Types
 
 open Store
 
-// can be used to compare addresses
+// Can be used to compare (base addresses of) records and arrays. See bad/test(28/29).tig
 type Unique = unit ref
 
 // Tip: Simplify types as much as possible
