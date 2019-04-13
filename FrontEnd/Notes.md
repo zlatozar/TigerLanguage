@@ -80,7 +80,7 @@ storing the sum in register `$fp`.
 
 ## Chapter 7
 
-Describes the steps that should be made to transfrom AST to IR using the data structures(frames)
+Describes the steps that should be made to transform AST to IR using the data structures(frames)
 defined in previous chapter.
 
 _Tree language_ instructions should be understood very well before start implementing translation.
@@ -93,14 +93,14 @@ is a tree traversal and jumps to labels.
 - with `SEQ` could be created instruction sequences via **CONSing**.
   For example:
 
-  ```
+```
   SEQ
     (MOVE (TEMP 100,CONST 1),
      SEQ
        (LABEL ("L_0", 0),
         SEQ
           (MOVE (TEMP 100,CONST 2),
-           SEQ (MOVE (TEMP 100,CONST 3),LABEL ("L_0", 0)))))
+           SEQ (MOVE (TEMP 100, CONST 3),LABEL ("L_0", 0)))))
 ```
 
   It is not a good idea to write this code by hand. That's why in book is suggested to write a function
@@ -127,15 +127,16 @@ blockCode [ ...
    * `MOVE(MEM exp1, exp2)` First evaluate _exp1_ yielding address `addr`(store location). Then evaluate _exp2_ and
      store the result into _wordSize_(defined in Frame interface) bytes of memory **starting** at `addr`.
 
-- `EXP` evaluate given expression and **discards** the result.
+- `EXP e` evaluate given expression and **discards** the result.
+   In which cases could be used? `externalCall` for example if we call procedure.
 
-- `TEMP ..` assume it is a register.
+- `TEMP e` assume it is a register.
 
 #### Exp
 
 - `MEM(e)` when is used as the **left child** of a `MOVE`, it means _"store"_, but anywhere else it means
   **"fetch"** - take the contents of _WORDSIZE_ bytes of memory from address `e`! In other words:
-   Computes value of `e` and looks up contents of memory at that address.
+   Computes value of `e` and looks up contents of memory at that address. Analog of C pointers `MEM e -> *e`.
 
 - `CALL(exp, params)` first execute `exp` to infer function name then calls it with given parameters.
 

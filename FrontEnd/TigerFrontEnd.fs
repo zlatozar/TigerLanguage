@@ -150,6 +150,7 @@ let rec transVar ((venv: VEnv), fenv, tenv, level, breakpoint, (var: Absyn.TVar)
                          -> let index = transExp (venv, fenv, tenv, level, breakpoint, idx)
                             checkInt (actualTy (index.ty, pos), pos)
 
+                            // in practice first elemet of the array see ArrayExp(Translate.arrayIR particulary)
                             let subcript = transVar (venv, fenv, tenv, level, breakpoint, arrVar)
                             let arrayTy = actualTy (subcript.ty, pos)
 
@@ -391,7 +392,7 @@ and transDec (venv, fenv, tenv, level, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
 
                             { venv=venv; fenv=fenv; tenv=tenv'''; exps=[] }
 
-    | VarDec varDecRec   -> let {exp=varExp; ty=expTy; name=expName } = transExp (venv, fenv, tenv, level, breakpoint, varDecRec.init)
+    | VarDec varDecRec   -> let {exp=varExp; ty=expTy; name=expName} = transExp (venv, fenv, tenv, level, breakpoint, varDecRec.init)
 
                             let acc = Translate.allocLocal level !varDecRec.escape // FindEscape sets it if variable escape
                             let var = Translate.simpleVarIR(acc, level)

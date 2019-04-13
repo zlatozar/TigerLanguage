@@ -98,7 +98,7 @@ let formals (level: Level) = match level with
 let allocLocal (level: Level) escape =
     match level with
     | Top                   -> failwithf "ERROR: Locals can't exist on top level."
-    | Nested (nestedRec, _) -> (level, Frame.allocLocal nestedRec.frame escape)
+    | Nested (nestedRec, _) -> (level, Frame.allocFrameLocal nestedRec.frame escape)
 
 // ____________________________________________________________________________
 //                     IR is independent of the details of the source language
@@ -116,40 +116,44 @@ let newBreakpoint = Temp.newLabel()
 
 // Must produce a chain of MEMs as fetch static links between the level of use
 // and the level of definition - the level within the variable's access.
-let simpleVarIR (access, varUsedLevel) :Exp =
-    let (defLevel, defAccess) = access
+let simpleVarIR (access, useLevel) :Exp =
+    let (defineLevel, frameAccess) = access
 
-    match defLevel with
+    match defineLevel with
     | Top               -> failwithf "ERROR: Can't pass Top level as current."
-    | Nested(_, defRef) -> let rec iter(curLevel, offsetAcc) =
+    | Nested(_, defRef) -> let rec genStaticLinkChain curLevel fpOffset =
                                match curLevel with
                                | Top                   -> failwithf "ERROR: Failed to find level."
                                | Nested(level, curRef) -> if (defRef = curRef)
-                                                              then Frame.exp(defAccess) offsetAcc
-                                                              else let staticlink = List.head (Frame.formals level.frame)
-                                                                   // MEM(BINOP(PLUS, (MEM(BINOP(PLUS, ... (MEM(BINOP(PLUS, TEMP(Frame.FP), CONST(k))...)
-                                                                   iter(level.parent, Frame.exp(staticlink) offsetAcc)
+                                                              then Frame.exp frameAccess fpOffset
+                                                              else let staticLink = List.head (Frame.formals level.frame)
+                                                                   // MEM(BINOP(PLUS, (MEM(BINOP(PLUS, ... (MEM(BINOP(PLUS, TEMP(Frame.FP), CONST(k))..))
+                                                                   genStaticLinkChain level.parent (Frame.exp staticLink fpOffset)
 
-                           // access is defined as offset from the FP p. 156
-                           Ex (iter(varUsedLevel, TEMP(Frame.FP)))
+                           // use static links up to variable definition
+                           Ex (genStaticLinkChain useLevel (TEMP Frame.FP))
 
 // MEM (BINOP (PLUS, ex1, ex2) as +(ex1, ex2)
 let private memplus ex1 ex2 = MEM (BINOP (PLUS, ex1, ex2))
 
 // All records and array values are pointers to record and array structures.
 // The base address of the array is really the contents of a pointer variable,
-// so MEM is required to fetch this base address p. 159
+// so MEM is required to dereference the pointer(to take the content) p. 159
 
 let fieldVarIR (r, idx) :Exp =
     Ex (memplus (unEx r) (BINOP (MUL, CONST idx, CONST Frame.WORDSIZE)))
 
-// If index is out of bounds result is inpredictable so check it
+// (array base address) + (index * WORDSIZE)
 let subscriptVarIR (a, idx) :Exp =
     let t = Temp.newTemp()
-    Ex (ESEQ (blockCode [EXP (Frame.externalCall ("checkArrayBounds", [unEx a; unEx idx]));
-                         MOVE (TEMP t, BINOP (PLUS, unEx a, CONST Frame.WORDSIZE))
+
+    Ex (ESEQ (blockCode [
+                          EXP (Frame.externalCall ("checkArrayBounds", [unEx a; unEx idx]));
+                          MOVE (TEMP t, BINOP (PLUS, unEx a, CONST Frame.WORDSIZE))
                         ],
               MEM (BINOP (PLUS, TEMP t, BINOP (MUL, unEx idx, CONST Frame.WORDSIZE)))))
+
+// All values and l-values in Tiger are scalar (occupy one word)
 
 // ____________________________________________________________________________
 //                                                            transExp section

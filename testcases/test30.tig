@@ -1,4 +1,4 @@
-/* Synonyms are fine */
+/* Synonyms are fine. See bad examples test28 and test29 */
 let
     type a = array of int
     type b = a

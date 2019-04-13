@@ -6,7 +6,7 @@ module Frame
 //   - the number of locals allocated so far
 //   - the `label` at which the function's machine code is to begin (see p.140)
 
-// This full version is on p. 260
+// Contains machine-dependant definitions
 
 // ____________________________________________________________________________
 //                                                                       Types
@@ -59,8 +59,8 @@ type FrameRec = { name: Temp.Label; formalsEsc: bool list }
 // Create new frame
 val newFrame   : FrameRec -> Frame
 
-// Allocate memory with one machine word size and return it's location
-val allocLocal : Frame -> bool -> Access
+// Give register or allocate memory with one machine word size and return it's location
+val allocFrameLocal : Frame -> bool -> Access
 
 // Routine name is used as label
 val name       : Frame -> Temp.Label

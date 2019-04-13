@@ -185,8 +185,8 @@ NOTE: For return address, RA register will be used
 // Turns a Frame.Access into the Tree expression.
 // Use it to reach a variable/expression result.
 //
-// For a simple variable 'v' declared in the current procedure's stack frame,
-// 'k' is the offset of 'v' within the frame and 'fp' is the frame pointer register (p. 154).
+// NOTE: 'fp' is FP only when accessing variable from its own level
+//       in other cases it's an offset from FP.
 let exp access fp :Exp =
     match access with
     | InFrame(k) -> MEM (BINOP (PLUS, fp, CONST k))
@@ -218,7 +218,7 @@ let newFrame (frameRec: FrameRec) =
       maxOutgoing=0; fpaccess=InFrame (-allocated * WORDSIZE) }
 
 // Return one word in memory in given frame or a register if not escapes
-let allocLocal (frame: Frame) escape =
+let allocFrameLocal (frame: Frame) escape =
     if escape then
         let access = InFrame(-frame.allocated  * WORDSIZE)
         frame.allocated <- frame.allocated + 1
@@ -239,7 +239,28 @@ let tempName t =
     | Some name -> name
     | None      -> Temp.makeString t
 
-let string (label, str) =  sprintf "%s: .asciiz \"%s\"\n" (Store.name label) str
+
+// Representation of strings that serves well is to have a string pointer point
+// to a one-word integer containing the length (number of characters), followed
+// immediately by the characters themselves p. 163
+let string (label, s) =
+    let size = String.length s
+
+    let bytes :int array =
+        Array.zeroCreate (size + WORDSIZE)
+
+    // Why?
+    Array.set bytes 0 (size &&& 0x000000ff)
+    Array.set bytes 1 ((size &&& 0x0000ff00) >>> 8)
+    Array.set bytes 2 ((size &&& 0x00ff0000) >>> 16)
+    Array.set bytes 3 ((size &&& 0xff000000) >>> 24)
+
+    String.iteri (fun i c -> Array.set bytes (i + WORDSIZE) ((int) c)) s
+
+    let byteString =
+        Array.fold (fun bs b -> sprintf "%s%s " bs ((string) b)) "" bytes
+
+    sprintf ".data\n.align 2\n%s:\n\t.byte %s \n.text\n" (Store.name label) byteString
 
 let externalCall (name, args) = CALL (NAME (Temp.namedLabel name), args)
 
@@ -260,7 +281,7 @@ let private blockCode stmList =
 let procEntryExit1 (frame: Frame, body: Stm) :Stm =
     let args = frame.viewshift   // how to "see" function actual parameters
 
-    let localsRA = List.map (fun reg -> (allocLocal frame false, reg)) (calleeSavesRegs @ [RA])
+    let localsRA = List.map (fun reg -> (allocFrameLocal frame false, reg)) (calleeSavesRegs @ [RA])
     let calleeSaveRegs = List.map (fun (localVar, reg) -> MOVE (exp localVar (TEMP FP), TEMP reg)) localsRA
     let restoreCalleeSaveRegs =
         List.map (fun (localInFrame, reg) -> MOVE (TEMP reg, exp localInFrame (TEMP FP))) (List.rev localsRA)
