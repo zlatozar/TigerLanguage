@@ -24,7 +24,8 @@
     <Compile Include="PrintTree.fs" />
     <Compile Include="FrontEnd.fs" />
 
-<None Include="Readme.md" />
+    <None Include="Notes.md" />
+    <None Include="Readme.md" />
   </ItemGroup>
 
   <ItemGroup>

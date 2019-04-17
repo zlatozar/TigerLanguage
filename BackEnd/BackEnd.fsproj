@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Compile Include="TigerBackEnd.fs /-->
+    <Compile Include="BackEnd.fs" />
+
+    <None Include="Notes.md" />
+    <None Include="Readme.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FrontEnd\FrontEnd.fsproj" />
+  </ItemGroup>
+
+</Project>
