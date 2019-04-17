@@ -179,7 +179,7 @@ let strIR (newString: string) :Exp =
 // nil is just CONS 0
 let nilIR :Exp = Ex (CONST 0)
 
-let breakIR (label) :Exp = Nx (JUMP(NAME label, [label]))
+let breakIR (doneLabel) :Exp = Nx (JUMP (NAME doneLabel, [doneLabel]))
 
 // Assign do not return value
 let assignIR (lhs, rhs) :Exp = Nx (MOVE (unEx lhs, unEx rhs))
@@ -363,10 +363,10 @@ let ifThenElseIR (test, thenStm, elseStm) :Exp =
                                               LABEL t],
                                     TEMP r))
 
-let whileIR test =
+// If there is a 'break' inside pass done lable to it
+let whileIR (test, doneLabel) =
     let testLabel = Temp.newLabel()
     let bodyLabel = Temp.newLabel()
-    let doneLabel = Temp.newLabel()
 
     let testStmFunc = unCx test
 
@@ -382,15 +382,13 @@ let whileIR test =
                               LABEL doneLabel
                               ])
 
-let forIR (var, lo, hi) =
+let forIR (var, lo, hi, doneLabel) =
     let testLabel = Temp.newLabel()
     let bodyLabel = Temp.newLabel()
 
     let varExp = unEx var
     let loExp = unEx lo
     let hiExp = unEx hi
-
-    let doneLabel = Temp.newLabel()
 
     fun body -> let bodyStm = unNx body
                 Nx (blockCode [ MOVE (varExp, loExp);

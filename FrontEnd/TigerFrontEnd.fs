@@ -301,12 +301,14 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
                             if test.ty = INT then ()
                                 else error whileRec.pos "test clause in `while..do` expression should be an integer."
 
-                            let body = transExp (venv, fenv, tenv, level, Translate.newBreakpoint, whileRec.body)
+                            let doneLabel = Translate.newBreakpoint
+
+                            let body = transExp (venv, fenv, tenv, level, doneLabel, whileRec.body)
                             if body.ty = UNIT then ()
                                 else error whileRec.pos "body of the `while..do` expression does not return a value."
 
                             breakLevel := !breakLevel - 1
-                            { exp=Translate.whileIR(test.exp) body.exp; ty=UNIT; name=None }
+                            { exp=Translate.whileIR(test.exp, doneLabel) body.exp; ty=UNIT; name=None }
 
     | ForExp forRec      -> breakLevel := !breakLevel + 1
 
@@ -321,7 +323,9 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
 
                             let {venv=venv'; fenv=_; tenv=_} = transDec (venv, fenv, tenv, level, breakpoint, id)
 
-                            let body = transExp (venv', fenv, tenv, level, Translate.newBreakpoint, forRec.body)
+                            let doneLabel = Translate.newBreakpoint
+
+                            let body = transExp (venv', fenv, tenv, level, doneLabel, forRec.body)
                             if body.ty = UNIT then ()
                                 else error forRec.pos "body of the `for..to..do` expression does not return a value."
 
@@ -329,7 +333,7 @@ and transExp ((venv: VEnv), (fenv: FEnv), (tenv: TEnv), level, breakpoint, (exp:
                             match Store.lookup (venv', forRec.var) with
                             | None   -> error forRec.pos (sprintf "ERROR: Can't find '%s' inital variable of `for..to..do` cycle" (Store.name forRec.var))
                                         errorTransExp
-                            | Some v -> { exp=Translate.forIR(Translate.simpleVarIR(v.access, level), lo.exp, hi.exp) body.exp; ty=UNIT; name=None }
+                            | Some v -> { exp=Translate.forIR (Translate.simpleVarIR(v.access, level), lo.exp, hi.exp, doneLabel) body.exp; ty=UNIT; name=None }
 
     | LetExp letRec      -> let transCurrentDec progEnv dec =
                                let decl = transDec (progEnv.venv, progEnv.fenv, progEnv.tenv, level, breakpoint, dec)
@@ -458,7 +462,8 @@ and transDec (venv, fenv, tenv, level, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
                             let functionHeader ((env: TEnv), funDecRec) :FunEntry =
                                 let paramsTy = List.map (fun p -> (transParam env p).ty) funDecRec.param
 
-                                let newLevel = Translate.newLevel { parent=level; name=funDecRec.name; formals=List.map (fun (p: FieldRec) -> !p.escape) funDecRec.param }
+                                let newLevel = Translate.newLevel { parent=level; name=funDecRec.name;
+                                                                    formals=List.map (fun (p: FieldRec) -> !p.escape) funDecRec.param }
 
                                 match funDecRec.result with
                                 | Some (sym, pos) -> match Store.lookup (env, sym) with
@@ -495,10 +500,10 @@ and transDec (venv, fenv, tenv, level, breakpoint, (dec: Absyn.TDec)) :ProgEnv =
                                                                                  Translate.procEntryExit (funEntry.level, body.exp)
 
                                 // procdure should not have return type
-                                | None                     -> let body = transExp ((List.fold addParam venv getParams), fenv, tenv, level, breakpoint, funDecRec.body)
+                                | None               -> let body = transExp ((List.fold addParam venv getParams), fenv, tenv, level, breakpoint, funDecRec.body)
 
-                                                              checkSame (body.ty, UNIT, funDecRec.pos)
-                                                              Translate.procEntryExit (funEntry.level, body.exp)
+                                                        checkSame (body.ty, UNIT, funDecRec.pos)
+                                                        Translate.procEntryExit (funEntry.level, body.exp)
 
                             let checkFunDec (funDecRec: FunDecRec) = let allParmNames = List.map (fun (x: FieldRec) -> x.name) funDecRec.param
                                                                      let allParamPos =  List.map (fun (x: FieldRec) -> x.pos) funDecRec.param

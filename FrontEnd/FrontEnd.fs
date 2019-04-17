@@ -18,10 +18,9 @@ module FrontEnd =
         fragList := []
 
         let mainMethod = { parent=Top; name=Temp.namedLabel "__main"; formals=[] }
-        let mainLevel = newLevel(mainMethod)
+        let mainLevel = newLevel mainMethod
 
-        let {exp=exp; ty=_} = transExp (baseVarEnv, baseFunEnv,
-                                  baseTyEnv, mainLevel,
+        let {exp=exp; ty=_} = transExp (baseVarEnv, baseFunEnv, baseTyEnv, mainLevel,
                                   Temp.newLabel(), (Tiger.Parser.fromString str))
 
         // translate to IR
@@ -32,10 +31,9 @@ module FrontEnd =
         fragList := []
 
         let mainMethod = { parent=Top; name=Temp.namedLabel "__main"; formals=[] }
-        let mainLevel = newLevel(mainMethod)
+        let mainLevel = newLevel mainMethod
 
-        let {exp=exp; ty=_} = transExp (baseVarEnv, baseFunEnv,
-                                  baseTyEnv, mainLevel,
+        let {exp=exp; ty=_} = transExp (baseVarEnv, baseFunEnv, baseTyEnv, mainLevel,
                                   Temp.newLabel(), (Tiger.Parser.fromFile filename))
 
         // translate to IR

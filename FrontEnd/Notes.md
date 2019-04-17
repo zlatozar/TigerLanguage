@@ -138,10 +138,12 @@ blockCode [ ...
   **"fetch"** - take the contents of _WORDSIZE_ bytes of memory from address `e`! In other words:
    Computes value of `e` and looks up contents of memory at that address. Analog of C pointers `MEM e -> *e`.
 
+**Order of parameter execution is important!** See chapter 8 introduction.
+
 - `CALL(exp, params)` first execute `exp` to infer function name then calls it with given parameters.
 
-- `ESEQ(stm, exp)` statement is evaluated for **side effects** (do not return value), then _exp_ is evaluated for a result.
-   Evaluates an expression `exp` **after** completion of a statement `stm` that might affect result of `exp`.
+- `ESEQ(stm, exp)` first statement is evaluated for **side effects** (do not return value), then _exp_ is evaluated
+   for a result. Evaluates an expression `exp` **after** completion of a statement `stm` that might affect result of `exp`.
 
 ### Translation example
 
@@ -168,16 +170,33 @@ becomes:
 
 ```
 SEQ(
-    MOVE(TEMP(n), CONST(0)),
+    MOVE(TEMP n, CONST 0),
   LABEL(HEAD),
-    CJUMP(LT(TEMP(n), CONST(10)),
+    CJUMP(LT, TEMP n, CONST 10),
           BODY, END),
-  LABEL(BODY),
-    MOVE(TEMP(n), ADD(TEMP(n),
+
+  LABEL body,
+    MOVE(TEMP n, ADD(TEMP(n),
          CONST(1))),
     JUMP(NAME(HEAD)),
   LABEL(END)
 )
+```
+
+### FOR loop translation
+
+```
+let var i := lo
+    var limit := hi
+in
+    if lo <= hi
+        then
+            while 1 do
+                ( body;
+                  if i < limit
+                      then i := i + 1
+                      else break )
+ end
 ```
 
 ### Function IR definition
@@ -197,6 +216,14 @@ Each Tiger function is translated into a _prologue_, a _body_  and an _epilogue_
 9. an instruction to reset the **stack pointer**
 10. a jump to the **return address**
 11. pseudo-instructions for the function end
+
+For `procEntryExit1` steps _2, 4, 5, 6, 7_ and _8_ should be implemented.
+Other depends from frame size and will be implemented when register are allocated.
+
+### Frame
+
+_Look at the created list frame as program that operates on given machine architecture._
+_It contains instructions that should be executed or strings(do nothing)._
 
 #### MIPS Simulator
 

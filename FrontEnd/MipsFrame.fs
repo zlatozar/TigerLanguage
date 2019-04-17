@@ -239,28 +239,12 @@ let tempName t =
     | Some name -> name
     | None      -> Temp.makeString t
 
-
 // Representation of strings that serves well is to have a string pointer point
 // to a one-word integer containing the length (number of characters), followed
 // immediately by the characters themselves p. 163
 let string (label, s) =
     let size = String.length s
-
-    let bytes :int array =
-        Array.zeroCreate (size + WORDSIZE)
-
-    // Why?
-    Array.set bytes 0 (size &&& 0x000000ff)
-    Array.set bytes 1 ((size &&& 0x0000ff00) >>> 8)
-    Array.set bytes 2 ((size &&& 0x00ff0000) >>> 16)
-    Array.set bytes 3 ((size &&& 0xff000000) >>> 24)
-
-    String.iteri (fun i c -> Array.set bytes (i + WORDSIZE) ((int) c)) s
-
-    let byteString =
-        Array.fold (fun bs b -> sprintf "%s%s " bs ((string) b)) "" bytes
-
-    sprintf ".data\n.align 2\n%s:\n\t.byte %s \n.text\n" (Store.name label) byteString
+    sprintf ".data\n%s:\n  .word %i\n.asscii \"%s\"" (Store.name label) size s
 
 let externalCall (name, args) = CALL (NAME (Temp.namedLabel name), args)
 

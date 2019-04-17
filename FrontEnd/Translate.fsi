@@ -97,12 +97,9 @@ val ifThenIR : Exp * Exp -> Exp
 
 val ifThenElseIR : Exp * Exp * Exp -> Exp
 
-// Test expression and return function that expects `while` body
+val whileIR : Exp * Label -> (Exp -> Exp)
 
-val whileIR : Exp -> (Exp -> Exp)
-
-// Varialble(counter), `low`, `hi` and function that exprects `for` body
-val forIR : Exp * Exp * Exp -> (Exp -> Exp)
+val forIR : Exp * Exp * Exp * Label -> (Exp -> Exp)
 
 val letIR : Exp list * Exp -> Exp
 
