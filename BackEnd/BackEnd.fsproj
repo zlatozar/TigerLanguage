@@ -5,7 +5,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Compile Include="TigerBackEnd.fs /-->
+    <Compile Include="Canon.fs" />
+    <!-- Compile Include="Codegen.fsi" /-->
+    <!-- Compile Include="MipsCondegen.fs" /-->
     <Compile Include="BackEnd.fs" />
 
     <None Include="Notes.md" />

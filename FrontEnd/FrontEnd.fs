@@ -13,7 +13,7 @@ module FrontEnd =
 // ______________________________________________________________________________
 //
 
-    let transFromString (str: string) =
+    let transFromString (str: string) :Frame.Frag list =
         // clear fragment list and define entry point (main function)
         fragList := []
 
@@ -27,7 +27,7 @@ module FrontEnd =
         procEntryExit(mainLevel, exp)
         !fragList
 
-    let transFromFile (filename: string) =
+    let transFromFile (filename: string) :Frame.Frag list =
         fragList := []
 
         let mainMethod = { parent=Top; name=Temp.namedLabel "__main"; formals=[] }

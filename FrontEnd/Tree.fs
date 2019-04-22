@@ -14,7 +14,7 @@ type Stm =
     | MOVE of Exp * Exp
     | EXP of Exp
 
-and Exp = 
+and Exp =
     | BINOP of BinOp * Exp * Exp
     | MEM of Exp
     | TEMP of Temp.Temp
@@ -22,17 +22,31 @@ and Exp =
     | NAME of Label
     | CONST of int
     | CALL of Exp * Exp list
-    
-and BinOp = 
+
+and BinOp =
     | PLUS | MINUS
-    | MUL  | DIV 
-    | AND  | OR 
-    | LSHIFT | RSHIFT | ARSHIFT 
+    | MUL  | DIV
+    | AND  | OR
+    | LSHIFT | RSHIFT | ARSHIFT
     | XOR
 
-and RelOp = 
-    | EQ  | NE 
-    | LT  | GT 
-    | LE  | GE 
-    | ULT | ULE 
+and RelOp =
+    | EQ  | NE
+    | LT  | GT
+    | LE  | GE
+    | ULT | ULE
     | UGT | UGE
+
+// Needed in BackEnd (see Canon.fs)
+let notRelop relOp =
+    match relOp with
+    | EQ -> NE
+    | NE -> EQ
+    | LT -> GE
+    | GT -> LE
+    | LE -> GT
+    | GE -> LT
+    | ULT -> UGE
+    | ULE -> UGT
+    | UGT -> ULE
+    | UGE -> ULT
