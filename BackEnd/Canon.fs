@@ -1,4 +1,4 @@
-module Conon
+module Canon
 
 open Tree
 
