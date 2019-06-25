@@ -5,9 +5,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Chapter 8 -->
     <Compile Include="Canon.fs" />
-    <!-- Compile Include="Codegen.fsi" /-->
-    <!-- Compile Include="MipsCondegen.fs" /-->
+
+    <!-- Chapter 9 -->
+    <Compile Include="Assem.fs" />
+    <!--Compile Include="Codegen.fsi" /-->
+    <!-- Compile Include="MipsCodegen.fs" /-->
+
+    <!-- Chapter 10 -->
+
+    <!-- Chapter 11 -->
+
+    <!-- Put all thogether -->
     <Compile Include="BackEnd.fs" />
 
     <None Include="Notes.md" />

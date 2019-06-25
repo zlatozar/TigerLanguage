@@ -4,7 +4,7 @@ open Tree
 
 // Olin Shivers' version
 
-// From an arbitrary Tree statement, produce a list of cleaned trees
+// From an arbitrary Tree language statement, produce a list of cleaned trees
 // satisfying the following properties:
 //    1. No SEQ's or ESEQ's
 //    2. The parent of every CALL is an EXP(..) or a MOVE(TEMP t, ..)
@@ -21,14 +21,11 @@ open Tree
 //      a := n * r	                // MOVE
 //      rv := a		                // MOVE
 //      goto DONE	                // JUMP
-//
-// The right-hand sides of register assignments and memory stores can be pure
-// expression trees or function calls. Funcall args must be pure expression trees.
 let linearize stm0 =
 
     let nop = EXP (CONST 0)
 
-    // Eliminate useless NOP or unite in a SEQ
+    // Eliminate useless NOP or unite. SEQ becomes on top.
     let ( % ) x y =
         match x, y with
         | EXP (CONST _), _ -> y
@@ -41,8 +38,8 @@ let linearize stm0 =
         | s          -> f s
 
     // 'stmt' - a list of Tree statements.
-    // 'e'    - side-effect-free Tree expression -- won't write a temp or
-    //          memory and guaranteed to terminate.
+    // 'e'    - side-effect-free Tree expression -- won't write a TEMP or
+    //          MEM and guaranteed to terminate.
     //
     // - Return 'true' if we are sure that executing (stmt; exp) produces
     //   the same value as (t := exp; stmt; t) for some fresh variable 't'.
@@ -58,6 +55,8 @@ let linearize stm0 =
         | _, NAME _    -> true
         | _, CONST _   -> true
         | stmt, BINOP (_, e1, e2) -> commutes stmt e1 && commutes stmt e2
+
+        // If 'stmt' writes in TEMP or MEM 'e' should not reference them
         | stmt, TEMP t            -> stmtSub (function
                                                 | JUMP _            -> false
                                                 | CJUMP _           -> false
@@ -79,8 +78,8 @@ let linearize stm0 =
 
         | _ -> failwithf "ERROR: Unexpected statement in `commute`."
 
-    // Boil out the side-effects into a Stm list, and render the left-over,
-    // pure expressions. (stmt; exp) to (t := exp; stmt; t) if commute.
+    // Reorder list of expressions and return pair (stmt * exp list)
+    // (stmt; exp) to (t := exp; stmt; t) if commute.
     let rec doExps = function
         | [] -> (nop, [])
         | h::t -> let (stm1', e') = doExp h
@@ -101,6 +100,7 @@ let linearize stm0 =
                             match doExps [a; b] with
                             | stm', [a'; b'] -> stm' % CJUMP (p, a', b', t, f)
                             | _              -> failwithf "ERROR: Illegal argument in CJUMP."
+        // MOVE case
         | MOVE (TEMP t, b) ->
                             let (stm', rv) = doRVal b
                             stm' % MOVE (TEMP t, rv)
@@ -115,13 +115,13 @@ let linearize stm0 =
         | MOVE (ESEQ _ as e, b) ->
                             let (stm1', e') = doExp e
                             stm1' % doStm (MOVE (e', b))
+
         | EXP e ->
                             let (stm', _) = doExp e
                             stm'
         | LABEL _ as label -> label
         | _                -> failwithf "ERROR: Unexpected expression."
 
-    // Boil out the side-effects into a Stm list, and render the left-over, pure expression.
     and doExp = function
         | BINOP (p, a, b) -> match doExps [a; b] with
                              | stm', [a'; b'] -> (stm', BINOP (p, a', b'))
@@ -211,7 +211,7 @@ let rec splitLast = function
                 (h::t', last)
     | []     -> failwithf "ERROR: Can't split emtpy list."
 
-// Every CJUMP is followed by false lablel p. 181
+// Every CJUMP is followed by 'false' lablel p. 181
 let rec trace table block rest =
     match block with
     | LABEL lab :: _ as b ->
