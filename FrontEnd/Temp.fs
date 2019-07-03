@@ -6,6 +6,7 @@ module Temp
 
 type Temp = int
 
+// Map wrapper
 type Table<'a> = private Table of Map<int, 'a>
 
 [<RequireQualifiedAccess>]

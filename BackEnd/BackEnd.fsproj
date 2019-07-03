@@ -14,6 +14,8 @@
     <Compile Include="MipsCodegen.fs" />
 
     <!-- Chapter 10 -->
+    <Compile Include="Graph.fs" />
+    <Compile Include="Flow.fs" />
 
     <!-- Chapter 11 -->
 
