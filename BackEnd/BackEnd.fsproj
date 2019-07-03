@@ -10,8 +10,8 @@
 
     <!-- Chapter 9 -->
     <Compile Include="Assem.fs" />
-    <!--Compile Include="Codegen.fsi" /-->
-    <!-- Compile Include="MipsCodegen.fs" /-->
+    <Compile Include="Codegen.fsi" />
+    <Compile Include="MipsCodegen.fs" />
 
     <!-- Chapter 10 -->
 
