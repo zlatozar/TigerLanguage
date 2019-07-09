@@ -41,3 +41,70 @@ let ``Format assembly`` () =
                                                    jump = None})
     // Generated assembler is aligned with tab to have room for labels
     assemInstr |> should equal "        add 103, 101, 102"
+
+// Chapter 10
+
+open GraphRep
+
+[<Fact>]
+let ``Graph length`` () =
+    let g = Graph.newGraph
+
+    Graph.newNode g |> ignore
+    Graph.newNode g |> ignore
+
+    (List.length (Graph.nodes g)) |> should equal 2
+
+[<Fact>]
+let ``Make eadge and check successors and predcessors`` () =
+    let g = Graph.newGraph
+
+    let n1 = Graph.newNode g
+    let n2 = Graph.newNode g
+    let n3 = Graph.newNode g
+
+    Graph.mkEdge n1 n3
+    Graph.mkEdge n2 n3
+
+    (Graph.succ n1) |> should equal [n3]
+    (Graph.succ n2) |> should equal [n3]
+    (Graph.pred n3) |> should equal [n2; n1]
+
+[<Fact>]
+let ``Delete eadge and check successors and predcessors`` () =
+    let g = Graph.newGraph
+
+    let n1 = Graph.newNode g
+    let n2 = Graph.newNode g
+    let n3 = Graph.newNode g
+    Graph.mkEdge n1 n3
+    Graph.mkEdge n2 n3
+
+    Graph.rmEdge n2 n3
+
+    (Graph.succ n2) |> should be Empty
+    (Graph.pred n3) |> should equal [n1]
+
+[<Fact>]
+let ``Test graph adjacency`` () =
+    let g = Graph.newGraph
+
+    let n1 = Graph.newNode g
+    let n2 = Graph.newNode g
+    let n3 = Graph.newNode g
+    let n4 = Graph.newNode g
+
+    Graph.mkEdge n1 n2
+    Graph.mkEdge n2 n3
+    Graph.mkEdge n3 n4
+    Graph.mkEdge n4 n1
+
+    (Graph.adj n1) |> should equal [n4; n2]
+    (Graph.adj n2) |> should equal [n1; n3]
+    (Graph.adj n3) |> should equal [n2; n4]
+    (Graph.adj n4) |> should equal [n3; n1]
+
+    Graph.rmEdge n2 n3
+
+    (Graph.adj n2) |> should equal [n1]
+    (Graph.adj n3) |> should equal [n4]

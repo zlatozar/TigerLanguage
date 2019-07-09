@@ -1,5 +1,7 @@
 module GraphRep
 
+open System.Collections.Generic
+
 type NodeIdx = int
 
 [<NoComparison>]
@@ -17,16 +19,16 @@ type Graph = ResizeArray<NodeRep>
 
 // Everything is a CONSing
 // [<CustomEquality; CustomComparison>]
-type Node(g: Graph, idx) =
+type Node(g: Graph, i) =
     member __.graph = g
-    member __.idx = idx
+    member __.idx = i
 
     override __.Equals n2 =
         match n2 with
-        | :? Node as n2 -> idx = n2.idx
+        | :? Node as n2 -> i = n2.idx
         | _             -> false
-    override __.GetHashCode() = hash idx
-    override __.ToString() = sprintf "%i" idx // for debugging only
+    override __.GetHashCode() = hash i
+    override __.ToString() = sprintf "node:%i" i // for debugging only
 
     interface System.IComparable with
         member n1.CompareTo nObj =
@@ -37,7 +39,7 @@ type Node(g: Graph, idx) =
 [<RequireQualifiedAccess>]
 module Graph =
 
-    let newGraph = ResizeArray<NodeRep>()
+    let newGraph = new ResizeArray<NodeRep>()
 
     let nodes (g: Graph) :Node list =
         let len = g.Count
@@ -49,31 +51,33 @@ module Graph =
 
     let private augment g n = Node (g, n)
 
-    let succ (g: Graph, i) :Node list =
-        let {succ=succ; pred=_ } = g.Item i
-        List.map (augment g) succ
+    let succ (n: Node) :Node list =
+        let {succ=succ; pred=_ } = n.graph.Item n.idx
+        List.map (augment n.graph) succ
 
-    let pred (g: Graph, i) :Node list =
-        let {succ=_; pred=pred } = g.Item i
-        List.map (augment g) pred
+    let pred (n: Node) :Node list =
+        let {succ=_; pred=pred } = n.graph.Item n.idx
+        List.map (augment n.graph) pred
 
     let adj gi :Node list =
-        (succ gi) @ (pred gi)
+        (pred gi) @ (succ gi)
 
     let newNode (g: Graph) :Node =
         g.Add emptyNode
-        Node (g, g.Count)
+        // graph with node index
+        Node (g, (g.Count - 1))
 
     let private diddleEdge changeFunc (a: Node) (b: Node) :unit =
         let g = a.graph
+
         let i = a.idx
         let j = b.idx
 
         let {succ=si; pred=pi} = g.Item i
         let {succ=sj; pred=pj} = g.Item j
 
-        g.[i] <- {succ = changeFunc j si; pred = pi}
-        g.[j] <- {succ = sj; pred = changeFunc i pj}
+        g.[i] <- {succ = (changeFunc j si); pred = pi}
+        g.[j] <- {succ = sj; pred = (changeFunc i pj)}
 
     exception GraphEdge
 
@@ -84,8 +88,8 @@ module Graph =
                          then tl
                          else h :: (delete i tl)
 
-    let mkEdge (_: Node) (_: Node) = diddleEdge (fun h t -> h :: t)
-    let rmEdge (_: Node) (_: Node) = diddleEdge delete
+    let mkEdge (a: Node) (b: Node) :unit = diddleEdge (fun h t -> h :: t) a b
+    let rmEdge (a: Node) (b: Node) :unit = diddleEdge delete a b
 
     type Table<'a when 'a: comparison> = Table of Map<'a, int>
 
