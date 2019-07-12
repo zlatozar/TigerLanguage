@@ -10,7 +10,7 @@ type NodeRep =
     with
         static member empty = { succ=[]; pred=[] }
         override this.ToString() =
-            sprintf "[succ: %A, pred: %A]" this.succ this.pred
+            sprintf "[succ(out): %A, pred(in): %A]" this.succ this.pred
 
 let emptyNode :NodeRep = NodeRep.empty
 
@@ -91,9 +91,13 @@ module Graph =
     let mkEdge (a: Node) (b: Node) :unit = diddleEdge (fun h t -> h :: t) a b
     let rmEdge (a: Node) (b: Node) :unit = diddleEdge delete a b
 
-    type Table<'a when 'a: comparison> = Table of Map<'a, int>
+    type Table<'a when 'a: comparison> = private Table of Map<'a, int>
 
     module Table =
         let empty = Table Map.empty
         let enter (Table table) k v = Table (Map.add k v table)
         let look (Table table) s = Map.tryFind s table
+
+//  For any node in the graph,
+//    Graph.Table.look(def, node) = Some (def-list)
+//    Graph.Table.look(use, node) = Some (use-list)

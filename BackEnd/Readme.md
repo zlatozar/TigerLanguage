@@ -2,5 +2,4 @@
 
 ## Chapete 9
 
-### MIPS instructions notes
-
+### MIPS instructions

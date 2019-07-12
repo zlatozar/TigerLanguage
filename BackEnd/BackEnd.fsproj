@@ -18,6 +18,7 @@
     <Compile Include="Flow.fs" />
 
     <!-- Chapter 11 -->
+    <Compile Include="MakeGraph.fs" />
 
     <!-- Put all thogether -->
     <Compile Include="BackEnd.fs" />
