@@ -108,3 +108,27 @@ let ``Test graph adjacency`` () =
 
     (Graph.adj n2) |> should equal [n1]
     (Graph.adj n3) |> should equal [n4]
+
+open Assem
+open Flow
+
+[<Fact>]
+let ``Test dataflow graph`` () =
+    let t1 = Temp.newTemp()
+    let t2 = Temp.newTemp()
+
+    let instrs = [
+        OPER {assem = "sw `s1, -4('s0)";
+              src = [Frame.FP; t1];
+              dst = [];
+              jump = None};
+
+        LABEL {assem = "l11";
+               lab = Temp.namedLabel "l11"};
+
+        MOVE {assem = "move 'd0, 's0";
+              src = t1;
+              dst = t2}]
+
+    let ({control=control; def=def; uses=uses; isMove=isMove}, [n1; n2; n3]) = MakeGraph.instrs2graph instrs
+    List.length (Graph.nodes control) |> should equal 3

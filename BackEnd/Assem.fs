@@ -23,6 +23,7 @@ type moveInstr = {
     src: Temp
 }
 
+// All instructions types
 type instr =
     | OPER of operInstr
     | LABEL of labelInstr
