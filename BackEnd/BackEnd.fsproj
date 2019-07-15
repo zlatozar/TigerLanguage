@@ -16,9 +16,10 @@
     <!-- Chapter 10 -->
     <Compile Include="Graph.fs" />
     <Compile Include="Flow.fs" />
+    <Compile Include="MakeGraph.fs" />
+    <Compile Include="Liveness.fs" />
 
     <!-- Chapter 11 -->
-    <Compile Include="MakeGraph.fs" />
 
     <!-- Put all thogether -->
     <Compile Include="BackEnd.fs" />
