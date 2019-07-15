@@ -52,11 +52,11 @@ module Graph =
     let private augment g n = Node (g, n)
 
     let succ (n: Node) :Node list =
-        let {succ=succ; pred=_ } = n.graph.Item n.idx
+        let {succ=succ; pred=_} = n.graph.Item n.idx
         List.map (augment n.graph) succ
 
     let pred (n: Node) :Node list =
-        let {succ=_; pred=pred } = n.graph.Item n.idx
+        let {succ=_; pred=pred} = n.graph.Item n.idx
         List.map (augment n.graph) pred
 
     let adj gi :Node list =
@@ -91,13 +91,14 @@ module Graph =
     let mkEdge (a: Node) (b: Node) :unit = diddleEdge (fun h t -> h :: t) a b
     let rmEdge (a: Node) (b: Node) :unit = diddleEdge delete a b
 
-    type Table<'a when 'a: comparison> = private Table of Map<'a, Node>
+    type Table<'a> = private Table of Map<Node, 'a>
 
     module Table =
         let empty = Table Map.empty
         let add (Table table) k v = Table (Map.add k v table)
-        let lookup (Table table) s = Map.tryFind s table
+        // if not found - compiler error
+        let lookup (Table table) s = Map.find s table
 
 //  For any node in the graph,
-//    Graph.Table.look(def, node) = Some (def-list)
-//    Graph.Table.look(use, node) = Some (use-list)
+//    Graph.Table.lookup(def, node) = Some (def-list)
+//    Graph.Table.lookup(use, node) = Some (use-list)

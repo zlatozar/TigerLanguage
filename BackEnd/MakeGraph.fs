@@ -9,7 +9,7 @@ let instrs2graph (instrs :Assem.instr list) :FlowGraph * Node list =
     //                                                        Helper functions
 
     // init new graph
-    let graph = Graph.newGraph
+    let empty = Graph.newGraph
 
     let takeNext lst =
         match lst with
@@ -20,7 +20,7 @@ let instrs2graph (instrs :Assem.instr list) :FlowGraph * Node list =
     // map label to Node
     let labelMap = List.fold (fun map instr -> match instr with
                                                | Assem.LABEL {assem=_; lab=lab} ->
-                                                                           Store.enter (map, lab, (Graph.newNode graph))
+                                                                           Store.enter (map, lab, (Graph.newNode empty))
                                                | _                              -> map
                                                                  ) Store.empty instrs
 
@@ -36,17 +36,17 @@ let instrs2graph (instrs :Assem.instr list) :FlowGraph * Node list =
     //_________________________________________________________________________
     //                                                          Implementation
 
-    // Recursivly Iterate over all assembly instructions type
-
+    // Wind till the end and initialize the 'control' with an empty graph.
+    // Then un-wind(backword) as apply the logic having previous node.
     let rec instrs2graph' (instrList: Assem.instr list) :FlowGraph * Node list =
         match instrList with
-        | []            -> ({control=graph;
+        | []            -> ({control=empty; // init
                              def=Graph.Table.empty;
                              uses=Graph.Table.empty;
                              isMove=Graph.Table.empty}, [])
 
         | Assem.OPER {assem=_; src=src; dst=dst; jump=jump} :: instrs
-                        -> let node = Graph.newNode graph
+                        -> let node = Graph.newNode empty
 
                            let ({control=control; def=def; uses=uses; isMove=isMove} :FlowGraph, nodes) = instrs2graph' instrs
 
@@ -59,9 +59,9 @@ let instrs2graph (instrs :Assem.instr list) :FlowGraph * Node list =
                            mkSucc node succ
 
                            ({control=control;
-                            def=Graph.Table.add def (List.sort dst) node;
-                            uses=Graph.Table.add uses (List.sort src) node;
-                            isMove=Graph.Table.add isMove false node}, node :: nodes)
+                            def=Graph.Table.add def node (List.sort dst);
+                            uses=Graph.Table.add uses node (List.sort src) ;
+                            isMove=Graph.Table.add isMove node false}, node :: nodes)
 
         | Assem.LABEL {assem=_; lab=lab} :: instrs
                         -> let node = labelNode lab
@@ -71,20 +71,20 @@ let instrs2graph (instrs :Assem.instr list) :FlowGraph * Node list =
                            mkSucc node (takeNext nodes)
 
                            ({control=control;
-                             def=Graph.Table.add def [] node;
-                             uses=Graph.Table.add uses [] node;
-                             isMove=Graph.Table.add isMove false node}, node :: nodes)
+                             def=Graph.Table.add def node [];
+                             uses=Graph.Table.add uses node [];
+                             isMove=Graph.Table.add isMove node false}, node :: nodes)
 
         | Assem.MOVE {assem=_; src=src; dst=dst} :: instrs
-                        -> let node = Graph.newNode graph
+                        -> let node = Graph.newNode empty
 
                            let ({control=control; def=def; uses=uses; isMove=isMove} :FlowGraph, nodes) = instrs2graph' instrs
 
                            mkSucc node (takeNext nodes)
 
                            ({control=control;
-                            def=Graph.Table.add def [dst] node;
-                            uses=Graph.Table.add uses [src] node;
-                            isMove=Graph.Table.add isMove true node}, node :: nodes)
+                            def=Graph.Table.add def node [dst];
+                            uses=Graph.Table.add uses node [src];
+                            isMove=Graph.Table.add isMove node true}, node :: nodes)
 
     instrs2graph' instrs

@@ -1,5 +1,7 @@
 module Tests
 
+#nowarn "25"
+
 open NUnit.Framework
 
 open FsUnit.Xunit
@@ -113,10 +115,11 @@ open Assem
 open Flow
 
 [<Fact>]
-let ``Test dataflow graph`` () =
+let ``Test basic dataflow graph`` () =
     let t1 = Temp.newTemp()
     let t2 = Temp.newTemp()
 
+    // assembly program
     let instrs = [
         OPER {assem = "sw `s1, -4('s0)";
               src = [Frame.FP; t1];
@@ -131,4 +134,49 @@ let ``Test dataflow graph`` () =
               dst = t2}]
 
     let ({control=control; def=def; uses=uses; isMove=isMove}, [n1; n2; n3]) = MakeGraph.instrs2graph instrs
+
     List.length (Graph.nodes control) |> should equal 3
+
+    // pred/succ
+    (Graph.pred n1) |> should be Empty
+    (Graph.succ n1) |> should equal [n2]
+    (Graph.pred n2) |> should equal [n1]
+    (Graph.succ n2) |> should equal [n3]
+    (Graph.succ n3) |> should be Empty
+    (Graph.pred n3) |> should equal [n2]
+
+    // def
+    (Graph.Table.lookup def n1) |> should be Empty
+    (Graph.Table.lookup def n2) |> should be Empty
+    (Graph.Table.lookup def n3) |> should equal [t2]
+
+    // uses
+    (Graph.Table.lookup uses n1) |> should equal [t1; Frame.FP] // sorted
+    (Graph.Table.lookup uses n2) |> should be Empty
+    (Graph.Table.lookup uses n3) |> should equal [t1]
+
+    // isMove
+    (Graph.Table.lookup isMove n1) |> should be False
+    (Graph.Table.lookup isMove n2) |> should be False
+    (Graph.Table.lookup isMove n3) |> should be True
+
+[<Fact>]
+let ``Test dataflow graph with labels`` () =
+    let instrs = [
+        OPER {assem = "b `j0";
+              src = [];
+              dst = [];
+              jump = Some [Temp.namedLabel "l12"]};
+
+        LABEL {assem = "l11";
+               lab = Temp.namedLabel "l11"};
+
+        LABEL {assem = "l12";
+               lab = Temp.namedLabel "l12"}]
+
+    let (_, [n1; n2; n3]) = MakeGraph.instrs2graph instrs
+
+    // control graph edges
+    (Graph.pred n1) |> should be Empty
+    (Graph.succ n1) |> should equal [n3]
+    (Graph.succ n2) |> should equal [n3]
