@@ -3,7 +3,7 @@ module MakeGraph
 open GraphRep
 open Flow
 
-let instrs2graph (instrs :Assem.instr list) :FlowGraph * Node list =
+let instrs2graph (instrs :Assem.Instr list) :FlowGraph * Node list =
 
     //_________________________________________________________________________
     //                                                        Helper functions
@@ -38,7 +38,7 @@ let instrs2graph (instrs :Assem.instr list) :FlowGraph * Node list =
 
     // Wind till the end and initialize the 'control' with an empty graph.
     // Then un-wind(backword) as apply the logic having previous node.
-    let rec instrs2graph' (instrList: Assem.instr list) :FlowGraph * Node list =
+    let rec instrs2graph' (instrList: Assem.Instr list) :FlowGraph * Node list =
         match instrList with
         | []            -> ({control=empty; // init
                              def=Graph.Table.empty;

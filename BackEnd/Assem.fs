@@ -3,31 +3,31 @@ module Assem
 open Temp
 open System.Text.RegularExpressions
 
-type reg = string
+type Reg = string
 
-type operInstr = {
+type OperInstr = {
     assem: string;   // Assembly-lang instruction
     dst: Temp list;  // A list of result registers (may be empty)
     src: Temp list;  // A list of operands registers (may be empty)
     jump: Label list option  // 'None' if fall to the next following instruction
 }
 
-type labelInstr = {
+type LabelInstr = {
     assem: string;
     lab: Label
 }
 
-type moveInstr = {
+type MoveInstr = {
     assem: string;
     dst: Temp;
     src: Temp
 }
 
-// All instructions types
-type instr =
-    | OPER of operInstr
-    | LABEL of labelInstr
-    | MOVE of moveInstr
+// All instructions types that we will iterate
+type Instr =
+    | OPER of OperInstr
+    | LABEL of LabelInstr
+    | MOVE of MoveInstr
 
 // Confention: 'd' - destination, 's' - source and 'j' (jump) refer to lable
 

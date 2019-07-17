@@ -1,3 +1,3 @@
 module Codegen
 
-val codegen : Frame.Frame -> Tree.Stm -> Assem.instr list
+val codegen : Frame.Frame -> Tree.Stm -> Assem.Instr list

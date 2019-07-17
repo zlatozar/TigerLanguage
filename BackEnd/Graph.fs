@@ -10,14 +10,14 @@ type NodeRep =
     with
         static member empty = { succ=[]; pred=[] }
         override this.ToString() =
-            sprintf "[succ(out): %A, pred(in): %A]" this.succ this.pred
+            sprintf "{pred: %A, succ: %A}" this.succ this.pred
 
-let emptyNode :NodeRep = NodeRep.empty
+let emptyNodeRep :NodeRep = NodeRep.empty
 
-// array because of index usage
+// array because of index usage/iteration
 type Graph = ResizeArray<NodeRep>
 
-// Everything is a CONSing
+// NOTE: Better name could be GraphRep but I will stick to book's notation
 // [<CustomEquality; CustomComparison>]
 type Node(g: Graph, i) =
     member __.graph = g
@@ -28,13 +28,13 @@ type Node(g: Graph, i) =
         | :? Node as n2 -> i = n2.idx
         | _             -> false
     override __.GetHashCode() = hash i
-    override __.ToString() = sprintf "node:%i" i // for debugging only
+    override __.ToString() = sprintf "node:%i" i
 
     interface System.IComparable with
         member n1.CompareTo nObj =
             match nObj with
             | :? Node as n2 -> compare n1.idx n2.idx
-            | _             ->  failwith "ERROR: Cannot compare values of different types."
+            | _             -> failwith "ERROR: Cannot compare values of different types."
 
 [<RequireQualifiedAccess>]
 module Graph =
@@ -62,9 +62,10 @@ module Graph =
     let adj gi :Node list =
         (pred gi) @ (succ gi)
 
+    // Node([NodeRep0<p,s>; NodeRep1<p,s>], 2)
     let newNode (g: Graph) :Node =
-        g.Add emptyNode
-        // graph with node index
+        g.Add emptyNodeRep
+        // graph with next array index
         Node (g, (g.Count - 1))
 
     let private diddleEdge changeFunc (a: Node) (b: Node) :unit =
@@ -91,6 +92,14 @@ module Graph =
     let mkEdge (a: Node) (b: Node) :unit = diddleEdge (fun h t -> h :: t) a b
     let rmEdge (a: Node) (b: Node) :unit = diddleEdge delete a b
 
+    // debugging
+    let show (g: Graph) :unit =
+        printfn "\ngraph -> ["
+        (nodes g)
+            |> List.iter (fun n -> printf "node:%i{succ:%A, pred:%A}; " n.idx (succ n) (pred n))
+        printfn "]\n"
+
+    // In this table we save 'a. 'a is what we need at current state of the Graph(given node)
     type Table<'a> = private Table of Map<Node, 'a>
 
     module Table =

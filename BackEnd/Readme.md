@@ -1,5 +1,5 @@
 ## Chapter 8
 
-## Chapete 9
+## Chapter 9
 
 ### MIPS instructions

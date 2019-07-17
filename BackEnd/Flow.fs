@@ -4,17 +4,19 @@ open GraphRep
 
 type FlowGraph =
     {
-      // DIRECTED graph representing control flow from instruction to instruction
+      // current state of the graph
       control: Graph;
 
+      // Folloing contains the information that we need at the current Node (moment)
+
       // sets of destination registers of the instruction (assign)
-      def: Temp.Temp list Graph.Table;
+      def: Graph.Table<Temp.Temp list>;
 
       // sets of source registers of the instruction (rhs)
-      uses: Temp.Temp list Graph.Table;
+      uses: Graph.Table<Temp.Temp list>;
 
       // is MOVE, then delete if 'use' and 'def' are indentical
-      isMove: bool Graph.Table
+      isMove: Graph.Table<bool>
     }
 
 // Notes:

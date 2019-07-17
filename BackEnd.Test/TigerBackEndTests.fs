@@ -55,7 +55,7 @@ let ``Graph length`` () =
     Graph.newNode g |> ignore
     Graph.newNode g |> ignore
 
-    (List.length (Graph.nodes g)) |> should equal 2
+    g.Count |> should equal 2
 
 [<Fact>]
 let ``Make eadge and check successors and predcessors`` () =
@@ -135,7 +135,7 @@ let ``Test basic dataflow graph`` () =
 
     let ({control=control; def=def; uses=uses; isMove=isMove}, [n1; n2; n3]) = MakeGraph.instrs2graph instrs
 
-    List.length (Graph.nodes control) |> should equal 3
+    control.Count |> should equal 3
 
     // pred/succ
     (Graph.pred n1) |> should be Empty
