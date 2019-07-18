@@ -20,7 +20,9 @@ type Graph = ResizeArray<NodeRep>
 // NOTE: Better name could be GraphRep but I will stick to book's notation
 // [<CustomEquality; CustomComparison>]
 type Node(g: Graph, i) =
+    // current state of the graph
     member __.graph = g
+    // index is need to re-create nodes number
     member __.idx = i
 
     override __.Equals n2 =
@@ -105,6 +107,7 @@ module Graph =
     module Table =
         let empty = Table Map.empty
         let add (Table table) k v = Table (Map.add k v table)
+        let iter f (Table table) = Map.iter f table
         // if not found - compiler error
         let lookup (Table table) s = Map.find s table
 

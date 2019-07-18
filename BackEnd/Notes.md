@@ -30,6 +30,9 @@ In an optimal tiling, the sum of the overall tile costs is minimum
 
 ### Liveness
 
+Before start calculating liveness we need additional information. First step is
+to analyze code and build **flow** graph.
+
 A variable is **live** if the variable is used at some later point in the program
 and there is not an intervening assignment to the variable.
 

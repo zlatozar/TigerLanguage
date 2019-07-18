@@ -14,6 +14,7 @@ module Table =
     let empty = Table Map.empty
     let enter (Table table) k v = Table (Map.add k v table)
     let look (Table table) s = Map.tryFind s table
+    let bindings (Table table) = Map.toList table
 
 type Label = Store.Symbol
 

@@ -180,3 +180,47 @@ let ``Test dataflow graph with labels`` () =
     (Graph.pred n1) |> should be Empty
     (Graph.succ n1) |> should equal [n3]
     (Graph.succ n2) |> should equal [n3]
+
+let assertLiveSet (liveMap :Liveness.LiveMap) fnode temps =
+    let (liveset, livelist) = Graph.Table.lookup liveMap fnode
+    (List.map fst (Temp.Table.bindings liveset)) |> should equal temps
+    livelist |> should equal temps
+
+[<Fact>]
+let ``Test liveness graph creation`` () =
+
+    let t1 = Temp.newTemp()
+    let t2 = Temp.newTemp()
+    let t3 = Temp.newTemp()
+    let t4 = Temp.newTemp()
+
+    let instrs = [
+        OPER {assem = "lw `d0, 1";
+              src = [];
+              dst = [t1];
+              jump = None};
+
+        OPER {assem = "lw `d0, 2";
+              src = [];
+              dst = [t2];
+              jump = None};
+
+        OPER {assem = "add 'd0, 's0, 's1";
+              src = [t1; t2];
+              dst = [t3];
+              jump = None};
+
+        OPER {assem = "addi 'd0, 's0, 5";
+              src = [t3];
+              dst = [t3];
+              jump = None};
+
+        OPER {assem = "jal 's0";
+              src = [t4];
+              dst = [];
+              jump = None}]
+
+    let (flowGraph, fnodes) = MakeGraph.instrs2graph instrs
+    let liveMap = Liveness.liveness flowGraph
+
+    List.iter2 (assertLiveSet liveMap) fnodes [[t1; t4]; [t1; t2; t4]; [t3; t4]; [t4]; []]

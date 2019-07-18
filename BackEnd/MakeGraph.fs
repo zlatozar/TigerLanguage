@@ -54,7 +54,7 @@ let instrs2graph (instrs :Assem.Instr list) :FlowGraph * Node list =
                            let succ =
                                match jump with
                                | Some ns -> List.map labelNode ns
-                               | None    -> List.take 1 nodes
+                               | None    -> takeNext nodes
 
                            mkSucc node succ
 
