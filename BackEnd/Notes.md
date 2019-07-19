@@ -34,7 +34,7 @@ Before start calculating liveness we need additional information. First step is
 to analyze code and build **flow** graph.
 
 A variable is **live** if the variable is used at some later point in the program
-and there is not an intervening assignment to the variable.
+and there is not an intervening assignment to the variable (nobody change it).
 
 A variable is _live_ on an edge if there is a directed path from that
 edge to a `use` of the variable that does not go through any `def`. A variable is
@@ -87,3 +87,21 @@ an effect on the time complexity of the algorithm, as it does here. Register all
 algorithm needs to ask the graph for all of its vertices and, given a vertex, it
 needs to known all of the adjacent vertices. Thus, the correct choice of graph
 representation is that of an adjacency list.
+
+#### Code notes
+
+- **foldBack** (called also _fold\_right_). Here is the example:
+
+```fsharp
+List.fold (fun acc x -> x :: acc) [] [1; 2; 3; 4; 5]
+// val it : int list = [5; 4; 3; 2; 1]
+
+List.foldBack (fun x acc -> x :: acc) [1; 2; 3; 4; 5] [];;
+// val it : int list = [1; 2; 3; 4; 5]
+```
+`List.fold` starts with an empty result list and goes forward through the input, adding each element
+to the front of the result list; therefore the final result is in the reverse order.
+
+`List.foldBack`, on the other hand, goes backward through the input; so each element newly added to
+the front of the result list was itself to the front in the original list. So the final result is the
+same list as the original.

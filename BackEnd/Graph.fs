@@ -70,6 +70,9 @@ module Graph =
         // graph with next array index
         Node (g, (g.Count - 1))
 
+    let eq (n1: Node) (n2: Node) =
+        n1 = n2
+
     let private diddleEdge changeFunc (a: Node) (b: Node) :unit =
         let g = a.graph
 
