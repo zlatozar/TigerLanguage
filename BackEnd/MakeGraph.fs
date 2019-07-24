@@ -59,9 +59,9 @@ let instrs2graph (instrs :Assem.Instr list) :FlowGraph * Node list =
                            mkSucc node succ
 
                            ({control=control;
-                            def=Graph.Table.add def node (List.sort dst);
-                            uses=Graph.Table.add uses node (List.sort src) ;
-                            isMove=Graph.Table.add isMove node false}, node :: nodes)
+                             def=Graph.Table.add def node (List.sort dst);
+                             uses=Graph.Table.add uses node (List.sort src) ;
+                             isMove=Graph.Table.add isMove node false}, node :: nodes)
 
         | Assem.LABEL {assem=_; lab=lab} :: instrs
                         -> let node = labelNode lab
@@ -83,8 +83,8 @@ let instrs2graph (instrs :Assem.Instr list) :FlowGraph * Node list =
                            mkSucc node (takeNext nodes)
 
                            ({control=control;
-                            def=Graph.Table.add def node [dst];
-                            uses=Graph.Table.add uses node [src];
-                            isMove=Graph.Table.add isMove node true}, node :: nodes)
+                             def=Graph.Table.add def node [dst];
+                             uses=Graph.Table.add uses node [src];
+                             isMove=Graph.Table.add isMove node true}, node :: nodes)
 
     instrs2graph' instrs

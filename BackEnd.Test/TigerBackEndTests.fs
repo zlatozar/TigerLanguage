@@ -33,16 +33,16 @@ let ``Tiger program should be linearised without errors`` () =
 
 [<Fact>]
 let ``Format assembly`` () =
-    let t1 = Temp.newTemp()
-    let t2 = Temp.newTemp()
-    let t3 = Temp.newTemp() // 103
+    let t1 = Temp.newTemp()  // 101
+    let t2 = Temp.newTemp()  // 102
+    let t3 = Temp.newTemp()  // 103
 
     let assemInstr = Assem.format Temp.makeString (Assem.OPER {Assem.assem = "add 'd0, 's0, 's1";
                                                    src = [t1; t2];
                                                    dst = [t3];
                                                    jump = None})
     // Generated assembler is aligned with tab to have room for labels
-    assemInstr |> should equal "        add 103, 101, 102"
+    assemInstr.Trim() |> should equal "add 103, 101, 102"
 
 // Chapter 10
 
@@ -254,12 +254,67 @@ let ``Test interference graph creation with no MOVE instruction`` () =
               dst = [t3];
               jump = None}]
 
-    let (flowgraph, fnodes) = MakeGraph.instrs2graph instrs
+    let (flowGraph, _) = MakeGraph.instrs2graph instrs
 
-    let ({graph=graph; tnode=tnode; gtemp=gtemp; moves=moves} as G, liveout) = interferenceGraph flowgraph
+    let ({graph=graph; tnode=tnode; gtemp=gtemp; moves=_} as G, _) = interferenceGraph flowGraph
     (List.length (Graph.nodes graph)) |> should equal 3
+    showIGraph G
 
-    List.iter (fun t -> gtemp (tnode t) |> should equal t) [t1; t2; t3];
+    List.iter (fun t -> gtemp (tnode t) |> should equal t) [t1; t2; t3]
     [tnode t2] |> should equal (Graph.adj (tnode t1))
-    [tnode t1] |> should equal (Graph.adj (tnode t2));
+    [tnode t1] |> should equal (Graph.adj (tnode t2))
     (Graph.adj (tnode t3)) |> should be Empty
+
+[<Fact>]
+let ``Test interference graph creation with a MOVE instruction`` () =
+    let t1 = Temp.newTemp()
+    let t2 = Temp.newTemp()
+    let t3 = Temp.newTemp()
+    let t4 = Temp.newTemp()
+
+    let instrs = [
+        OPER {assem = "lw `d0, 1";
+              src = [];
+              dst = [t4];
+              jump = None};
+
+        OPER {assem = "lw `d0, 1";
+              src = [];
+              dst = [t1];
+              jump = None};
+
+        MOVE {assem = "move 'd0, 's0";
+              src = t1;
+              dst = t2};
+
+        OPER {assem = "add 'd0, 's0, 's1";
+              src = [t1; t2];
+              dst = [t3];
+              jump = None};
+
+        OPER {assem = "addi 'd0, 's0, 1";
+              src = [t4];
+              dst = [t4];
+              jump = None};
+
+        MOVE {assem = "move 'd0, 's0";
+              src = t4;
+              dst = t4}]
+
+    let (flowGraph, _) = MakeGraph.instrs2graph instrs
+
+    let ({graph=graph; tnode=tnode; gtemp=gtemp; moves=moves} as G, _) = interferenceGraph flowGraph
+    (List.length (Graph.nodes graph)) |> should equal 4
+    showIGraph G
+
+    List.iter (fun t -> (gtemp (tnode t)) |> should equal t) [t1; t2; t3; t4]
+    [tnode t4] |> should equal (Graph.adj (tnode t1))
+    [tnode t4] |> should equal (Graph.adj (tnode t2))
+    [tnode t4] |> should equal (Graph.adj (tnode t3))
+    (List.map tnode [t3; t2; t1]) |> should equal (Graph.adj (tnode t4))
+
+    (List.length moves) |> should equal 2
+
+    List.iter2 (fun (dst, src) (dst', src') -> Graph.eq dst dst' |> should be True;
+                                               Graph.eq src src' |> should be True
+               ) moves [(tnode t2, tnode t1); (tnode t4, tnode t4)]

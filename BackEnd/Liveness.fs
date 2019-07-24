@@ -97,12 +97,12 @@ let showLiveMap (liveMap :LiveMap) =
     Graph.Table.iter (fun n m -> printf "\t%A -> %A\n" n m) liveMap
     printfn "]\n"
 
-let interferenceGraph (flowgraph :FlowGraph) :IGraph * (Node -> Temp.Temp list) =
+let interferenceGraph (flowGraph :FlowGraph) :IGraph * (Node -> Temp.Temp list) =
 
-    let liveMap = liveness flowgraph
+    let liveMap = liveness flowGraph
     let igraph = new ResizeArray<NodeRep>()
 
-    let {control=control; def=def; uses=uses; isMove=isMove} = flowgraph
+    let {control=control; def=def; uses=uses; isMove=isMove} = flowGraph
 
     let addINode (tnode, gtemp) temp =
         if Temp.Table.contain tnode temp
@@ -114,7 +114,7 @@ let interferenceGraph (flowgraph :FlowGraph) :IGraph * (Node -> Temp.Temp list) 
                 // node and it's temps
                 (tnode', gtemp')
 
-    // nodes interferes
+    // nodes that interfere
     let addIEdge (n1: Node) (n2: Node) =
         if not (n1 = n2) && not (List.exists (Graph.eq n1) (Graph.adj n2))
             then Graph.mkEdge n1 n2
