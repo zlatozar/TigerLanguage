@@ -20,8 +20,11 @@ module FrontEnd =
         let mainMethod = { parent=Top; name=Temp.namedLabel "__main"; formals=[] }
         let mainLevel = newLevel mainMethod
 
+        let absyn = Tiger.Parser.fromString str
+        FindEscape.findEscape absyn
+
         let {exp=exp; ty=_} = transExp (baseVarEnv, baseFunEnv, baseTyEnv, mainLevel,
-                                  Temp.newLabel(), (Tiger.Parser.fromString str))
+                                  Temp.newLabel(), absyn)
 
         // translate to IR
         procEntryExit(mainLevel, exp)
@@ -33,8 +36,11 @@ module FrontEnd =
         let mainMethod = { parent=Top; name=Temp.namedLabel "__main"; formals=[] }
         let mainLevel = newLevel mainMethod
 
+        let absyn = Tiger.Parser.fromFile filename
+        FindEscape.findEscape absyn
+
         let {exp=exp; ty=_} = transExp (baseVarEnv, baseFunEnv, baseTyEnv, mainLevel,
-                                  Temp.newLabel(), (Tiger.Parser.fromFile filename))
+                                  Temp.newLabel(), absyn)
 
         // translate to IR
         procEntryExit(mainLevel, exp)

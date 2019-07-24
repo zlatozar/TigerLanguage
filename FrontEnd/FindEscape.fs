@@ -13,7 +13,7 @@ let rec traverseVar (env: escEnv, d: depth, var: TVar) :unit =
     match var with
     | SimpleVar (sym, _) -> match Store.lookup(env, sym) with
                             | Some(depth, esc)  -> if d > depth then esc := true else ()
-                                                   printf "%s -> declared: %i,  usded: %i\n" (Store.name sym) depth d
+                                                   // printf "%s -> declared: %i, usded: %i\n" (Store.name sym) depth d
                             | None              -> ()
 
     | FieldVar (tVar, _, _)
@@ -79,7 +79,8 @@ and traverseDecs (parentEnv: escEnv, d: depth, decs: TDec list) :escEnv =
         | FunctionDec funDecRecList
                             -> let traverseParams beforeEnv funDecRec =
                                    let newEnv = List.fold (fun locEnv fieldRec -> fieldRec.escape := false
-                                                                                  Store.enter(locEnv, fieldRec.name, ((d + 1), fieldRec.escape))) beforeEnv funDecRec.param
+                                                                                  Store.enter(locEnv, fieldRec.name, ((d + 1), fieldRec.escape))
+                                                          ) beforeEnv funDecRec.param
                                    traverseExp (newEnv, (d + 1), funDecRec.body)
                                    beforeEnv
 
@@ -87,5 +88,6 @@ and traverseDecs (parentEnv: escEnv, d: depth, decs: TDec list) :escEnv =
 
     List.fold traversDec parentEnv decs
 
+// Side effect 'programm' as add escapes
 let findEscape(program: TExp): unit =
     traverseExp(Store.empty<depth * bool ref>, 0, program)
