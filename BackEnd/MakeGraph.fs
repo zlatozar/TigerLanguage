@@ -9,7 +9,7 @@ let instrs2graph (instrs :Assem.Instr list) :FlowGraph * Node list =
     //                                                        Helper functions
 
     // init new graph
-    let empty = Graph.newGraph
+    let empty = new ResizeArray<NodeRep>()
 
     let takeNext lst =
         match lst with

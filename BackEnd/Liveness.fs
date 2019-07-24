@@ -49,6 +49,7 @@ let liveness ({control=control; def=def; uses=uses; isMove=_} :FlowGraph) :LiveM
 
     let rec loop inTable outTable =
         let (in', out') =
+            // use 'foldBack' - liveness calculation following REVERSE control-flow edges
             List.foldBack (fun fnode (inT, outT) ->
                                             // use[n], def[n]
                                             let uses' = Graph.Table.lookup uses fnode
@@ -99,57 +100,70 @@ let showLiveMap (liveMap :LiveMap) =
 let interferenceGraph (flowgraph :FlowGraph) :IGraph * (Node -> Temp.Temp list) =
 
     let liveMap = liveness flowgraph
-    let igraph = Graph.newGraph
+    let igraph = new ResizeArray<NodeRep>()
 
     let {control=control; def=def; uses=uses; isMove=isMove} = flowgraph
 
-    let addINode (tnode, gtemp) t =
-        if Temp.Table.contain tnode t
+    let addINode (tnode, gtemp) temp =
+        if Temp.Table.contain tnode temp
             then (tnode, gtemp)
             else
                 let inode = Graph.newNode igraph
-                let tnode' = Temp.Table.enter tnode t inode
-                let gtemp' = Graph.Table.add gtemp inode t
+                let tnode' = Temp.Table.enter tnode temp inode
+                let gtemp' = Graph.Table.add gtemp inode temp
+                // node and it's temps
                 (tnode', gtemp')
 
+    // nodes interferes
     let addIEdge (n1: Node) (n2: Node) =
         if not (n1 = n2) && not (List.exists (Graph.eq n1) (Graph.adj n2))
             then Graph.mkEdge n1 n2
             else ()
 
-    let rec loop tnode gtemp moves = function
+    let rec loop tnode gtemp moves fnodes =
+        match fnodes with
         | []              ->
                              { graph=igraph;
                                tnode=(fun t     -> Temp.Table.lookup tnode t);
                                gtemp=(fun inode -> Graph.Table.lookup gtemp inode);
                                moves=List.rev moves }
 
-        | fnode :: fnodes ->
-                             let uses' = Graph.Table.lookup uses fnode
-                             let def' = Graph.Table.lookup def fnode
-                             let isMove' = Graph.Table.lookup isMove fnode
+        | fnode :: restNodes ->
+                                let uses' = Graph.Table.lookup uses fnode
+                                let def' = Graph.Table.lookup def fnode
+                                let isMove' = Graph.Table.lookup isMove fnode
 
-                             let (liveTab, liveList) = Graph.Table.lookup liveMap fnode
-                             let (tnode', gtemp') = List.fold addINode (tnode, gtemp) (uses' @ def' @ liveList)
+                                let (liveTab, liveList) = Graph.Table.lookup liveMap fnode
+                                let (tnode', gtemp') = List.fold addINode (tnode, gtemp) (uses' @ def' @ liveList)
 
-                             let moves' = if isMove'
-                                              then
-                                                  let u = Temp.Table.lookup tnode' (List.head def')
-                                                  let v = Temp.Table.lookup tnode' (List.head uses')
-                                                  (u, v) :: moves
-                                              else moves
+                                let moves' = if isMove'
+                                                then
+                                                    let u = Temp.Table.lookup tnode' (List.head def')
+                                                    let v = Temp.Table.lookup tnode' (List.head uses')
+                                                    (u, v) :: moves
+                                                else moves
 
-                             let adj = if isMove' && Temp.Table.contain liveTab (List.head uses')
-                                           then List.filter (fun t -> t <> List.head uses') liveList
-                                           else liveList
+                                let adj = if isMove' && Temp.Table.contain liveTab (List.head uses')
+                                            then List.filter (fun t -> t <> List.head uses') liveList
+                                            else liveList
 
-                             List.iter (fun d -> let inode = Temp.Table.lookup tnode' d
-                                                 let iadj = List.map (fun t -> Temp.Table.lookup tnode' t) adj
-                                                 List.iter (addIEdge inode) iadj) def'
+                                List.iter (fun d -> let inode = Temp.Table.lookup tnode' d
+                                                    let iadj = List.map (fun t -> Temp.Table.lookup tnode' t) adj
+                                                    List.iter (addIEdge inode) iadj) def'
 
-                             loop tnode' gtemp' moves' fnodes
+                                // continue with the rest
+                                loop tnode' gtemp' moves' restNodes
 
     let fnodes = Graph.nodes control
     let iGraph = loop Temp.Table.empty Graph.Table.empty [] fnodes
+
     let liveOut fnode = snd (Graph.Table.lookup liveMap fnode)
     (iGraph, liveOut)
+
+let showIGraph ({graph=graph; tnode=_; gtemp=gtemp; moves=_} :IGraph) =
+    let say = printfn "%s"
+    say "\n";
+    List.iter  (fun n -> say (sprintf "%s:\t%s: %i\n"
+                               (Frame.tempName (gtemp n))
+                               (String.concat ", " (List.map (fun gn -> Frame.tempName (gtemp gn)) (Graph.adj n)))
+                               (List.length (Graph.adj n)))) (Graph.nodes graph)

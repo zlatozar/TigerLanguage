@@ -234,6 +234,7 @@ let tempMap =
     (argRegsMap @ callerSavesMap @ calleeSavesMap) |>
         List.fold (fun table (k, v) -> Temp.Table.enter table k v) Temp.Table.empty
 
+// In assembler we could use names of MIPS registers
 let tempName t =
     match Temp.Table.look tempMap t with
     | Some name -> name

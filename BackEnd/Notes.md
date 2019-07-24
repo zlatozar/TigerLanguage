@@ -56,6 +56,8 @@ at a node if it is live on any of the out-edges of the node.
 
 #### Building the Interference Graph
 
+**Two temporaries can be allocated to the same register if there is no edge connecting them**
+
   Based on the liveness analysis, we know where each variable is needed. However,
 during register allocation, we need to answer questions of the specific
 form: are variables **u** and **v** live at the same time? (And therefore cannot
@@ -88,6 +90,12 @@ algorithm needs to ask the graph for all of its vertices and, given a vertex, it
 needs to known all of the adjacent vertices. Thus, the correct choice of graph
 representation is that of an adjacency list.
 
+1. At any non-MOVE instruction that defines a variable `A`, where the live-out variables are
+  `B1,...,Bj`, add interference edges `(A, B1),...,(A, Bj)`.
+
+2. At a MOVE instruction `A := C`, where variables `B1,...,Bj` are live-out, add interference
+   edges `(A, Bj),...,(A, Bj)` for any `Bi` that is not the same as `C`.
+
 #### Code notes
 
 - **foldBack** (called also _fold\_right_). Here is the example:
@@ -105,3 +113,6 @@ to the front of the result list; therefore the final result is in the reverse or
 `List.foldBack`, on the other hand, goes backward through the input; so each element newly added to
 the front of the result list was itself to the front in the original list. So the final result is the
 same list as the original.
+
+In other words `fold` starts from front (first/left) element of given list, `foldBack` starts from the
+back (last/right) element.

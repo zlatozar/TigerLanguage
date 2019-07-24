@@ -50,7 +50,7 @@ open GraphRep
 
 [<Fact>]
 let ``Graph length`` () =
-    let g = Graph.newGraph
+    let g = new ResizeArray<NodeRep>()
 
     Graph.newNode g |> ignore
     Graph.newNode g |> ignore
@@ -59,7 +59,7 @@ let ``Graph length`` () =
 
 [<Fact>]
 let ``Make eadge and check successors and predcessors`` () =
-    let g = Graph.newGraph
+    let g = new ResizeArray<NodeRep>()
 
     let n1 = Graph.newNode g
     let n2 = Graph.newNode g
@@ -74,7 +74,7 @@ let ``Make eadge and check successors and predcessors`` () =
 
 [<Fact>]
 let ``Delete eadge and check successors and predcessors`` () =
-    let g = Graph.newGraph
+    let g = new ResizeArray<NodeRep>()
 
     let n1 = Graph.newNode g
     let n2 = Graph.newNode g
@@ -89,7 +89,7 @@ let ``Delete eadge and check successors and predcessors`` () =
 
 [<Fact>]
 let ``Test graph adjacency`` () =
-    let g = Graph.newGraph
+    let g = new ResizeArray<NodeRep>()
 
     let n1 = Graph.newNode g
     let n2 = Graph.newNode g
@@ -224,3 +224,42 @@ let ``Test liveness graph creation`` () =
     let liveMap = Liveness.liveness flowGraph
 
     List.iter2 (assertLiveSet liveMap) fnodes [[t1; t4]; [t1; t2; t4]; [t3; t4]; [t4]; []]
+
+open Liveness
+
+[<Fact>]
+let ``Test interference graph creation with no MOVE instruction`` () =
+    let t1 = Temp.newTemp()
+    let t2 = Temp.newTemp()
+    let t3 = Temp.newTemp()
+
+    let instrs = [
+        OPER {assem = "lw `d0, 1";
+              src = [];
+              dst = [t1];
+              jump = None};
+
+        OPER {assem = "lw `d0, 2";
+              src = [];
+              dst = [t2];
+              jump = None};
+
+        OPER {assem = "add 'd0, 's0, 's1";
+              src = [t1; t2];
+              dst = [t3];
+              jump = None};
+
+        OPER {assem = "addi 'd0, 's0, 5";
+              src = [t3];
+              dst = [t3];
+              jump = None}]
+
+    let (flowgraph, fnodes) = MakeGraph.instrs2graph instrs
+
+    let ({graph=graph; tnode=tnode; gtemp=gtemp; moves=moves} as G, liveout) = interferenceGraph flowgraph
+    (List.length (Graph.nodes graph)) |> should equal 3
+
+    List.iter (fun t -> gtemp (tnode t) |> should equal t) [t1; t2; t3];
+    [tnode t2] |> should equal (Graph.adj (tnode t1))
+    [tnode t1] |> should equal (Graph.adj (tnode t2));
+    (Graph.adj (tnode t3)) |> should be Empty
