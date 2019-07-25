@@ -7,50 +7,75 @@ open NUnit.Framework
 open FsUnit.Xunit
 open Xunit
 
-// Chapter 8
-open Canon
+// NOTE: There is difference if we run suite or separate tests - Temps are with different numbers
 
 // _____________________________________________________________________________
-//                                              Correct Tiger language examples
+//                                                         Chapter 8 (Canon.fs)
 
-let mergeTig = "../../../../testcases/merge.tig"
+open Canon
 
-let displayExps fileName =
-    let fragments = Tiger.FrontEnd.transFromFile fileName
+// correct example (testcases/test08.tig)
+let tigExample = "if (10 > 20) then 30 else 40"
 
-    let display stm =
-        match stm with
-        | Frame.PROC proc -> printf "%A\n\n" (linearize proc.body)
-        | _               -> printf "\n\n"
+let displayExps =
+    let fragments = Tiger.FrontEnd.transFromString tigExample
+
+    let display frag =
+        match frag with
+        | Frame.PROC proc         -> Frame.prettyPrint (proc.body |> linearize |> basicBlocks |> traceSchedule)
+        | Frame.STRING (label, s) -> printf "%s" (Frame.string (label, s))
 
     List.iter display fragments
 
 [<Fact>]
 let ``Tiger program should be linearised without errors`` () =
-    displayExps mergeTig
+    displayExps
 
-// Chapter 9
+// _____________________________________________________________________________
+//                                                                    Chapter 9
+
+// MIPS code generation
+
+let emitProc frag =
+    match frag with
+    | Frame.PROC {body=body; frame=frame} -> printf "%A\n\n"
+                                                 (List.concat (List.map (Codegen.codegen frame) (body |> linearize |> basicBlocks |> traceSchedule)))
+    | Frame.STRING (label, s)             -> printf "%s" (Frame.string (label, s))
+
+[<Fact>]
+let ``Assembly representation`` () =
+    let fragmets = Tiger.FrontEnd.transFromString tigExample
+    List.iter emitProc fragmets
+
+// To assembly format
 
 [<Fact>]
 let ``Format assembly`` () =
-    let t1 = Temp.newTemp()  // 101
-    let t2 = Temp.newTemp()  // 102
-    let t3 = Temp.newTemp()  // 103
+    let t1 = Temp.newTemp() // 101 or 177 if run suite
+    let t2 = Temp.newTemp()
+    let t3 = Temp.newTemp()
+
+    let expectedResult = if t1 = 101
+                             then "add 103, 101, 102"
+                             else "add 179, 177, 178"
 
     let assemInstr = Assem.format Temp.makeString (Assem.OPER {Assem.assem = "add 'd0, 's0, 's1";
                                                    src = [t1; t2];
                                                    dst = [t3];
                                                    jump = None})
     // Generated assembler is aligned with tab to have room for labels
-    assemInstr.Trim() |> should equal "add 103, 101, 102"
+    assemInstr.Trim() |> should equal expectedResult
 
-// Chapter 10
+// _____________________________________________________________________________
+//                                                                   Chapter 10
+
+// Graph representation and it's operations
 
 open GraphRep
 
 [<Fact>]
 let ``Graph length`` () =
-    let g = new ResizeArray<NodeRep>()
+    let g = Graph.newGraph()
 
     Graph.newNode g |> ignore
     Graph.newNode g |> ignore
@@ -59,7 +84,7 @@ let ``Graph length`` () =
 
 [<Fact>]
 let ``Make eadge and check successors and predcessors`` () =
-    let g = new ResizeArray<NodeRep>()
+    let g = Graph.newGraph()
 
     let n1 = Graph.newNode g
     let n2 = Graph.newNode g
@@ -74,7 +99,7 @@ let ``Make eadge and check successors and predcessors`` () =
 
 [<Fact>]
 let ``Delete eadge and check successors and predcessors`` () =
-    let g = new ResizeArray<NodeRep>()
+    let g = Graph.newGraph()
 
     let n1 = Graph.newNode g
     let n2 = Graph.newNode g
@@ -89,7 +114,7 @@ let ``Delete eadge and check successors and predcessors`` () =
 
 [<Fact>]
 let ``Test graph adjacency`` () =
-    let g = new ResizeArray<NodeRep>()
+    let g = Graph.newGraph()
 
     let n1 = Graph.newNode g
     let n2 = Graph.newNode g
@@ -110,6 +135,8 @@ let ``Test graph adjacency`` () =
 
     (Graph.adj n2) |> should equal [n1]
     (Graph.adj n3) |> should equal [n4]
+
+// Data flow problem
 
 open Assem
 open Flow
@@ -150,8 +177,11 @@ let ``Test basic dataflow graph`` () =
     (Graph.Table.lookup def n2) |> should be Empty
     (Graph.Table.lookup def n3) |> should equal [t2]
 
+    let sortedResult = if t1 > Frame.FP
+                           then [Frame.FP; t1]
+                           else [t1; Frame.FP]
     // uses
-    (Graph.Table.lookup uses n1) |> should equal [t1; Frame.FP] // sorted
+    (Graph.Table.lookup uses n1) |> should equal sortedResult
     (Graph.Table.lookup uses n2) |> should be Empty
     (Graph.Table.lookup uses n3) |> should equal [t1]
 
@@ -180,6 +210,8 @@ let ``Test dataflow graph with labels`` () =
     (Graph.pred n1) |> should be Empty
     (Graph.succ n1) |> should equal [n3]
     (Graph.succ n2) |> should equal [n3]
+
+// Liveness
 
 let assertLiveSet (liveMap :Liveness.LiveMap) fnode temps =
     let (liveset, livelist) = Graph.Table.lookup liveMap fnode
@@ -224,6 +256,8 @@ let ``Test liveness graph creation`` () =
     let liveMap = Liveness.liveness flowGraph
 
     List.iter2 (assertLiveSet liveMap) fnodes [[t1; t4]; [t1; t2; t4]; [t3; t4]; [t4]; []]
+
+// Build interference graph
 
 open Liveness
 

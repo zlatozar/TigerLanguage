@@ -100,7 +100,7 @@ let showLiveMap (liveMap :LiveMap) =
 let interferenceGraph (flowGraph :FlowGraph) :IGraph * (Node -> Temp.Temp list) =
 
     let liveMap = liveness flowGraph
-    let igraph = new ResizeArray<NodeRep>()
+    let igraph = Graph.newGraph()
 
     let {control=control; def=def; uses=uses; isMove=isMove} = flowGraph
 

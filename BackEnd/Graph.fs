@@ -41,8 +41,8 @@ type Node(g: Graph, i) =
 [<RequireQualifiedAccess>]
 module Graph =
 
-    // FIXME: It is global and mutable so do  not works
-    // let newGraph = new ResizeArray<NodeRep>()
+    // every time new instance
+    let newGraph = fun() -> new ResizeArray<NodeRep>()
 
     let nodes (g: Graph) :Node list =
         let len = g.Count

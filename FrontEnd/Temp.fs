@@ -20,6 +20,8 @@ module Table =
 
 type Label = Store.Symbol
 
+// Tip: If you deal with mutable in a module return closure
+
 let newTemp =
     let temp = ref 100
     fun () ->

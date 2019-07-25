@@ -174,7 +174,7 @@ let registers = List.map (fun (_, name) -> name) (argRegsMap @ callerSavesMap @ 
 |            |
 | saved regs |
 |            |
-|  arg2      |           <---- outgoing args
+|  arg2      |            <---- outgoing args
 |  arg1      |
 | static link|
                                lower addresses
@@ -248,6 +248,17 @@ let string (label, s) =
     sprintf ".data\n%s:\n  .word %i\n.asscii \"%s\"" (Store.name label) size s
 
 let externalCall (name, args) = CALL (NAME (Temp.namedLabel name), args)
+
+let prettyPrint (stms: Stm list) =
+    let print stm =
+        match stm with
+        | LABEL (name, _)         -> printf "%s: " name
+        | CJUMP(_) | JUMP(_) as J -> printfn "\t%A\n" J
+        | x                       -> printfn "\t%A" x
+
+    printfn ""
+    List.iter print stms
+    printfn "\n"
 
 let private blockCode stmList =
     let rec cons x xs =
