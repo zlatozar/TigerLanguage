@@ -58,43 +58,42 @@ at a node if it is live on any of the out-edges of the node.
 
 **Two temporaries can be allocated to the same register if there is no edge connecting them**
 
-  Based on the liveness analysis, we know where each variable is needed. However,
-during register allocation, we need to answer questions of the specific
-form: are variables **u** and **v** live at the same time? (And therefore cannot
-be assigned to the same register.) To make this question easier to answer,
-we create an explicit data structure, an _interference graph_. An interference
-graph is an _undirected_ graph that has an edge between two variables if they
-are live at the same time, that is, if they **interfere** with each other.
+ Based on the liveness analysis, we know where each variable is needed. However, during
+register allocation, we need to answer questions of the specific form: are variables **u**
+and **v** live at the same time? (And therefore cannot be assigned to the same register.)
+To make this question easier to answer, we create an explicit data structure, an
+_interference graph_. An interference graph is an _undirected_ graph that has an edge
+between two variables if they are live at the same time, that is, if they **interfere**
+with each other.
 
-  The most obvious way to compute the interference graph is to look at
-the set of live variables between each statement in the program, and add an
-edge to the graph for every pair of variables in the same set. This approach
-is less than ideal for two reasons. First, it can be rather expensive because
-it takes **O(n2)** time to look at every pair in a set of **n** live variables. Second,
-there is a special case in which two variables that are live at the same time
-do not actually interfere with each other: when they both contain the same
-value because we have assigned one to the other.
-  A better way to compute the interference graph is to focus on the writes.
-That is, for each instruction, create an edge between the variable being
-written to and all the _other_ live variables. (One should not create self
-edges.)
-  Our next concern is to choose a data structure for representing the interference
-graph. There are many standard choices for how to represent a
-graph: _adjacency matrix, adjacency list_, and _edge set_ [see Cormen, 2001].
-**The right way to choose a data structure is to study the algorithm that uses**
-**the data structure, determine what operations need to be performed, and**
-**then choose the data structure that provide the most efficient implementations**
-**of those operations.** Often times the choice of data structure can have
-an effect on the time complexity of the algorithm, as it does here. Register allocation
-algorithm needs to ask the graph for all of its vertices and, given a vertex, it
-needs to known all of the adjacent vertices. Thus, the correct choice of graph
-representation is that of an adjacency list.
+  The most obvious way to compute the interference graph is to look at the set of live
+variables between each statement in the program, and add an edge to the graph for every
+pair of variables in the same set. This approach is less than ideal for two
+reasons. First, it can be rather expensive because it takes **O(n2)** time to look at
+every pair in a set of **n** live variables. Second, there is a special case in which two
+variables that are live at the same time do not actually interfere with each other: when
+they both contain the same value because we have assigned one to the other.  A better way
+to compute the interference graph is to focus on the writes.  That is, for each
+instruction, create an edge between the variable being written (def[`A`]) to and all the
+_other_ live-out variables. (One should not create self edges.)  Our next concern is to
+choose a data structure for representing the interference graph. There are many standard
+choices for how to represent a graph: _adjacency matrix, adjacency list_, and _edge set_.
+**The right way to choose a data structure is to study the algorithm that uses the**
+**data structure, determine what operations need to be performed, and then choose the**
+**data structure that provide the most efficient implementations of those operations.**
+Often times the choice of data structure can have an effect on the time complexity of the
+algorithm, as it does here. Register allocation algorithm needs to ask the graph for all
+of its vertices and, given a vertex, it needs to known all of the adjacent vertices. Thus,
+the correct choice of graph representation is that of an adjacency list.
 
-1. At any non-MOVE instruction that defines a variable `A`, where the live-out variables are
-  `B1,...,Bj`, add interference edges `(A, B1),...,(A, Bj)`.
+_Algorithm:_
 
-2. At a MOVE instruction `A := C`, where variables `B1,...,Bj` are live-out, add interference
-   edges `(A, Bj),...,(A, Bj)` for any `Bi` that is not the same as `C`.
+1. At any non-MOVE instruction that defines a variable `A` (def[A]), where the live-out
+   variables are `B1,...,Bj`, add interference edges `(A, B1),...,(A, Bj)`.
+
+2. At a MOVE instruction `A := C` (def[`A`], use[`C`]), where variables `B1,...,Bj` are
+   live-out, add interference edges `(A, Bj),...,(A, Bj)` for any `Bi` that is **not** the
+   same as `C`.
 
 #### Code notes
 

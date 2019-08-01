@@ -220,7 +220,7 @@ let newFrame (frameRec: FrameRec) =
 // Return one word in memory in given frame or a register if not escapes
 let allocFrameLocal (frame: Frame) escape =
     if escape then
-        let access = InFrame(-frame.allocated  * WORDSIZE)
+        let access = InFrame(-frame.allocated * WORDSIZE)
         frame.allocated <- frame.allocated + 1
         access
 

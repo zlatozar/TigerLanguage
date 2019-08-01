@@ -9,10 +9,10 @@ type IGraph =
       gtemp: Node -> Temp.Temp;
       moves: (Node * Node) list }
 
-// list of temps * map of temps
+// temps index * list of temps
 type LiveSet = Temp.Table<unit> * Temp.Temp list
 
-// Node and coresponing Temps
+// Map of Node:LiveSet (coresponing live-out Temps)
 type LiveMap = Graph.Table<LiveSet>
 
 //_____________________________________________________________________________
@@ -35,8 +35,8 @@ let rec union setX setY =
 
 let rec diff setX setY =
     match setX, setY with
-    |  [], _ -> []
-    |  _, [] -> setX
+    |  [], _      -> []
+    |  _, []      -> setX
     | hd :: tl, _ -> if List.contains hd setY then diff tl setY
                      else add hd (diff tl setY)
 
@@ -110,53 +110,59 @@ let interferenceGraph (flowGraph :FlowGraph) :IGraph * (Node -> Temp.Temp list) 
             else
                 let inode = Graph.newNode igraph
                 let tnode' = Temp.Table.enter tnode temp inode
-                let gtemp' = Graph.Table.add gtemp inode temp
-                // node and it's temps
+                let gtemp' = Graph.ITable.add gtemp inode temp
                 (tnode', gtemp')
 
-    // nodes that interfere
+    // Connect nodes that interfere
     let addIEdge (n1: Node) (n2: Node) =
         if not (n1 = n2) && not (List.exists (Graph.eq n1) (Graph.adj n2))
             then Graph.mkEdge n1 n2
             else ()
 
+    // Builds IGraph as creating inodes and fill tables
     let rec loop tnode gtemp moves fnodes =
         match fnodes with
-        | []              ->
+        | []              -> // The graph itself and the instruments to search in graph database
                              { graph=igraph;
                                tnode=(fun t     -> Temp.Table.lookup tnode t);
-                               gtemp=(fun inode -> Graph.Table.lookup gtemp inode);
+                               gtemp=(fun inode -> Graph.ITable.lookup gtemp inode);
                                moves=List.rev moves }
 
         | fnode :: restNodes ->
+                                // Find out kind of temps in flow graph
                                 let uses' = Graph.Table.lookup uses fnode
                                 let def' = Graph.Table.lookup def fnode
                                 let isMove' = Graph.Table.lookup isMove fnode
 
-                                let (liveTab, liveList) = Graph.Table.lookup liveMap fnode
+                                let (liveKey, liveList) = Graph.Table.lookup liveMap fnode
+
+                                // Note that we pass liveList. In this way we catch all temps up to now.
                                 let (tnode', gtemp') = List.fold addINode (tnode, gtemp) (uses' @ def' @ liveList)
 
-                                let moves' = if isMove'
-                                                then
-                                                    let u = Temp.Table.lookup tnode' (List.head def')
-                                                    let v = Temp.Table.lookup tnode' (List.head uses')
-                                                    (u, v) :: moves
-                                                else moves
+                                // Tip: The head of def[] and use[] are temps defined/used in current node.
 
-                                let adj = if isMove' && Temp.Table.contain liveTab (List.head uses')
-                                            then List.filter (fun t -> t <> List.head uses') liveList
-                                            else liveList
+                                let moves' = if isMove'
+                                                 then
+                                                     let a = Temp.Table.lookup tnode' (List.head def')
+                                                     let c = Temp.Table.lookup tnode' (List.head uses')
+                                                     (a, c) :: moves
+                                                 else moves
+
+                                let adj = if isMove' && Temp.Table.contain liveKey (List.head uses')
+                                              then List.filter (fun t -> t <> List.head uses') liveList // don't add self-edge
+                                              else liveList
 
                                 List.iter (fun d -> let inode = Temp.Table.lookup tnode' d
                                                     let iadj = List.map (fun t -> Temp.Table.lookup tnode' t) adj
                                                     List.iter (addIEdge inode) iadj) def'
 
-                                // continue with the rest
+                                // continue with the rest and accumulate moves
                                 loop tnode' gtemp' moves' restNodes
 
-    let fnodes = Graph.nodes control
-    let iGraph = loop Temp.Table.empty Graph.Table.empty [] fnodes
+    let flowNodes = Graph.nodes control
+    let iGraph = loop Temp.Table.empty Graph.ITable.empty [] flowNodes
 
+    // function thar returns live-out temps in a given node
     let liveOut fnode = snd (Graph.Table.lookup liveMap fnode)
     (iGraph, liveOut)
 

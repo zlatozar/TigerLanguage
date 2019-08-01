@@ -41,6 +41,7 @@ let codegen (frame: Frame.Frame) stm =
         match stm with
         | SEQ (a, b)    -> munch_stm a; munch_stm b
 
+        // with offset
         | MOVE (MEM (BINOP (PLUS, CONST i, e1)), e2)
                         -> emit (Assem.OPER { assem = (sprintf "sw 's0, %i('s1)" i);
                                         src = [munch_exp e2; munch_exp e1]; dst = []; jump = None})
@@ -49,16 +50,19 @@ let codegen (frame: Frame.Frame) stm =
                         -> emit (Assem.OPER { assem = (sprintf "sw 's0, %i('s1)" i);
                                         src = [munch_exp e2; munch_exp e1]; dst = []; jump = None })
 
+        // immediate
         | MOVE (MEM (CONST i), e2)
                         -> emit (Assem.OPER { assem = (sprintf "sw 's0, %i" i);
                                         src = [munch_exp e2]; dst = []; jump = None })
 
+        // without offset
         | MOVE (MEM (e1), e2)
                         -> emit (Assem.OPER { assem = "sw 's0, ('s1)";
                                         src = [munch_exp e2; munch_exp e1]; dst = []; jump = None })
 
         | LABEL lab     -> emit (Assem.LABEL { assem = (sprintf "%s:" (Temp.stringOfLabel lab)); lab = lab })
 
+        // procedure call
         | EXP (CALL (NAME lab, args))
                         -> emit (Assem.OPER { assem = (sprintf "jal %s" (Temp.stringOfLabel lab));
                                         src = munch_args 0 args;
@@ -80,6 +84,7 @@ let codegen (frame: Frame.Frame) stm =
                                         src = munch_exp e1;
                                         dst = t })
 
+        // jumps and procedure return
         | JUMP (NAME lab, labs) when labs = [lab]
                         -> emit (Assem.OPER { assem = "j 'j0";
                                         src = []; dst = [];
@@ -98,6 +103,7 @@ let codegen (frame: Frame.Frame) stm =
                                | GT -> "bgt"
                                | LE -> "ble"
                                | GE -> "bge"
+                               // for absolute values (unsigned integers)
                                | ULT -> "bltu"
                                | ULE -> "bleu"
                                | UGT -> "bgtu"
@@ -116,6 +122,8 @@ let codegen (frame: Frame.Frame) stm =
 
     and munch_exp exp =
         match exp with
+
+        // load
         | MEM (BINOP (PLUS, e1, CONST i))
                         -> result (fun r -> emit (Assem.OPER { assem = (sprintf "lw 'd0, %i('s0)" i);
                                                          src = [munch_exp e1]; dst = [r]; jump = None }) )
@@ -131,6 +139,7 @@ let codegen (frame: Frame.Frame) stm =
         | MEM (e1)      -> result (fun r -> emit (Assem.OPER { assem = "lw 'd0, ('s0)";
                                                          src = [munch_exp e1]; dst = [r]; jump = None }) )
 
+        // arithmetic
         | BINOP (PLUS, e1, CONST i)
                         -> result (fun r -> emit (Assem.OPER { assem = (sprintf "addi 'd0, 's0, %i" i);
                                                            src = [munch_exp e1]; dst = [r]; jump = None }) )
@@ -159,6 +168,7 @@ let codegen (frame: Frame.Frame) stm =
                                                          src = [munch_exp e1; munch_exp e2]; dst = [r];
                                                          jump = None }) )
 
+        // constant manipulation
         | CONST i       -> result (fun r -> emit (Assem.OPER { assem = (sprintf "li 'd0, %i" i);
                                                          src = []; dst = [r]; jump = None }) )
 

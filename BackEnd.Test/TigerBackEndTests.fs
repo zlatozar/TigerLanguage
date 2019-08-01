@@ -292,6 +292,7 @@ let ``Test interference graph creation with no MOVE instruction`` () =
 
     let ({graph=graph; tnode=tnode; gtemp=gtemp; moves=_} as G, _) = interferenceGraph flowGraph
     (List.length (Graph.nodes graph)) |> should equal 3
+    printfn "\nTemps are digints because the are not mapped to registers"
     showIGraph G
 
     List.iter (fun t -> gtemp (tnode t) |> should equal t) [t1; t2; t3]

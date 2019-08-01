@@ -17,7 +17,6 @@ let emptyNodeRep :NodeRep = NodeRep.empty
 // array because of index usage/iteration
 type Graph = ResizeArray<NodeRep>
 
-// NOTE: Better name could be GraphRep but I will stick to book's notation
 // [<CustomEquality; CustomComparison>]
 type Node(g: Graph, i) =
     // current state of the graph
@@ -115,6 +114,10 @@ module Graph =
         // if not found - compiler error
         let lookup (Table table) s = Map.find s table
 
-//  For any node in the graph,
-//    Graph.Table.lookup(def, node) = Some (def-list)
-//    Graph.Table.lookup(use, node) = Some (use-list)
+    type ITable<'a> = private ITable of Map<Node, 'a>
+
+    module ITable =
+        let empty = ITable Map.empty
+        let add (ITable table) k v = ITable (Map.add k v table)
+        let iter f (ITable table) = Map.iter f table
+        let lookup (ITable table) s = Map.find s table

@@ -4,7 +4,7 @@ open GraphRep
 
 type FlowGraph =
     {
-      // current state of the graph
+      // current (up to node) graph
       control: Graph;
 
       // Folloing contains the information that we need at the current Node (moment)
