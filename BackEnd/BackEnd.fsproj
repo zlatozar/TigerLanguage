@@ -20,6 +20,8 @@
     <Compile Include="Liveness.fs" />
 
     <!-- Chapter 11 -->
+    <Compile Include="Color.fs" />
+    <Compile Include="RegAlloc.fs" />
 
     <!-- Put all thogether -->
     <Compile Include="BackEnd.fs" />
