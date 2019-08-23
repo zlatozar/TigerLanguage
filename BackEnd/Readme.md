@@ -77,7 +77,28 @@ addi  rt, rs, imm
 `.word size`  In `.word` data is stored in the form of 32 bits. It can also
               be used to initialize array.
 
-`.ascii str`  Declare and initialize a string. `.ascii "Hello word"` for example
+`.ascii str`  Declare and initialize a string. `.ascii "Hello word"` for example.
+
+`.align 4`    The next variable (symbol) should starts at an address that is a multiple of 4
+              Word data must be "word aligned". Word address ends in a number devisible by 4 in MIPS.
+              In hex address ends with: 0, 4, 8, c. In binary ends with two zeros `00`.
+
+Computer's processor does not read from and write to memory in byte-sized chunks. Instead, it accesses
+memory in _two-, four-, eight- 16-_ or even _32-byte_ chunks. The size in which a processor accesses
+memory its **memory access granularity**. For example to allocate 20 words of memory use the following:
+
+```assembly
+       .align 2
+array: .space 80
+```
+
+The `.align` is necessary to guarantee that the array is started on a word boundary.
+
+`.byte n1, n2..` Store the `n` values in successive bytes of memory.
+                 Byte (4 Bits) data type is used for single integers without any decimal places.
+                 It can also be used to store character.
+
+`.space 128`  Reserve space for a variable (array). Not initialized.
 
 #### Data Movement Instructions
 
@@ -292,3 +313,123 @@ Call with parameters
 ### Online symulator
 
 http://www.kvakil.me/venus/
+
+## Chapter 11
+
+### Register allocation
+
+  _Graph coloring_ is a relatively simple method which can be used for some of the scheduling
+problems, e.g.  for **register allocation**.  To apply graph-coloring to register allocation,
+we frst need to construct an _interference graph_, as discussed in the last chapter.  Next,
+we color the interference graph using `K` different colors, where `K` is the number of
+registers available for allocation. _No pair of nodes which are connected by an edge may be_
+_assigned the same color._
+  If it is impossible to color the interference graph with the given `K` colors, then we
+will have to keep some of the values (represented by corresponding vertices) in the memo-
+ry (for at least part of their lifetime).  The compiler should generate the code such that
+a live value will either reside in a register or in a memory location.  Before the program
+overwrites a register which stores a still-live value, that value must be saved to a
+memory location.  This is called **spilling** the register, and the memory location to save
+the spilled value called its _spill location_.
+
+#### Coloring by Simplication
+
+For arbitrary graphs, coloring is an NP-complete problem.  On the other hand, there exists
+a linear-time heuristic method (known since 19th century) which is based on simplication
+of the graph described as follows:
+
+- Until the graph is empty, and a vertex, a, whose degree is < `K`. Remove a from the graph
+and push it to the coloring stack. (Some people propose that the node with the _lowest_
+degree is removed.)
+
+- If such a vertex cannot be found before the graph becomes empty, then the simplication
+fails.
+
+- Otherwise, the graph can be colored in `K` colors by sequentially coloring the vertices
+popped off the coloring stack. The reason the last step mentioned above works is because:
+
+_For any vertex m whose degree is < K, if the graph G-{m} can be colored in K colors, then_
+_so can G._
+
+  If the simplication scheme fails, it does not mean that a `K-coloring` does not exist.
+An "optimistic" scheme continues to remove a vertex from the graph and push it into the
+colo ring stack. (Which vertex to remove depends on how we define the spilling priority.)
+During the coloring phase, we might still find it possible to color the graph with K-colors.
+  If the optimistic scheme still fails, it still does not mean that a `K-coloring` does
+not exist.  However, to simplify the solution, we will just assume that a `K-coloring`
+does not exist and we resort to spilling.
+  Any vertex that cannot be successfully colored is put in the _spilling list_.  We continue
+to color the rest of the vertices (just to see if there exist more spilled vertices).  When
+this is done, we need to modify the code by inserting memory load and store instructions for
+the spilled values.
+  The spilling code inserted above introduces more temporaries with short live ranges. We
+re-draw the interference graph and re-apply the coloring scheme. We iterate until we can
+color the modifed graph with `K` colors.
+
+![Coloring Algorithm](images/simplify_select.png)
+
+#### The Spilling Cost
+
+When choosing a vertex in the interference graph to spill, the compiler needs to compare
+the spilling priority among the possible candidates. Such a priority depends on the
+spilling cost and the degree of the vertex in the graph. Commonly, the vertex with the
+_lowest value_ of
+
+```
+ spilling cost
+---------------
+    degree
+```
+
+is considered the best candidate for spilling.
+
+  A vertex with a _high degree_ in the interference graph is considered to be a good
+candidate for spilling because its spilling may yield a better chance for the remaining
+vertices to be colorable.
+  The spilling cost of a vertex is the performance penalty paid at run time due to the
+decision to spill the corresponding variable to the memory. _Generally speaking, the more_
+_often a variable is referenced at run time, the higher its spilling cost._
+
+####Pre-colored nodes
+
+Register-allocation schemes discussed above assume that all hardware registers can be used
+in the same way.  However, as discussed in Chapter 6, different registers can be assigned
+different roles in order to make function call/return faster:
+
+- A number of registers may be designated to pass function arguments.
+- One or two registers may be used to return function value(s).
+- A subset of the registers may be designated as saved by the caller and the rest
+designated as saved by the callee.
+
+In order to use all registers as fully as possible, in order to reduce memory references,
+we want almost all registers be eligible for register allocation, (with a few such as **FP**,
+**SP** and **return-address register** excluded).
+
+On the other hand, we need to retain the special roles of different registers. To do this,
+we add all registers (which participate in register allocation) to the interference graph
+and add appropriate edges to reflect the special constraints. These vertices are called
+_pre-colored._
+
+- At the entry of the function, the registers which are used to pass arguments should be
+copied to the formal arguments. These registers are dead after the copying is done, until
+some of these registers are used to return function result(s).
+
+- All callee-save registers are copied to new temporaries.  These registers then remain
+dead until the new temporaries are copied back to them at the exit of the function. The
+live range of those new temporaries, therefore, expand nearly the whole function.
+
+- Any `CALL` instruction is assumed to define all callersave registers. Therefore, a
+variable `x` which is not live across any `CALL` will not interfere with any callsave
+registers. However, if `x` is live across a `CALL`, then it interferes with all caller-save
+registers. On the other hand, `x` will also interfere with all those new temporaries which
+are copied from callee-save registers, causing one of those temporaries to spill (because
+their spill priority is highest). This will cause `x` to be allocated to a callee-save
+register.
+
+- It is meaningless to select any pre-colored vertex to spill, so we assign the lowest
+spilling priority to precolored vertices.
+
+In the discussion above, register copying is introduced in many places. It is quite
+possible that some of them are unnecessary. A technique called **coalescing** can be used to
+eliminate unnecessary copying. Since this technique is very specialized and there are
+other compiler techniques which can achieve the same or better effect.

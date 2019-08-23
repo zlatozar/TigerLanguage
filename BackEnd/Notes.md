@@ -56,7 +56,10 @@ at a node if it is live on any of the out-edges of the node.
 
 #### Building the Interference Graph
 
-**Two temporaries can be allocated to the same register if there is no edge connecting them**
+**Two temporaries can be allocated to the same register if there is no edge connecting them**.
+In other words:
+Each node in the inteference graph represents a temporary value; each edge `(t1, t2)` indicates
+a pair of temporaries that **cannot** be assigned to the same register.
 
  Based on the liveness analysis, we know where each variable is needed. However, during
 register allocation, we need to answer questions of the specific form: are variables **u**
