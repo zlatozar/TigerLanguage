@@ -390,7 +390,7 @@ vertices to be colorable.
 decision to spill the corresponding variable to the memory. _Generally speaking, the more_
 _often a variable is referenced at run time, the higher its spilling cost._
 
-####Pre-colored nodes
+#### Pre-colored nodes
 
 Register-allocation schemes discussed above assume that all hardware registers can be used
 in the same way.  However, as discussed in Chapter 6, different registers can be assigned

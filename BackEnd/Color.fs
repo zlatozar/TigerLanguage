@@ -78,15 +78,17 @@ module RSet =
     let remove = Set.remove<Frame.Register>
     let choose = Set.minElement<Frame.Register>
 
+//_____________________________________________________________________________
+//                                                             Color algorithm
+
 open GraphRep
 open Liveness
 
-let color ({graph=graph; tnode=tnode; gtemp=gtemp; moves=moves} as igraph) spill_cost (allocation: Allocation) registers =
+let color ({graph=graph; tnode=_; gtemp=gtemp; moves=moves} :IGraph)
+            (spill_cost: (Node -> int)) (allocation: Allocation)
+            (registers: Frame.Register list) :Temp.Table<Frame.Register> * Temp.Temp list =
 
     let nextn = ref 0
-
-//_____________________________________________________________________________
-//                                                            Helper Functions
 
     let add_node inode dll =
         let cnode = { inode=inode; n=(!nextn); setNode={node=None; dll=dll} }
@@ -265,6 +267,7 @@ let color ({graph=graph; tnode=tnode; gtemp=gtemp; moves=moves} as igraph) spill
         else
             cnode
 
+    // Note: adj_set.[t.n, u.n] not adj_set.[t.n].[u.n]
     let ok (t: CNode) (u: CNode) = degree.[t.n] < k || t.setNode.dll = precolored || adj_set.[t.n, u.n]
 
     let conservative (nodes: CSet) =
