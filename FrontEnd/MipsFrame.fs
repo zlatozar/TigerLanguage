@@ -26,6 +26,7 @@ type FrameRec = { name: Temp.Label; formalsEsc: bool list }
 
 // 32 bit architecture
 let WORDSIZE = 4
+let MIN_FRAME_SIZE = 24
 
 // ____________________________________________________________________________
 //                            All 32 MIPS instructions
@@ -144,7 +145,7 @@ let callerSavesMap = [
     (T7, "$t7");
     (T8, "$t8");
     (T9, "$t9");
-    (V1, "$v1")]
+    (V1, "$v1") ]
 
 let callerSavesRegs = List.map (fun (temp, _) -> temp) callerSavesMap
 
@@ -273,7 +274,7 @@ let private blockCode stmList =
 
 // Defines what should be done before execute function body and after it's exit.
 //
-// ATTENTION: This first version is not optimal and there is a lot of room for optimization.
+// ATTENTION: This first version is not optimal.
 let procEntryExit1 (frame: Frame, body: Stm) :Stm =
     let args = frame.viewshift   // how to "see" function actual parameters
 
@@ -283,3 +284,97 @@ let procEntryExit1 (frame: Frame, body: Stm) :Stm =
         List.map (fun (localInFrame, reg) -> MOVE (TEMP reg, exp localInFrame (TEMP FP))) (List.rev localsRA)
 
     blockCode (args @ calleeSaveRegs @ [body] @ restoreCalleeSaveRegs)
+
+open System.Text.RegularExpressions
+
+let procEntryExit2 (frame: Frame) (body: Assem.Instr list) :Assem.Instr list =
+    let maxOutgoing =
+        let pattern = Regex("sw 's0, ([0-9]+)\('s1\)")
+
+        List.fold
+            (fun max instr -> match instr with
+                              | Assem.OPER {assem=assem; src=[_; s1]; dst=_; jump=_} when s1 = SP ->
+                                        let matches = pattern.Match assem
+                                        if matches.Success then
+                                            let offset = (int) matches.Groups.[1].Value
+                                            let m = offset / 4 + 1
+                                            if m > max then m else max
+                                        else max
+                              | _   -> max
+            ) 0 body
+
+    frame.maxOutgoing <- maxOutgoing
+    body @ [Assem.OPER {assem = ""; src = specialRegs @ calleeSavesRegs; dst = []; jump = None}]
+
+let procEntryExit3 ({name=name; formals=_; fpaccess=fpaccess; allocated=allocated; maxOutgoing=maxOutgoing; viewshift=_} :Frame)
+                        (body: Assem.Instr list) =
+
+    let fpoffset = match fpaccess with
+                   | InFrame k -> k
+                   | InReg _   -> failwith "ERROR: Nothing to do with register." // ??
+
+    let fs =
+        let pad fs = if (fs % (WORDSIZE * 2)) = 0 then fs
+                     else fs + WORDSIZE
+
+        let n = (allocated + maxOutgoing) * WORDSIZE
+
+        if n < MIN_FRAME_SIZE then
+            MIN_FRAME_SIZE
+        else
+            pad n
+
+    let prologue = [
+        Assem.LABEL {
+                      assem = sprintf "%s:" (Temp.stringOfLabel name);
+                      lab = name
+                    };
+
+        Assem.OPER {
+                     assem = sprintf "subu 'd0, 's0, %i" fs;
+                     src = [SP];
+                     dst = [SP];
+                     jump = None
+                   };
+
+        Assem.OPER {
+                     assem = sprintf "sw 's0, %i('s1)" (fs - WORDSIZE + fpoffset);
+                     src = [FP; SP];
+                     dst = [];
+                     jump = None
+                   };
+
+        Assem.OPER {
+                     assem = sprintf "addiu 'd0, 's0, %i" (fs - WORDSIZE);
+                     src = [SP];
+                     dst = [FP];
+                     jump = None
+                   }
+        ]
+
+    let epilogue = [
+        Assem.OPER {
+                     assem = sprintf "lw 'd0, %i('s0)" (fs - WORDSIZE + fpoffset);
+                     src = [SP];
+                     dst = [FP];
+                     jump = None
+                    };
+
+        Assem.OPER {
+                     assem = sprintf "addiu 's0, 'd0, %i" fs;
+                     src = [SP];
+                     dst = [SP];
+                     jump = None
+                   };
+
+        Assem.OPER {
+                     assem = "jr 's0";
+                     src = [RA];
+                     dst =[];
+                     jump = None
+                   }
+        ]
+
+    let mkString instrs = List.fold (fun s instr -> sprintf "%s%s\n" s (Assem.format tempName instr)) "" instrs
+
+    ((sprintf ".text\n %s" (mkString prologue)), body, mkString epilogue)

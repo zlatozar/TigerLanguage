@@ -9,7 +9,6 @@
     <Compile Include="Canon.fs" />
 
     <!-- Chapter 9 -->
-    <Compile Include="Assem.fs" />
     <Compile Include="Codegen.fsi" />
     <Compile Include="MipsCodegen.fs" />
 

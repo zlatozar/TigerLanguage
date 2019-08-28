@@ -8,6 +8,7 @@
     <Compile Include="Types.fs" />
     <Compile Include="Temp.fs" />
     <Compile Include="Tree.fs" />
+    <Compile Include="Assem.fs" />
 
     <Compile Include="Frame.fsi" />
     <Compile Include="MipsFrame.fs" />

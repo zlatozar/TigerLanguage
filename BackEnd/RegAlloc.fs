@@ -55,7 +55,7 @@ let rewrite_program spilled frame instrs =
                             assem=assem;
                             src = replace_temps src src_replace.replacement;
                             dst = replace_temps dst dst_replace.replacement;
-                            jump=jump;
+                            jump=jump
                         }
 
                         let (temps, instrs') = loop instrs
@@ -70,7 +70,7 @@ let rewrite_program spilled frame instrs =
                         let instr = Assem.MOVE {
                             assem=assem;
                             src = List.head (replace_temps [src] src_replace.replacement);
-                            dst = List.head (replace_temps [dst] dst_replace.replacement);
+                            dst = List.head (replace_temps [dst] dst_replace.replacement)
                         }
 
                         let (temps, instrs') = loop instrs
@@ -87,9 +87,9 @@ let rewrite_program spilled frame instrs =
 let rec eliminate_moves allocation instrs =
     List.filter
         (function
-                | Assem.MOVE {assem=_; dst=dst; src=src}
-                        when Temp.Table.lookup allocation src = Temp.Table.lookup allocation dst -> false
-                | _                                                                              -> true ) instrs
+             | Assem.MOVE {assem=_; dst=dst; src=src}
+                   when Temp.Table.lookup allocation src = Temp.Table.lookup allocation dst -> false
+             | _                                                                            -> true ) instrs
 
 open Flow
 open Liveness
@@ -122,6 +122,7 @@ let alloc (instrs: Assem.Instr list) (frame: Frame.Frame) :Assem.Instr list * Te
 
                     ) Temp.Table.empty flownodes
 
+            // return
             (fun inode -> let t = gtemp inode
                           let (uses, def) = Temp.Table.lookup usedefs t
 

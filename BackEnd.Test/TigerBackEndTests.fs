@@ -56,8 +56,8 @@ let ``Format assembly`` () =
     let t3 = Temp.newTemp()
 
     let expectedResult = if t1 = 101
-                             then "add 103, 101, 102"
-                             else "add 179, 177, 178"
+                             then "add t103, t101, t102"
+                             else "add t179, t177, t178"
 
     let assemInstr = Assem.format Temp.makeString (Assem.OPER {Assem.assem = "add 'd0, 's0, 's1";
                                                    src = [t1; t2];

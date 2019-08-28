@@ -44,7 +44,7 @@ let format formatTemp instr =
                                               match kind with
                                               | "s" -> formatTemp (List.item idx src)
                                               | "d" -> formatTemp (List.item idx dst)
-                                              | "j" -> makeString (List.item idx jump)
+                                              | "j" -> Temp.stringOfLabel (List.item idx jump)
                                               | _   -> failwithf "ERROR: Bad Assem format.")
 
         Regex.Replace(assem, placeholderRegex, matchEvaluator)

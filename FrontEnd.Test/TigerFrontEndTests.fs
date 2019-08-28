@@ -5,6 +5,8 @@ open NUnit.Framework
 open FsUnit.Xunit
 open Xunit
 
+open System.Text.RegularExpressions
+
 open Tiger.FrontEnd
 
 [<SetUp>]
@@ -39,3 +41,11 @@ let correctExamples = ["../../../../testcases/test01.tig";
 let ``All correct Tiger programs should pass without errors`` () =
     List.iter (transFromFile >> ignore) correctExamples
     !ErrorMsg.anyErrors |> should be False
+
+[<Fact>]
+let ``Simple RegEx test`` () =
+    let pattern = Regex("sw 's0, ([0-9]+)\('s1\)")
+    let matches = pattern.Match "sw 's0, 16('s1)"
+
+    matches.Success |> should be True
+    ((int) matches.Groups.[1].Value) |> should equal 16

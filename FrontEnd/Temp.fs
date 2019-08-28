@@ -28,7 +28,7 @@ let newTemp =
         temp := !temp + 1
         !temp
 
-let makeString t = string t
+let makeString t = sprintf "t%i" t
 
 let newLabel =
     let labs = ref 0

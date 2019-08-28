@@ -82,5 +82,6 @@ val prettyPrint : Tree.Stm list -> unit
 
 val procEntryExit1 : Frame * Tree.Stm -> Tree.Stm
 
-// val procEntryExit2 : frame * Assem.Instr list -> Assem.Instr list
-// val procEntryExit3 : frame * Assem.Instr list -> { prolog: string, body: Assem.instr list, epilog: string }
+val procEntryExit2 : Frame -> Assem.Instr list -> Assem.Instr list
+
+val procEntryExit3 : Frame -> Assem.Instr list -> string * Assem.Instr list * string
