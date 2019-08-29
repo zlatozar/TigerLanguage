@@ -353,3 +353,13 @@ let ``Test interference graph creation with a MOVE instruction`` () =
     List.iter2 (fun (dst, src) (dst', src') -> Graph.eq dst dst' |> should be True;
                                                Graph.eq src src' |> should be True
                ) moves [(tnode t2, tnode t1); (tnode t4, tnode t4)]
+
+// // Chapter 11
+
+// open Tiger.FrontEnd
+// open Tiger.BackEnd
+
+// [<Fact>]
+// let ``Emit MIPS assembler`` () =
+//       transFromString(tigExample)
+//             |>  List.iter emitToConsole
