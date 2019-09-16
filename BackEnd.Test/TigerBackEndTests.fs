@@ -47,25 +47,6 @@ let ``Assembly representation`` () =
     let fragmets = Tiger.FrontEnd.transFromString tigExample
     List.iter emitProc fragmets
 
-// To assembly format
-
-[<Fact>]
-let ``Format assembly`` () =
-    let t1 = Temp.newTemp() // 101 or 177 if run suite
-    let t2 = Temp.newTemp()
-    let t3 = Temp.newTemp()
-
-    let expectedResult = if t1 = 101
-                             then "add t103, t101, t102"
-                             else "add t179, t177, t178"
-
-    let assemInstr = Assem.format Temp.makeString (Assem.OPER {Assem.assem = "add 'd0, 's0, 's1";
-                                                   src = [t1; t2];
-                                                   dst = [t3];
-                                                   jump = None})
-    // Generated assembler is aligned with tab to have room for labels
-    assemInstr.Trim() |> should equal expectedResult
-
 // _____________________________________________________________________________
 //                                                                   Chapter 10
 
@@ -350,16 +331,16 @@ let ``Test interference graph creation with a MOVE instruction`` () =
 
     (List.length moves) |> should equal 2
 
-    List.iter2 (fun (dst, src) (dst', src') -> Graph.eq dst dst' |> should be True;
+    List.iter2 (fun (dst, src) (dst', src') -> Graph.eq dst dst' |> should be True
                                                Graph.eq src src' |> should be True
                ) moves [(tnode t2, tnode t1); (tnode t4, tnode t4)]
 
-// // Chapter 11
+// Chapter 11
 
-// open Tiger.FrontEnd
-// open Tiger.BackEnd
+open Tiger.FrontEnd
+open Tiger.BackEnd
 
-// [<Fact>]
-// let ``Emit MIPS assembler`` () =
-//       transFromString(tigExample)
-//             |>  List.iter emitToConsole
+[<Fact>]
+let ``Emit MIPS assembler`` () =
+      transFromString(tigExample)
+            |>  List.iter emitToConsole

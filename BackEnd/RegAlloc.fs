@@ -84,7 +84,7 @@ let rewrite_program spilled frame instrs =
     // Start rewriting
     loop instrs
 
-let rec eliminate_moves allocation instrs =
+let eliminate_moves allocation instrs =
     List.filter
         (function
              | Assem.MOVE {assem=_; dst=dst; src=src}
@@ -122,7 +122,7 @@ let alloc (instrs: Assem.Instr list) (frame: Frame.Frame) :Assem.Instr list * Te
 
                     ) Temp.Table.empty flownodes
 
-            // return
+            // return spill cost function
             (fun inode -> let t = gtemp inode
                           let (uses, def) = Temp.Table.lookup usedefs t
 
@@ -133,11 +133,11 @@ let alloc (instrs: Assem.Instr list) (frame: Frame.Frame) :Assem.Instr list * Te
 
         let (allocation, spilled) = Color.color igraph spill_cost Frame.tempMap Frame.registers
 
-        if spilled = [] then
-            let instrs' = eliminate_moves allocation instrs in
-            (instrs', allocation)
+        if List.isEmpty spilled then
+            let instrs' = eliminate_moves allocation instrs
+            (instrs, allocation)
         else
-            let (temps, instrs') = rewrite_program spilled frame instrs in
+            let (temps, instrs') = rewrite_program spilled frame instrs
             loop instrs' temps
 
     loop instrs []

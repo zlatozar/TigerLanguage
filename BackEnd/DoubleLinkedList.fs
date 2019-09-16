@@ -1,8 +1,8 @@
 // A mutable, circular, doubly linked list
 module DLList
 
-[<CustomEquality;CustomComparison>]
-type NodeType<'a when 'a: comparison> = {
+[<CustomEquality;NoComparison>]
+type NodeType<'a when 'a :equality> = {
                       mutable data: 'a;
                       mutable next: NodeType<'a>;
                       mutable prev: NodeType<'a>
@@ -13,12 +13,6 @@ type NodeType<'a when 'a: comparison> = {
             | :? NodeType<'a> as n2 -> __.data = n2.data
             | _                     -> false
         override __.GetHashCode() = hash __.data
-
-        interface System.IComparable with
-            member __.CompareTo nObj =
-                match nObj with
-                | :? NodeType<'a> as n2 -> compare __.data n2.data
-                | _                     -> failwith "ERROR: Cannot compare values of different types."
 
 exception Empty
 
@@ -53,7 +47,7 @@ let insert d node =
                 data = d;
                 next = node.next;
                 prev = node
-                }
+             }
     node.next.prev <- nd  // circular
     node.next      <- nd
 

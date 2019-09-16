@@ -6,16 +6,16 @@ open System.Collections.Generic
 
 type Allocation = Temp.Table<Frame.Register>
 
-// Pointer to the list
-type Dll<'a when 'a: comparison> = DLList.NodeType<'a> option ref
+type Dll<'a when 'a: equality> = DLList.NodeType<'a> option ref
 
-// Pointer and the element
-type DllNode<'a when 'a: comparison> = {
+type DllNode<'a when 'a: equality> = {
                         mutable node: DLList.NodeType<'a> option;
                         mutable dll: Dll<'a>
                       }
 
-let createDll() = ref None
+let equalRefs = LanguagePrimitives.PhysicalEquality
+
+let createDll = fun() -> ref None
 
 // Helper functions
 
@@ -36,27 +36,48 @@ let moveNode setNode dll =
     // Remove from old dll
     if next = node then
         oldDll := None
-    else
-        if node = head then
-            oldDll := Some next
-            // Append to new dll
-            match !dll with
-            | None       -> dll := Some node
-            | Some other -> DLList.splice (DLList.prev other) node
+
+    else if node = head then
+        oldDll := Some next
+
+    // Append to new dll
+    match !dll with
+    | None       -> dll := Some node
+    | Some other -> DLList.splice (DLList.prev other) node
 
 // Node representation
+[<CustomEquality;CustomComparison>]
 type CNode = {
                inode: GraphRep.Node;
                n: int;
                setNode: DllNode<CNode>
              }
+     with
+         override __.Equals n2 =
+             match n2 with
+             | :? CNode as n2 -> __.n = n2.n
+             | _              -> false
+         override __.GetHashCode() = hash __.n
+
+         interface System.IComparable with
+             member __.CompareTo nObj =
+                 match nObj with
+                 | :? CNode as n2 -> compare __.n n2.n
+                 | _              -> failwith "ERROR: Cannot compare values of different types."
 
 // 'MOVE' representation
+[<CustomEquality;NoComparison>]
 type Move = {
               src: CNode;
               dst: CNode;
               setNode: DllNode<Move>
             }
+     with
+         override __.Equals m2 =
+             match m2 with
+             | :? Move as m2 -> __.src = m2.src && __.dst = m2.dst
+             | _             -> false
+         override __.GetHashCode() = hash __.src
 
 type CSet = Set<CNode>
 
@@ -181,11 +202,11 @@ let color ({graph=graph; tnode=_; gtemp=gtemp; moves=moves} :IGraph)
             adj_set.[u.n, v.n] <- true
             adj_set.[v.n, u.n] <- true
 
-            if u.setNode.dll <> precolored then
+            if not (equalRefs u.setNode.dll precolored) then
                 adj_list.[u.n] <- CSet.add v adj_list.[u.n]
                 degree.[u.n]   <- degree.[u.n] + 1
 
-            if v.setNode.dll <> precolored then
+            if not (equalRefs v.setNode.dll precolored) then
                 adj_list.[v.n] <- CSet.add u adj_list.[v.n]
                 degree.[v.n]   <- degree.[v.n] + 1
 
@@ -218,7 +239,7 @@ let color ({graph=graph; tnode=_; gtemp=gtemp; moves=moves} :IGraph)
                       moves
 
     let node_moves n = List.filter
-                           (fun m -> m.setNode.dll = active_moves || m.setNode.dll = worklist_moves) move_list.[n.n]
+                           (fun m -> equalRefs m.setNode.dll active_moves || equalRefs m.setNode.dll worklist_moves) move_list.[n.n]
 
     let move_related n = node_moves n <> []
 
@@ -241,7 +262,7 @@ let color ({graph=graph; tnode=_; gtemp=gtemp; moves=moves} :IGraph)
 
     let enable_moves cnodes =
         List.iter (fun cnode -> List.iter (fun m ->
-                                               if m.setNode.dll = active_moves then
+                                               if (equalRefs m.setNode.dll active_moves) then
                                                     moveNode m.setNode worklist_moves) (node_moves cnode))
                        cnodes
 
@@ -262,20 +283,20 @@ let color ({graph=graph; tnode=_; gtemp=gtemp; moves=moves} :IGraph)
                       (dll2list simplify_worklist)
 
     let rec get_alias (cnode: CNode) =
-        if cnode.setNode.dll = coalesced_nodes then
+        if (equalRefs cnode.setNode.dll coalesced_nodes) then
             get_alias (Option.get alias.[cnode.n])
         else
             cnode
 
     // Note: adj_set.[t.n, u.n] not adj_set.[t.n].[u.n]
-    let ok (t: CNode) (u: CNode) = degree.[t.n] < k || t.setNode.dll = precolored || adj_set.[t.n, u.n]
+    let ok (t: CNode) (u: CNode) = degree.[t.n] < k || (equalRefs t.setNode.dll precolored) || adj_set.[t.n, u.n]
 
     let conservative (nodes: CSet) =
         let d = CSet.fold (fun d n -> if degree.[n.n] >= k then d + 1 else d) 0 nodes
         d < k
 
     let add_worklist (u: CNode) =
-        if u.setNode.dll <> precolored && not (move_related u) && degree.[u.n] < k
+        if not (equalRefs u.setNode.dll precolored) && not (move_related u) && degree.[u.n] < k
         then moveNode u.setNode simplify_worklist
 
     let combine (u: CNode) (v: CNode) =
@@ -286,7 +307,7 @@ let color ({graph=graph; tnode=_; gtemp=gtemp; moves=moves} :IGraph)
         enable_moves [v]
         List.iter (fun t -> add_edge t u; decrement_degree t) (adjacent v)
 
-        if degree.[u.n] >= k && u.setNode.dll = freeze_worklist
+        if degree.[u.n] >= k && (equalRefs u.setNode.dll freeze_worklist)
         then moveNode u.setNode spill_worklist
 
 
@@ -296,19 +317,21 @@ let color ({graph=graph; tnode=_; gtemp=gtemp; moves=moves} :IGraph)
         let x = get_alias src
         let y = get_alias dst
 
-        let (u, v) = if y.setNode.dll = precolored then (y, x) else (x, y)
+        let (u, v) = if (equalRefs y.setNode.dll precolored) then (y, x) else (x, y)
 
         if u = v then
             moveNode m.setNode coalesced_moves
             add_worklist u
-        else if v.setNode.dll = precolored || adj_set.[u.n, v.n] then
+
+        else if (equalRefs v.setNode.dll precolored) || adj_set.[u.n, v.n] then
                  moveNode m.setNode constrained_moves
                  add_worklist u
                  add_worklist v
 
-        else if (u.setNode.dll = precolored && List.forall (fun t -> ok t u) (adjacent v))
-                || (u.setNode.dll <> precolored
-                        && conservative (CSet.union (CSet.ofList (adjacent u)) (CSet.ofList (adjacent v)))) then
+        else if (equalRefs u.setNode.dll precolored && List.forall (fun t -> ok t u) (adjacent v)) ||
+                (not (equalRefs u.setNode.dll precolored) &&
+                    conservative (CSet.union (CSet.ofList (adjacent u)) (CSet.ofList (adjacent v)))) then
+
                  moveNode m.setNode coalesced_moves
                  combine u v
                  add_worklist u
@@ -346,7 +369,8 @@ let color ({graph=graph; tnode=_; gtemp=gtemp; moves=moves} :IGraph)
                                         (fun ok_colors adj ->
                                              let adj' = get_alias adj
 
-                                             if adj'.setNode.dll = colored_nodes || adj'.setNode.dll = precolored
+                                             if (equalRefs adj'.setNode.dll colored_nodes)
+                                                || (equalRefs adj'.setNode.dll precolored)
                                              then
                                                  RSet.remove (Option.get color.[adj'.n]) ok_colors
                                              else
@@ -372,16 +396,18 @@ let color ({graph=graph; tnode=_; gtemp=gtemp; moves=moves} :IGraph)
     build()
     make_worklist()
 
-    while (dll2list simplify_worklist) <> [] ||
-          (dll2list worklist_moves) <> [] ||
-          (dll2list freeze_worklist) <> [] ||
-          (dll2list spill_worklist) <> []
+    while not (List.isEmpty (dll2list simplify_worklist)) ||
+          not (List.isEmpty (dll2list worklist_moves))    ||
+          not (List.isEmpty (dll2list freeze_worklist))   ||
+          not (List.isEmpty (dll2list spill_worklist))
         do
-          if (dll2list simplify_worklist) <> [] then simplify()
+          if not (List.isEmpty (dll2list simplify_worklist)) then simplify()
+
           // guards functions from empty list so #nowarn "25" is OK
-          else if (dll2list worklist_moves) <> [] then coalesce()
-          else if (dll2list freeze_worklist) <> [] then freeze()
-          else if (dll2list spill_worklist) <> [] then select_spill()
+          else if not (List.isEmpty (dll2list worklist_moves) ) then coalesce()
+          else if not (List.isEmpty (dll2list freeze_worklist)) then freeze()
+          else if not (List.isEmpty (dll2list spill_worklist) ) then select_spill()
+        done
 
     assign_colors()
 
@@ -396,5 +422,5 @@ let color ({graph=graph; tnode=_; gtemp=gtemp; moves=moves} :IGraph)
 
     let spilled = List.map (fun cnode -> gtemp cnode.inode) (dll2list spilled_nodes)
 
-    // Start coloring
+    // Result
     (allocation', spilled)
