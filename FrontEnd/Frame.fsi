@@ -78,7 +78,7 @@ val externalCall : string * Tree.Exp list -> Tree.Exp
 // Mimic real assembly code. Debugging only
 val prettyPrint : Tree.Stm list -> unit
 
-// Defines what should be done when executing a routine (prolog, code, eiplog)
+// Defines what should be done when executing a routine (prolog, code, epilog)
 
 val procEntryExit1 : Frame * Tree.Stm -> Tree.Stm
 

@@ -8,7 +8,7 @@ type Replace = {
     temps: Temp.Temp list
 }
 
-let rewrite_program spilled frame instrs =
+let rewriteProgram spilled frame instrs =
 
     let mem =
         List.fold
@@ -84,7 +84,7 @@ let rewrite_program spilled frame instrs =
     // Start rewriting
     loop instrs
 
-let eliminate_moves allocation instrs =
+let eliminateMoves allocation instrs =
     List.filter
         (function
              | Assem.MOVE {assem=_; dst=dst; src=src}
@@ -97,13 +97,13 @@ open GraphRep
 
 let alloc (instrs: Assem.Instr list) (frame: Frame.Frame) :Assem.Instr list * Temp.Table<Frame.Register> =
 
-    let rec loop instrs rewrite_temps =
+    let rec loop instrs rewriteTemps =
 
-        let ({FlowGraph.control=_; def=def; uses=uses; isMove=_} as flowgraph, flownodes) = MakeGraph.instrs2graph instrs
-        let ({IGraph.graph=_; tnode=_; gtemp=gtemp; moves=_} as igraph, _) = interferenceGraph flowgraph
+        let ({FlowGraph.control=_; def=def; uses=uses; isMove=_} as flowGraph, flowNodes) = MakeGraph.instrs2graph instrs
+        let ({IGraph.graph=_; tnode=_; gtemp=gtemp; moves=_} as igraph, _) = interferenceGraph flowGraph
 
-        let spill_cost =
-            let usedefs =
+        let spillCost =
+            let useDefs =
                 List.fold
                     (fun tab fnode -> let tab' = List.fold
                                                      (fun tab t ->
@@ -120,24 +120,24 @@ let alloc (instrs: Assem.Instr list) (frame: Frame.Frame) :Assem.Instr list * Te
                                                         Temp.Table.enter tab t (nuse, ndef + 1)
                                           ) tab' (Graph.Table.lookup def fnode)
 
-                    ) Temp.Table.empty flownodes
+                    ) Temp.Table.empty flowNodes
 
             // return spill cost function
             (fun inode -> let t = gtemp inode
-                          let (uses, def) = Temp.Table.lookup usedefs t
+                          let (uses, def) = Temp.Table.lookup useDefs t
 
-                          if List.contains t rewrite_temps then
+                          if List.contains t rewriteTemps then
                               System.Int32.MaxValue
                           else
                               uses + def)
 
-        let (allocation, spilled) = Color.color igraph spill_cost Frame.tempMap Frame.registers
+        let (allocation, spilled) = Color.color igraph spillCost Frame.tempMap Frame.registers
 
         if List.isEmpty spilled then
-            let instrs' = eliminate_moves allocation instrs
-            (instrs, allocation)
+            let instrs' = eliminateMoves allocation instrs
+            (instrs', allocation)
         else
-            let (temps, instrs') = rewrite_program spilled frame instrs
+            let (temps, instrs') = rewriteProgram spilled frame instrs
             loop instrs' temps
 
     loop instrs []

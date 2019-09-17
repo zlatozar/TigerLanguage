@@ -232,7 +232,7 @@ let name (frame: Frame) = frame.name
 let formals (frame: Frame) = frame.formals
 
 let tempMap =
-    (argRegsMap @ callerSavesMap @ calleeSavesMap) |>
+    (specialRegsMap @ argRegsMap @ callerSavesMap @ calleeSavesMap) |>
         List.fold (fun table (k, v) -> Temp.Table.enter table k v) Temp.Table.empty
 
 // In assembler we could use names of MIPS registers
@@ -309,9 +309,9 @@ let procEntryExit2 (frame: Frame) (body: Assem.Instr list) :Assem.Instr list =
 let procEntryExit3 ({name=name; formals=_; fpaccess=fpaccess; allocated=allocated; maxOutgoing=maxOutgoing; viewshift=_} :Frame)
                         (body: Assem.Instr list) =
 
-    let fpoffset = match fpaccess with
+    let fpOffset = match fpaccess with
                    | InFrame k -> k
-                   | InReg _   -> failwith "ERROR: Nothing to do with register." // ??
+                   | InReg _   -> failwith "ERROR: Nothing to do with register."
 
     let fs =
         let pad fs = if (fs % (WORDSIZE * 2)) = 0 then fs
@@ -338,7 +338,7 @@ let procEntryExit3 ({name=name; formals=_; fpaccess=fpaccess; allocated=allocate
                    };
 
         Assem.OPER {
-                     assem = sprintf "sw 's0, %i('s1)" (fs - WORDSIZE + fpoffset);
+                     assem = sprintf "sw 's0, %i('s1)" (fs - WORDSIZE + fpOffset);
                      src = [FP; SP];
                      dst = [];
                      jump = None
@@ -354,7 +354,7 @@ let procEntryExit3 ({name=name; formals=_; fpaccess=fpaccess; allocated=allocate
 
     let epilogue = [
         Assem.OPER {
-                     assem = sprintf "lw 'd0, %i('s0)" (fs - WORDSIZE + fpoffset);
+                     assem = sprintf "lw 'd0, %i('s0)" (fs - WORDSIZE + fpOffset);
                      src = [SP];
                      dst = [FP];
                      jump = None
