@@ -97,7 +97,7 @@ module Graph =
     let mkEdge (a: Node) (b: Node) :unit = diddleEdge (fun h t -> h :: t) a b
     let rmEdge (a: Node) (b: Node) :unit = diddleEdge delete a b
 
-    // debugging
+    // when debugging
     let show (g: Graph) :unit =
         printfn "\ngraph -> ["
         (nodes g)

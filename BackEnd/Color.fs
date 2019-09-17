@@ -111,7 +111,7 @@ let color ({graph=graph; tnode=_; gtemp=gtemp; moves=moves} :IGraph)
 
     let nextn = ref 0
 
-    let add_node inode dll =
+    let addNode inode dll =
         let cnode = { inode=inode; n=(!nextn); setNode={node=None; dll=dll} }
 
         nextn := !nextn + 1;
@@ -125,7 +125,7 @@ let color ({graph=graph; tnode=_; gtemp=gtemp; moves=moves} :IGraph)
 
         cnode
 
-    let add_move src dst dll =
+    let addMove src dst dll =
         let move = { src=src; dst=dst; setNode={node=None; dll=dll} }
 
         let dllNode = DLList.create move
@@ -143,8 +143,8 @@ let color ({graph=graph; tnode=_; gtemp=gtemp; moves=moves} :IGraph)
     let k = List.length registers
 
     // Graph representation p. 241
-    let adj_list = Array.create n CSet.empty
-    let adj_set = Array2D.create n n false
+    let adjList = Array.create n CSet.empty
+    let adjSet = Array2D.create n n false
 
 //_____________________________________________________________________________
 //                                           Node work-lists, sets, and stacks
@@ -154,61 +154,61 @@ let color ({graph=graph; tnode=_; gtemp=gtemp; moves=moves} :IGraph)
     // temporary registers, not precolored and not yet processed
     let initial = createDll()
     // list of low-degree non-move-related nodes
-    let simplify_worklist = createDll()
+    let simplifyWorklist = createDll()
     // low-degree move-related nodes
-    let freeze_worklist = createDll()
+    let freezeWorklist = createDll()
     // high-degree nodes
-    let spill_worklist = createDll()
+    let spillWorklist = createDll()
     // nodes marked for spilling during this round; initially empty
-    let spilled_nodes = createDll()
+    let spilledNodes = createDll()
 
     // registers that have been coalesced; when u <- v; is coalesced, 'v'
     // is added to this set and 'u' put back on some work-list (or vice versa)
-    let coalesced_nodes = createDll()
+    let coalescedNodes = createDll()
 
     // nodes successfully colored
-    let colored_nodes = createDll()
+    let coloredNodes = createDll()
     // stack containing temporaries removed from the graph
-    let select_stack = createDll()
+    let selectStack = createDll()
 
     (* Move sets *)
 
     // moves that have been coalesced
-    let coalesced_moves = createDll()
+    let coalescedMoves = createDll()
     // moves whose source and target interfere
-    let constrained_moves = createDll()
+    let constrainedMoves = createDll()
     // moves that will no longer be considered for coalescing
-    let frozen_moves = createDll()
+    let frozenMoves = createDll()
     // moves enabled for possible coalescing
-    let worklist_moves = createDll()
+    let worklistMoves = createDll()
     // moves not yet ready for coalescing
-    let active_moves = createDll()
+    let activeMoves = createDll()
 
     (* Other data structurs *)
 
     // an array containing the current degree of each node.
     let degree = Array.create n 0
     // a mapping from a node to the list of moves it is associated with
-    let move_list = Array.create n []
+    let moveList = Array.create n []
     // a move (u, v) has been coalesced, and 'u'; put in 'coalescedNodes', then alias(v) = u
     let alias = Array.create n None
     // the color chosen by the algorithm for a node; for precolored nodes this is
     // initialized to the given color.
     let color = Array.create n None
 
-    let add_edge u v =
-        if not adj_set.[u.n, v.n] && u <> v then
+    let addEdge u v =
+        if not adjSet.[u.n, v.n] && u <> v then
 
-            adj_set.[u.n, v.n] <- true
-            adj_set.[v.n, u.n] <- true
+            adjSet.[u.n, v.n] <- true
+            adjSet.[v.n, u.n] <- true
 
             if not (equalRefs u.setNode.dll precolored) then
-                adj_list.[u.n] <- CSet.add v adj_list.[u.n]
-                degree.[u.n]   <- degree.[u.n] + 1
+                adjList.[u.n] <- CSet.add v adjList.[u.n]
+                degree.[u.n]  <- degree.[u.n] + 1
 
             if not (equalRefs v.setNode.dll precolored) then
-                adj_list.[v.n] <- CSet.add u adj_list.[v.n]
-                degree.[v.n]   <- degree.[v.n] + 1
+                adjList.[v.n] <- CSet.add u adjList.[v.n]
+                degree.[v.n]  <- degree.[v.n] + 1
 
     // Constructs the interference graph (and bit matrix) using the results
     // of static liveness, and also initializes the 'worklistMoves' to contain
@@ -217,199 +217,200 @@ let color ({graph=graph; tnode=_; gtemp=gtemp; moves=moves} :IGraph)
         // (Node, CNode)
         let iNodeTab = List.fold (fun tab inode -> let temp = gtemp inode
                                                    let cnode = if Temp.Table.contain allocation temp then
-                                                                   let cnode = add_node inode precolored
+                                                                   let cnode = addNode inode precolored
                                                                    color.[cnode.n] <- Some (Temp.Table.lookup allocation temp)
                                                                    cnode
                                                                else
-                                                                    add_node inode initial
+                                                                    addNode inode initial
                                                    Graph.ITable.add tab inode cnode)
                                       Graph.ITable.empty (Graph.nodes graph)
 
         List.iter (fun inode -> let u = Graph.ITable.lookup iNodeTab inode
-                                List.iter (fun adj -> add_edge u (Graph.ITable.lookup iNodeTab adj))
+                                List.iter (fun adj -> addEdge u (Graph.ITable.lookup iNodeTab adj))
                                               (Graph.adj inode))
                       (Graph.nodes graph);
 
         List.iter (fun (u, v) -> let u = Graph.ITable.lookup iNodeTab u
                                  let v = Graph.ITable.lookup iNodeTab v
-                                 let m = add_move u v worklist_moves
+                                 let m = addMove u v worklistMoves
 
-                                 move_list.[u.n] <- move_list.[u.n] @ [m]
-                                 move_list.[v.n] <- move_list.[v.n] @ [m])
+                                 moveList.[u.n] <- moveList.[u.n] @ [m]
+                                 moveList.[v.n] <- moveList.[v.n] @ [m])
                       moves
 
-    let node_moves n = List.filter
-                           (fun m -> equalRefs m.setNode.dll active_moves || equalRefs m.setNode.dll worklist_moves) move_list.[n.n]
+    let nodeMoves n = List.filter
+                           (fun m -> equalRefs m.setNode.dll activeMoves || equalRefs m.setNode.dll worklistMoves) moveList.[n.n]
 
-    let move_related n = node_moves n <> []
+    let moveRelated n = nodeMoves n <> []
 
-    let make_worklist() =
+    let makeWorklist() =
         List.iter (fun cnode -> if degree.[cnode.n] >= k then
-                                    moveNode cnode.setNode spill_worklist
+                                    moveNode cnode.setNode spillWorklist
                                 else
-                                    if move_related cnode then
-                                        moveNode cnode.setNode freeze_worklist
+                                    if moveRelated cnode then
+                                        moveNode cnode.setNode freezeWorklist
                                     else
-                                        moveNode cnode.setNode simplify_worklist)
+                                        moveNode cnode.setNode simplifyWorklist)
                        (dll2list initial)
 
     let adjacent cnode =
         CSet.elements
-                      (CSet.diff adj_list.[cnode.n]
+                      (CSet.diff adjList.[cnode.n]
                           (CSet.union
-                              (CSet.ofList (dll2list select_stack))
-                                  (CSet.ofList (dll2list coalesced_nodes))))
+                              (CSet.ofList (dll2list selectStack))
+                                  (CSet.ofList (dll2list coalescedNodes))))
 
-    let enable_moves cnodes =
+    let enableMoves cnodes =
         List.iter (fun cnode -> List.iter (fun m ->
-                                               if (equalRefs m.setNode.dll active_moves) then
-                                                    moveNode m.setNode worklist_moves) (node_moves cnode))
+                                               if (equalRefs m.setNode.dll activeMoves) then
+                                                    moveNode m.setNode worklistMoves) (nodeMoves cnode))
                        cnodes
 
-    let decrement_degree cnode =
+    let decrementDegree cnode =
         let d = degree.[cnode.n]
         degree.[cnode.n] <- degree.[cnode.n] - 1
 
         if d = k then
-            enable_moves (cnode :: adjacent cnode);
-            if move_related cnode then
-                moveNode cnode.setNode freeze_worklist
+            enableMoves (cnode :: adjacent cnode);
+            if moveRelated cnode then
+                moveNode cnode.setNode freezeWorklist
             else
-                moveNode cnode.setNode simplify_worklist
+                moveNode cnode.setNode simplifyWorklist
 
     let simplify () =
-        List.iter (fun (cnode: CNode) -> moveNode cnode.setNode select_stack
-                                         List.iter decrement_degree (adjacent cnode))
-                      (dll2list simplify_worklist)
+        List.iter (fun (cnode: CNode) -> moveNode cnode.setNode selectStack
+                                         List.iter decrementDegree (adjacent cnode))
+                      (dll2list simplifyWorklist)
 
-    let rec get_alias (cnode: CNode) =
-        if (equalRefs cnode.setNode.dll coalesced_nodes) then
-            get_alias (Option.get alias.[cnode.n])
+    let rec getAlias (cnode: CNode) =
+        if (equalRefs cnode.setNode.dll coalescedNodes) then
+            getAlias (Option.get alias.[cnode.n])
         else
             cnode
 
-    // Note: adj_set.[t.n, u.n] not adj_set.[t.n].[u.n]
-    let ok (t: CNode) (u: CNode) = degree.[t.n] < k || (equalRefs t.setNode.dll precolored) || adj_set.[t.n, u.n]
+    // Note: adjSet.[t.n, u.n] not adjSet.[t.n].[u.n]
+    let ok (t: CNode) (u: CNode) =
+        degree.[t.n] < k || (equalRefs t.setNode.dll precolored) || adjSet.[t.n, u.n]
 
     let conservative (nodes: CSet) =
         let d = CSet.fold (fun d n -> if degree.[n.n] >= k then d + 1 else d) 0 nodes
         d < k
 
-    let add_worklist (u: CNode) =
-        if not (equalRefs u.setNode.dll precolored) && not (move_related u) && degree.[u.n] < k
-        then moveNode u.setNode simplify_worklist
+    let addWorklist (u: CNode) =
+        if not (equalRefs u.setNode.dll precolored) && not (moveRelated u) && degree.[u.n] < k
+        then moveNode u.setNode simplifyWorklist
 
     let combine (u: CNode) (v: CNode) =
-        moveNode v.setNode coalesced_nodes
-        alias.[v.n]     <- Some u
-        move_list.[u.n] <- move_list.[u.n] @ move_list.[v.n]
+        moveNode v.setNode coalescedNodes
+        alias.[v.n]    <- Some u
+        moveList.[u.n] <- moveList.[u.n] @ moveList.[v.n]
 
-        enable_moves [v]
-        List.iter (fun t -> add_edge t u; decrement_degree t) (adjacent v)
+        enableMoves [v]
+        List.iter (fun t -> addEdge t u; decrementDegree t) (adjacent v)
 
-        if degree.[u.n] >= k && (equalRefs u.setNode.dll freeze_worklist)
-        then moveNode u.setNode spill_worklist
+        if degree.[u.n] >= k && (equalRefs u.setNode.dll freezeWorklist)
+        then moveNode u.setNode spillWorklist
 
 
     let coalesce () =
-        let ({src=src; dst=dst} as m) :: _ = dll2list worklist_moves
+        let ({src=src; dst=dst} as m) :: _ = dll2list worklistMoves
 
-        let x = get_alias src
-        let y = get_alias dst
+        let x = getAlias src
+        let y = getAlias dst
 
         let (u, v) = if (equalRefs y.setNode.dll precolored) then (y, x) else (x, y)
 
         if u = v then
-            moveNode m.setNode coalesced_moves
-            add_worklist u
+            moveNode m.setNode coalescedMoves
+            addWorklist u
 
-        else if (equalRefs v.setNode.dll precolored) || adj_set.[u.n, v.n] then
-                 moveNode m.setNode constrained_moves
-                 add_worklist u
-                 add_worklist v
+        else if (equalRefs v.setNode.dll precolored) || adjSet.[u.n, v.n] then
+                 moveNode m.setNode constrainedMoves
+                 addWorklist u
+                 addWorklist v
 
         else if (equalRefs u.setNode.dll precolored && List.forall (fun t -> ok t u) (adjacent v)) ||
                 (not (equalRefs u.setNode.dll precolored) &&
                     conservative (CSet.union (CSet.ofList (adjacent u)) (CSet.ofList (adjacent v)))) then
 
-                 moveNode m.setNode coalesced_moves
+                 moveNode m.setNode coalescedMoves
                  combine u v
-                 add_worklist u
+                 addWorklist u
 
         else
-            moveNode m.setNode active_moves
+            moveNode m.setNode activeMoves
 
-    let freeze_moves u =
-        List.iter (fun move -> let v = if get_alias u = get_alias move.dst
-                                       then get_alias move.src
-                                       else get_alias move.dst
+    let freezeMoves u =
+        List.iter (fun move -> let v = if getAlias u = getAlias move.dst
+                                       then getAlias move.src
+                                       else getAlias move.dst
 
-                               moveNode move.setNode frozen_moves
+                               moveNode move.setNode frozenMoves
 
-                               if not (move_related v) && degree.[v.n] < k
-                               then moveNode v.setNode simplify_worklist)
-                     (node_moves u)
+                               if not (moveRelated v) && degree.[v.n] < k
+                               then moveNode v.setNode simplifyWorklist)
+                     (nodeMoves u)
 
     let freeze () =
-        let u :: _ = dll2list freeze_worklist
+        let u :: _ = dll2list freezeWorklist
 
-        moveNode u.setNode simplify_worklist
-        freeze_moves u
+        moveNode u.setNode simplifyWorklist
+        freezeMoves u
 
-    let select_spill () =
+    let selectSpill () =
         let cost cnode = spill_cost cnode.inode
-        let m :: _ = List.sortWith (fun u v -> (cost u) - (cost v)) (dll2list spill_worklist)
+        let m :: _ = List.sortWith (fun u v -> (cost u) - (cost v)) (dll2list spillWorklist)
 
-        moveNode m.setNode simplify_worklist;
-        freeze_moves m
+        moveNode m.setNode simplifyWorklist;
+        freezeMoves m
 
-    let assign_colors () =
-        List.iter (fun cnode -> let ok_colors' =
+    let assignColors () =
+        List.iter (fun cnode -> let okColors' =
                                     CSet.fold
-                                        (fun ok_colors adj ->
-                                             let adj' = get_alias adj
+                                        (fun okColors adj ->
+                                             let adj' = getAlias adj
 
-                                             if (equalRefs adj'.setNode.dll colored_nodes)
+                                             if (equalRefs adj'.setNode.dll coloredNodes)
                                                 || (equalRefs adj'.setNode.dll precolored)
                                              then
-                                                 RSet.remove (Option.get color.[adj'.n]) ok_colors
+                                                 RSet.remove (Option.get color.[adj'.n]) okColors
                                              else
-                                                 ok_colors
+                                                 okColors
 
-                                        ) (RSet.ofList registers) adj_list.[cnode.n]
+                                        ) (RSet.ofList registers) adjList.[cnode.n]
 
-                                if RSet.isEmpty ok_colors' then
-                                    moveNode cnode.setNode spilled_nodes
+                                if RSet.isEmpty okColors' then
+                                    moveNode cnode.setNode spilledNodes
                                 else
-                                    moveNode cnode.setNode colored_nodes;
-                                    color.[cnode.n] <- Some (RSet.choose ok_colors')
+                                    moveNode cnode.setNode coloredNodes;
+                                    color.[cnode.n] <- Some (RSet.choose okColors')
 
-                 ) (List.rev (dll2list select_stack))
+                 ) (List.rev (dll2list selectStack))
 
-        List.iter (fun cnode -> let alias = get_alias cnode
+        List.iter (fun cnode -> let alias = getAlias cnode
                                 color.[cnode.n] <- color.[alias.n])
-            (dll2list coalesced_nodes)
+            (dll2list coalescedNodes)
 
 //_____________________________________________________________________________
 //                                                                  Main Logic
 
     build()
-    make_worklist()
+    makeWorklist()
 
-    while not (List.isEmpty (dll2list simplify_worklist)) ||
-          not (List.isEmpty (dll2list worklist_moves))    ||
-          not (List.isEmpty (dll2list freeze_worklist))   ||
-          not (List.isEmpty (dll2list spill_worklist))
+    while not (List.isEmpty (dll2list simplifyWorklist)) ||
+          not (List.isEmpty (dll2list worklistMoves))    ||
+          not (List.isEmpty (dll2list freezeWorklist))   ||
+          not (List.isEmpty (dll2list spillWorklist))
         do
-          if not (List.isEmpty (dll2list simplify_worklist)) then simplify()
+          if not (List.isEmpty (dll2list simplifyWorklist)) then simplify()
 
           // guards functions from empty list so #nowarn "25" is OK
-          else if not (List.isEmpty (dll2list worklist_moves) ) then coalesce()
-          else if not (List.isEmpty (dll2list freeze_worklist)) then freeze()
-          else if not (List.isEmpty (dll2list spill_worklist) ) then select_spill()
+          else if not (List.isEmpty (dll2list worklistMoves) ) then coalesce()
+          else if not (List.isEmpty (dll2list freezeWorklist)) then freeze()
+          else if not (List.isEmpty (dll2list spillWorklist) ) then selectSpill()
         done
 
-    assign_colors()
+    assignColors()
 
     let allocation' =
       List.fold (fun alloc cnode -> let color = color.[cnode.n]
@@ -418,9 +419,9 @@ let color ({graph=graph; tnode=_; gtemp=gtemp; moves=moves} :IGraph)
                                                 Temp.Table.enter alloc t c
                                     | None   -> allocation
 
-                ) allocation (dll2list colored_nodes @ dll2list coalesced_nodes)
+                ) allocation (dll2list coloredNodes @ dll2list coalescedNodes)
 
-    let spilled = List.map (fun cnode -> gtemp cnode.inode) (dll2list spilled_nodes)
+    let spilled = List.map (fun cnode -> gtemp cnode.inode) (dll2list spilledNodes)
 
     // Result
     (allocation', spilled)

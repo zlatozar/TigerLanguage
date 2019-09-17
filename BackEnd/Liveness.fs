@@ -74,9 +74,9 @@ let liveness ({control=control; def=def; uses=uses; isMove=_} :FlowGraph) :LiveM
 
         // When all liveness information (outs and ins) not changed, the calculation is ended
         if List.forall
-            (fun fnode ->
-                Graph.Table.lookup inTable fnode = Graph.Table.lookup in' fnode  &&
-                Graph.Table.lookup outTable fnode = Graph.Table.lookup out' fnode) fnodes
+               (fun fnode ->
+                    Graph.Table.lookup inTable fnode = Graph.Table.lookup in' fnode  &&
+                    Graph.Table.lookup outTable fnode = Graph.Table.lookup out' fnode) fnodes
         then (in', out')
         else loop in' out'
 
@@ -116,8 +116,7 @@ let interferenceGraph (flowGraph :FlowGraph) :IGraph * (Node -> Temp.Temp list) 
     // Connect nodes that interfere
     let addIEdge (n1: Node) (n2: Node) =
         if not (n1 = n2) && not (List.exists (Graph.eq n1) (Graph.adj n2))
-            then Graph.mkEdge n1 n2
-            else ()
+        then Graph.mkEdge n1 n2
 
     // Builds IGraph as creating inodes and fill tables
     let rec loop tnode gtemp moves fnodes =
@@ -141,12 +140,11 @@ let interferenceGraph (flowGraph :FlowGraph) :IGraph * (Node -> Temp.Temp list) 
 
                                 // Tip: The head of def[] and use[] are temps defined/used in current node.
 
-                                let moves' = if isMove'
-                                                 then
-                                                     let a = Temp.Table.lookup tnode' (List.head def')
-                                                     let c = Temp.Table.lookup tnode' (List.head uses')
-                                                     (a, c) :: moves
-                                                 else moves
+                                let moves' = if isMove' then
+                                                  let a = Temp.Table.lookup tnode' (List.head def')
+                                                  let c = Temp.Table.lookup tnode' (List.head uses')
+                                                  (a, c) :: moves
+                                             else moves
 
                                 let adj = if isMove' && Temp.Table.contain liveKey (List.head uses')
                                               then List.filter (fun t -> t <> List.head uses') liveList // don't add self-edge
@@ -172,4 +170,5 @@ let showIGraph ({graph=graph; tnode=_; gtemp=gtemp; moves=_} :IGraph) =
     List.iter  (fun n -> say (sprintf "%s:\t%s: %i\n"
                                (Frame.tempName (gtemp n))
                                (String.concat ", " (List.map (fun gn -> Frame.tempName (gtemp gn)) (Graph.adj n)))
-                               (List.length (Graph.adj n)))) (Graph.nodes graph)
+                               (List.length (Graph.adj n))))
+                (Graph.nodes graph)
