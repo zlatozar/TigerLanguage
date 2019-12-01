@@ -88,6 +88,8 @@ routine can find its arguments just under its own frame. In other words, the arg
 have small negative addresses relative to the base of the called routine's frame. In all
 other respects, they can be accessed just like variables local to the called routine.
 
+![Call Stack](images/call_stack.png)
+
 #### View Shift
 
 The difference in the caller's method of access and the callee's is called the _view shift_.
