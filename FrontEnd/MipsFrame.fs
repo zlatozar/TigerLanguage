@@ -24,8 +24,10 @@ and ProcRec =
 
 type FrameRec = { name: Temp.Label; formalsEsc: bool list }
 
-// 32 bit architecture
+// 32 bit architecture: 4 bytes = 32 bits
 let WORDSIZE = 4
+// By convention the space for parameters $a0-$a3
+// will be allocated even if not needed
 let MIN_FRAME_SIZE = 24
 
 // ____________________________________________________________________________

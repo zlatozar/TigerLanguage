@@ -231,8 +231,8 @@ size: .word 10  # array size (not used but could be)
 
 print_loop:
             beq  $t2, $t3, print_loop_end   # check for array end
-            lw  $a0, ($t1)                  # print value at the array pointer
-            li  $v0, 1
+            lw   $a0, ($t1)                 # print value at the array pointer
+            li   $v0, 1
             syscall
             addi  $t2, $t2, 1               # advance loop counter
             addi  $t1, $t1, 4               # advance array pointer
@@ -280,18 +280,18 @@ With 4 parameters
 
 ```assembly
 proc_example:
-              addi $sp, $sp, -4    # adjust stack pointer to make
-                                   #   room for 1 item
-              sw   $s0, 0($sp)     # save the value that was in
-                                   #   $s0 when the call occurred
-              add  $t0, $a0, $a1   # $t0 = g + h
-              add  $t1, $a2, $a3   # $t1 = i + j
-              sub  $s0, $t0, $t1   # $s0 = (g + h) - (i + j)
-              move $v0, $s0        # put return value into $v0
-              lw   $s0, 0($sp)     # restore value of $s0
-              addi $sp, $sp, 4     # restore the stack pointer
-              jr   $ra             # jump back to the
-                                   #    return addres
+              addiu $sp, $sp, -4    # adjust stack pointer to make
+                                    #   room for 1 item (word is 4 bytes)
+              sw   $s0, 0($sp)      # save the value that was in
+                                    #   $s0 when the call occurred
+              add  $t0, $a0, $a1    # $t0 = g + h
+              add  $t1, $a2, $a3    # $t1 = i + j
+              sub  $s0, $t0, $t1    # $s0 = (g + h) - (i + j)
+              move $v0, $s0         # put return value into $v0
+              lw   $s0, 0($sp)      # restore value of $s0
+              addi $sp, $sp, 4      # restore the stack pointer
+              jr   $ra              # jump back to the
+                                    #    return addres
 ```
 
 Call with parameters
