@@ -79,9 +79,9 @@ addi  rt, rs, imm
 
 `.ascii str`  Declare and initialize a string. `.ascii "Hello word"` for example.
 
-`.align 4`    The next variable (symbol) should starts at an address that is a multiple of 4
+`.align 4`    The next variable (symbol) should starts at an address that is a multiple of 4.
               Word data must be "word aligned". Word address ends in a number devisible by 4 in MIPS.
-              In hex address ends with: 0, 4, 8, c. In binary ends with two zeros `00`.
+              In hex address ends with: 0, 4, 8, C. In binary ends with two zeros `00`.
 
 Computer's processor does not read from and write to memory in byte-sized chunks. Instead, it accesses
 memory in _two-, four-, eight- 16-_ or even _32-byte_ chunks. The size in which a processor accesses
@@ -89,7 +89,7 @@ memory its **memory access granularity**. For example to allocate 20 words of me
 
 ```assembly
        .align 2
-array: .space 80
+array: .space 80   # int array[80]
 ```
 
 The `.align` is necessary to guarantee that the array is started on a word boundary.
@@ -98,7 +98,7 @@ The `.align` is necessary to guarantee that the array is started on a word bound
                  Byte (4 Bits) data type is used for single integers without any decimal places.
                  It can also be used to store character.
 
-`.space 128`  Reserve space for a variable (array). Not initialized.
+`.space 128`     Reserve space for a variable (array). Not initialized.
 
 #### Data Movement Instructions
 
@@ -153,7 +153,7 @@ Not used in current implementation
 `lw  rdest, address`  Copy from memory to register. See `sw`.
                       `lw  rdest, 1000(base)` means _rdest = Memory[base+1000]_
 
-`li  rdest, imm`  (_pseudoinstruction_) Move the constant `imm` into register `rdest`.
+`li  rdest, imm`      (_pseudoinstruction_) Move the constant `imm` into register `rdest`.
 
 `la  rdest, address`  (_pseudoinstruction_) Loads computed address of label (not its contents)
                       into register `rdest`.
@@ -214,14 +214,14 @@ loop: beq   $t0, $s1, done   # loop test
       add   $s0, $s0, $t0    # Sum = Sum + i
       addi  $t0, $t0, 1      # ++i
       b     loop             # restart loop
-done:
+done: ...
 ```
 
 #### Arrays
 
 ```assembly
       .data
-list: .word 2, 3, 5, 7, 11, 13, 17, 19, 23, 29 # ten elements
+list: .word 2, 3, 5, 7, 11, 13, 17, 19, 23, 29 # array init with this element
 
 size: .word 10  # array size (not used but could be)
 
@@ -249,7 +249,7 @@ With no parameters
 ```assembly
 get_integer:
              # Prompt the user to enter an integer value. Read and return
-             # it.  It takes no parameters.
+             # it. It takes no parameters.
 
              li  $v0, 4        # system call code for printing a
                                #    string = 4
@@ -266,7 +266,7 @@ Call the defined procedure
 
 ```assembly
 ...
-        .data      # Data declaration section
+        .data         #  Data declaration section
 prompt: .asciiz "Enter an integer value\n"
         .text
 
@@ -280,17 +280,17 @@ With 4 parameters
 
 ```assembly
 proc_example:
-              addi  $sp, $sp, -4   # adjust stack pointer to make
+              addi $sp, $sp, -4    # adjust stack pointer to make
                                    #   room for 1 item
-              sw  $s0, 0($sp)      # save the value that was in
+              sw   $s0, 0($sp)     # save the value that was in
                                    #   $s0 when the call occurred
               add  $t0, $a0, $a1   # $t0 = g + h
               add  $t1, $a2, $a3   # $t1 = i + j
               sub  $s0, $t0, $t1   # $s0 = (g + h) - (i + j)
-              move  $v0, $s0       # put return value into $v0
-              lw  $s0, 0($sp)      # restore value of $s0
-              addi  $sp, $sp, 4    # restore the stack pointer
-              jr  $ra              # jump back to the
+              move $v0, $s0        # put return value into $v0
+              lw   $s0, 0($sp)     # restore value of $s0
+              addi $sp, $sp, 4     # restore the stack pointer
+              jr   $ra             # jump back to the
                                    #    return addres
 ```
 
@@ -310,9 +310,24 @@ Call with parameters
 ...
 ```
 
+### Compile to assembler
+
+https://godbolt.org/
+
+### Exercises
+
+https://exercism.io/my/tracks/mips
+
 ### Online symulator
 
 http://www.kvakil.me/venus/
+
+### Book
+
+_"MIPS Assembly Language Programming"_ by Robert Britton
+
+More general:
+_"Introduction to 64 Bit Intel Assembly Language Programming for Linux"_ by Ray Seyfarth
 
 ## Chapter 11
 
@@ -332,7 +347,7 @@ overwrites a register which stores a still-live value, that value must be saved 
 memory location.  This is called **spilling** the register, and the memory location to save
 the spilled value called its _spill location_.
 
-#### Coloring by Simplication
+#### Coloring by Simplification
 
 For arbitrary graphs, coloring is an NP-complete problem.  On the other hand, there exists
 a linear-time heuristic method (known since 19th century) which is based on simplication

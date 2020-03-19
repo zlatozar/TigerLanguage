@@ -63,7 +63,7 @@ int main() {
     consts[i].chars[0] = i;
   }
 
-  return tigermain(0 /* static link!? */);
+  return __main(0 /* static link!? */);
 }
 
 int ord(struct string *s) {

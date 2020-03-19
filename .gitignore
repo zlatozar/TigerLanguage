@@ -3,6 +3,7 @@
 *.suo
 *.user
 *.vscode
+.ionide
 
 # Build results
 [Dd]ebug/
