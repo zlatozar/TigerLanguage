@@ -7,12 +7,12 @@
   .ent malloc
   .text
 malloc:
-  # round up the requested amount to a multiple of 4
+  # round up the requested amount(memory size) to be multiple of 4
   add $a0, $a0, 3
   srl $a0, $a0, 2
   sll $a0, $a0, 2
 
-  # allocate the memory with sbrk()
+  # allocate the memory with sbrk(code 9 in $v0)
   li $v0, 9
   syscall
   j  $ra
