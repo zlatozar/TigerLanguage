@@ -6,7 +6,7 @@ open Flow
 type IGraph =
     { graph: Graph;
       tnode: Temp.Temp -> Node;
-      gtemp: Node -> Temp.Temp;
+      gtemp: Node      -> Temp.Temp;
       moves: (Node * Node) list }
 
 // temps index * list of temps
@@ -115,7 +115,7 @@ let interferenceGraph (flowGraph :FlowGraph) :IGraph * (Node -> Temp.Temp list) 
 
     // Connect nodes that interfere
     let addIEdge (n1: Node) (n2: Node) =
-        if not (n1 = n2) && not (List.exists (Graph.eq n1) (Graph.adj n2))
+        if n1 <> n2 && not (List.exists (Graph.eq n1) (Graph.adj n2))
         then Graph.mkEdge n1 n2
 
     // Builds IGraph as creating inodes and fill tables
@@ -169,6 +169,6 @@ let showIGraph ({graph=graph; tnode=_; gtemp=gtemp; moves=_} :IGraph) =
     say "\n";
     List.iter  (fun n -> say (sprintf "%s:\t%s: %i\n"
                                (Frame.tempName (gtemp n))
-                               (String.concat ", " (List.map (fun gn -> Frame.tempName (gtemp gn)) (Graph.adj n)))
+                               (String.concat ", " (List.map (Frame.tempName << gtemp) (Graph.adj n)))
                                (List.length (Graph.adj n))))
                 (Graph.nodes graph)

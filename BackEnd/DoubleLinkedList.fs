@@ -14,7 +14,7 @@ type NodeType<'a when 'a :equality> = {
             | _                     -> false
         override __.GetHashCode() = hash __.data
 
-exception Empty
+exception EmptyException
 
 let create d =
     let rec node = {
@@ -128,7 +128,7 @@ let toList node = foldRight (fun d l -> d::l) node []
 
 let ofList lst =
     match lst with
-    | []     -> raise Empty
+    | []     -> raise EmptyException
     | h :: t ->
                 let first = create h
 

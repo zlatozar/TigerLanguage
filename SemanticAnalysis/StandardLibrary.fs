@@ -40,7 +40,7 @@ let concat = (Store.symbol "concat", { formals=[STRING; STRING]; result=STRING }
 
 // Return (i = 0).
 // function not(i: integer) :integer
-let not = (Store.symbol "not", { formals=[INT]; result=INT })
+let not = (Store.symbol "_not", { formals=[INT]; result=INT })
 
 // Terminate execution with code i.
 // function exit(i: int)

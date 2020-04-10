@@ -2,8 +2,6 @@ module Color
 
 #nowarn "25"
 
-open System.Collections.Generic
-
 type Allocation = Temp.Table<Frame.Register>
 
 type Dll<'a when 'a: equality> = DLList.NodeType<'a> option ref

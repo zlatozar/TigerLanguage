@@ -11,16 +11,16 @@ open Tree
 //
 // A list of these things looks much more like "generic" assembler:
 //
-//    FACT:				            // LABEL
-//      if n=0 then L1 else L2		// CJUMP
-//    L1:				            // LABEL
-//      rv := 1				        // MOVE
-//      goto DONE		            // JUMP
-//    L2:                           // LABEL
-//      r := FACT(n-1)	            // MOVE
-//      a := n * r	                // MOVE
-//      rv := a		                // MOVE
-//      goto DONE	                // JUMP
+//    FACT:                       // LABEL
+//      if n=0 then L1 else L2    // CJUMP
+//    L1:                         // LABEL
+//      rv := 1                   // MOVE
+//      goto DONE                 // JUMP
+//    L2:                         // LABEL
+//      r := FACT(n-1)            // MOVE
+//      a := n * r                // MOVE
+//      rv := a                   // MOVE
+//      goto DONE                 // JUMP
 let linearize stm0 =
 
     let nop = EXP (CONST 0)
@@ -61,7 +61,7 @@ let linearize stm0 =
                                                 | JUMP _            -> false
                                                 | CJUMP _           -> false
                                                 | EXP (CALL _)      -> true
-                                                | MOVE (TEMP t', _) -> not (t = t')
+                                                | MOVE (TEMP t', _) -> t <> t'
                                                 | MOVE _            -> true
                                                 | EXP _             -> true
                                                 | _                 -> failwithf "ERROR: Unexpected expression in `commute`."
@@ -81,7 +81,7 @@ let linearize stm0 =
     // Reorder list of expressions and return pair (stmt * exp list)
     // (stmt; exp) to (t := exp; stmt; t) if commute.
     let rec doExps = function
-        | [] -> (nop, [])
+        | []   -> (nop, [])
         | h::t -> let (stm1', e') = doExp h
                   let (stm2', el) = doExps t
 

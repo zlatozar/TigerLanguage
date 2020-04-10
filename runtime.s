@@ -371,7 +371,7 @@ Lrunt51:
 #   return !i;
 # }
 
-not:
+_not:
   seq $v0, $a0, 0
   jr $ra
 

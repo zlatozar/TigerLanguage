@@ -91,7 +91,7 @@ the correct choice of graph representation is that of an adjacency list.
 
 _Algorithm:_
 
-1. At any non-MOVE instruction that defines a variable `A` (def[A]), where the live-out
+1. At any non-`MOVE` instruction that defines a variable `A` (def[A]), where the live-out
    variables are `B1,...,Bj`, add interference edges `(A, B1),...,(A, Bj)`.
 
 2. At a MOVE instruction `A := C` (def[`A`], use[`C`]), where variables `B1,...,Bj` are

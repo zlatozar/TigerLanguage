@@ -1,7 +1,5 @@
 module GraphRep
 
-open System.Collections.Generic
-
 type NodeIdx = int
 
 [<NoComparison>]
