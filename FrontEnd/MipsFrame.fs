@@ -94,7 +94,7 @@ let RV = V0
 let GP = Temp.newTemp() // Pointer to global area
 let SP = Temp.newTemp() // Stack Pointer
 let FP = Temp.newTemp() // Frame Pointer
-let RA = Temp.newTemp() // Return Adderss
+let RA = Temp.newTemp() // Return Address
 
 // ____________________________________________________________________________
 
@@ -159,7 +159,7 @@ let registers = List.map (fun (_, name) -> name) (argRegsMap @ callerSavesMap @ 
 
     ...                        higher addresses
 
-|   arg_N    |  4 + 4*N   <---- incomming args that could be seen using "view shift" code
+|   arg_N    |  4 + 4*N   <---- incoming args that could be seen using "view shift" code
 |   ...      |
 |   arg_1    |  8               CALLER frame
 |static link |  4

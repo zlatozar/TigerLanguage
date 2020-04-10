@@ -150,7 +150,7 @@ let rec transVar ((venv: VEnv), fenv, tenv, level, breakpoint, (var: Absyn.TVar)
                          -> let index = transExp (venv, fenv, tenv, level, breakpoint, idx)
                             checkInt (actualTy (index.ty, pos), pos)
 
-                            // in practice first elemet of the array see ArrayExp(Translate.arrayIR particulary)
+                            // in practice first elemet of the array see ArrayExp(Translate.arrayIR particularly)
                             let subcript = transVar (venv, fenv, tenv, level, breakpoint, arrVar)
                             let arrayTy = actualTy (subcript.ty, pos)
 

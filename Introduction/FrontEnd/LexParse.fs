@@ -1,8 +1,5 @@
 namespace FrontEnd
 
-open System
-open System.IO
-open System.Text
 open Microsoft.FSharp.Text.Lexing
 
 open Absyn

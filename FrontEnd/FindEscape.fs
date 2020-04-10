@@ -25,7 +25,7 @@ let rec traverseVar (env: escEnv, d: depth, var: TVar) :unit =
 and traverseExp (env: escEnv, d: depth, exp: TExp) :unit =
     match exp with
     | IntExp _           -> ()
-    | StringExp (_, _)   -> ()
+    | StringExp _        -> ()
     | NilExp             -> ()
     | BreakExp _         -> ()
 

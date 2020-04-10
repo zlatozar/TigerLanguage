@@ -26,10 +26,10 @@ let rec insert x tree =
 
 let rec lookup x tree =
     match tree with
-    | Leaf                           -> false
-    | Node(treeL, k, treeR) when x<k -> lookup x treeL
-    | Node(treeL, k, treeR) when x>k -> lookup x treeR
-    | _                              -> true
+    | Leaf                        -> false
+    | Node(treeL, k, _) when x<k  -> lookup x treeL
+    | Node(_, k, treeR) when x>k  -> lookup x treeR
+    | _                           -> true
 
 // First visit the root node, then traverse the left sub-tree in pre-order
 // and finally traverse the right sub-tree in pre-order.

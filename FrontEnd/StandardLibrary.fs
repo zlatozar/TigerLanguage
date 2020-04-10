@@ -48,10 +48,11 @@ let STL = [
             ("exit", [INT], UNIT)]
 
 let includes =
-    List.map (fun (name, formals, result) -> let label = Temp.namedLabel name
-                                             (Store.symbol(name), { level=Translate.newLevel { parent=Translate.outermost;
-                                                                                               name=label;
-                                                                                               formals=(List.map (fun _ -> false) formals) };
-                                                                    label=label;
-                                                                    formals=formals;
-                                                                    result=result}) ) STL
+    List.map (fun (name, formals, result) ->
+              let label = Temp.namedLabel name
+              (Store.symbol(name), { level=Translate.newLevel { parent=Translate.outermost;
+                                                                name=label;
+                                                                formals=(List.map (fun _ -> false) formals) };
+                                     label=label;
+                                     formals=formals;
+                                     result=result}) ) STL
