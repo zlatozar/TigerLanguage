@@ -9,7 +9,8 @@ The main ideas behind every step during development are:
 - linearization of syntax tree and represent it in a sequential form (intermediate representation)
 - efficiency/optimization (the whole compiler backend)
 
-The whole idea is to convert program to list of functions (instructions) that could be executed
-by hardware in a context.
+The whole idea of compilation is to convert program to list of functions (instructions) that could
+be executed by hardware in a context (environment). Of course you can compile something but the
+execution could be made by software.
 
-NOTE: All compiler backend algorithms are translated from ![gumchum ML implementation](https://github.com/gumchum/tiger)
+NOTE: All compiler backend algorithms are translated from ![gumchum](https://github.com/gumchum/tiger) ML implementation

@@ -1,5 +1,6 @@
 namespace Tiger
 
+// Tiger parser
 module FrontEnd =
 
     open Env

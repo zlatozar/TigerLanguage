@@ -1,5 +1,9 @@
 module Translate
 
+// Here every Tiger language expression should be translated. We have chose to
+// translate to Forth, C, LLVM, some made-up intermediate language(IR) or some
+// virtual machine language. We choose IR.
+
 open Tree
 
 // Tip: Here we do not work with variable but with "memory places".

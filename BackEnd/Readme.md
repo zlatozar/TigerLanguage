@@ -1,5 +1,15 @@
 ## Chapter 8
 
+"Show me your code and conceal your data structures, and I shall continue to be
+mystified. Show me your data structures, and I won't usually need your code; it'll be obvious."
+_Eric Raymond_
+
+The central theme of this chapter has been the relationship between data and
+program structures. The data provides a model of the problem environment, and by
+basing our program structures on data structures we ensure that our programs
+will be intelligible and easy to maintain. Program structure should be dictated by
+the structure of its input and output data streams
+
 ## Chapter 9
 
 ### Used MIPS Instructions
@@ -322,12 +332,12 @@ https://exercism.io/my/tracks/mips
 
 http://www.kvakil.me/venus/
 
-### Book
+### Books
 
 _"MIPS Assembly Language Programming"_ by Robert Britton
 
 More general:
-_"Introduction to 64 Bit Intel Assembly Language Programming for Linux"_ by Ray Seyfarth
+_"From Hardware to Software: an introduction to computers"_ by Graham Lee
 
 ## Chapter 11
 

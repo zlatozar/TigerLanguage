@@ -6,6 +6,9 @@ open Xunit
 open Absyn
 open Tiger.Parser
 
+// Tip: Compilers need lots and lots of tests. Do not make next step is you are not
+//      completely sure that current one is absolutely correct.
+
 // _____________________________________________________________________________
 //                                              Correct Tiger language examples
 
