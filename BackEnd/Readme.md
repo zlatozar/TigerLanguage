@@ -186,6 +186,30 @@ Remember arithmetic operands are registers or immediates, not memory!
                Leave the quotient in register `lo` and the remainder in register `hi`.
                `hi, lo = rs/rt`.
 
+#### Synchronization Instructions
+
+`ll`     load linked, load value at address `addr`
+`sc`     returns *SUCCESS* if the value stored at the
+         address has _not changed_ since `ll`.
+         The value stored at the address can be any 32bit value.
+         `sc` does *not check* what that value at the address is, it onlychecks if it has changed.
+
+In pseudo code:
+```
+MIPSTestAndSet(addr, value) {
+  tmp = ll addr            // load value
+  result = sc addr, value  // store conditionally
+
+  if (result == SUCCEED)
+    return tmp
+
+  return TRUE
+}
+
+Acquire(bool *lock) {
+  while( MIPSTestAndSet(lock, true) == true ) {};
+}
+
 ### Example code
 
 #### Labels

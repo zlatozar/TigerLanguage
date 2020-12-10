@@ -1,0 +1,15 @@
+# Auto detect text files and perform LF normalization
+*        text=auto
+
+# .Net
+*.sln    text eol=crlf merge=union
+*.fsproj text merge=union
+
+# Documents
+*.pdf    diff=astextplain
+
+# Graphics
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary

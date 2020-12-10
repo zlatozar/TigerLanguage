@@ -1,3 +1,8 @@
+## Parser
+
+A parser is just a function that consumes less-structured input and produces more-structured output.
+It is important because **data structure determines program structure.**
+
 ## Tiger Parser
 
 Use to use language specification. Keep in mind that it is not complete so given test cases complete it.

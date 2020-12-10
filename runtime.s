@@ -5,6 +5,9 @@
 #
 # NOTE: Do not rename labels because they names are
 #       defined in Tiger Standard Library
+#
+# NOTE: https://godbolt.org/ could be used
+#       to translate C to MIPS assembler
 
   .text
 
