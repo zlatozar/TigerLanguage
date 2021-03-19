@@ -7,6 +7,10 @@ See notest in `Canon.fs`
 In an **optimal tiling**, no two _adjecent tiles_ ca be combined into a single tile
 of lower cost.
 
+You can look at so called `Memory-use`/`Runtime environment`, how records, procedures
+etc. are organized as the data structure which hardware functions work/change. The
+together organize Abstract Data Type(ADT).
+
 #### Maximal Munch algorithm
 
 1. Start at the root of the IR tree.

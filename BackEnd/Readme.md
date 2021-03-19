@@ -1,8 +1,8 @@
 ## Chapter 8
 
-"Show me your code and conceal your data structures, and I shall continue to be
-mystified. Show me your data structures, and I won't usually need your code; it'll be obvious."
-_Eric Raymond_
+_"Show me your code and conceal your data structures, and I shall continue to be_
+_mystified. Show me your data structures, and I won't usually need your code; it'll be obvious."_<br/>
+**Eric Raymond**
 
 The central theme of this chapter has been the relationship between data and
 program structures. The data provides a model of the problem environment, and by
@@ -31,7 +31,7 @@ register is a general purpose register that contains a 32-bit address. The offse
 16-bit signed integer contained in the instruction. _The sum of the address in the base_
 _register with the (sign-extended) offset forms the memory address_
 
-**Pseudoinstructions**
+**Pseudo instructions**
 
 In short this instruction is provided by assembler not from processor!
 
@@ -119,7 +119,7 @@ The `.align` is necessary to guarantee that the array is started on a word bound
 `sw  reg, address`  Store the word from register _reg_ at _address_. See `lw`.
                     `sw  reg, 1000(base)` means _Memory[base+1000]=reg_
 
-#### Jump Instructins
+#### Jump Instructions
 
 `jal  label`  Unconditionally jump to the instruction at label. Save the address of the next
               instruction in register `$ra`. Use when making procedure call because it saves the
@@ -133,22 +133,22 @@ The `.align` is necessary to guarantee that the array is started on a word bound
 
 #### Branch Instructions
 
-`bne  rs, rt, label`  Test if registers `rs` and `rt` are **not** equal.
+`bne  rs, rt, label`  Test if registers `rs` and `rt` are **not** equal.<br/>
                       `bne  rs, rt, 1000` means _if(rs != rt); go to PC+4+1000_
 
-`blt  rs, rt, label`  (_pseudoinstruction_) Branch on less than.
+`blt  rs, rt, label`  (_pseudoinstruction_) Branch on less than.<br/>
                       `blt  rs, rt, 1000` means _if(rs < rt); go to PC+4+1000_
 
-`bgt  rs, rt, label`  (_pseudoinstruction_) Branch on greater than.
+`bgt  rs, rt, label`  (_pseudoinstruction_) Branch on greater than.<br/>
                       `bgt  rs, rt, 1000` means _if(rs > rt); go to PC+4+1000_
 
-`ble  rs, rt, label`  (_pseudoinstruction_) Branch on less than or equal.
+`ble  rs, rt, label`  (_pseudoinstruction_) Branch on less than or equal.<br/>
                       `ble  rs, rt, 1000` means _if(rs <= rt); go to PC+4+1000_
 
-`bge  rs, rt, label`  (_pseudoinstruction_) Branch on greater than or equal.
-                      `bge  rs, rt, 1000` means _if(rs >= rt); go to PC+4+1000_
+`bge  rs, rt, label`  (_pseudoinstruction_) Branch on greater than or equal.<br/>
+                      `bge  rs, rt, 1000` means _if(rs >= rt); go to PC+4+1000_<br/>
 
-Not used in current implementation
+Not used in Tiger implementation:
 
 `bltu  rs, rt, label`  (_pseudoinstruction_) Branch on less than **unsigned**.
 
@@ -171,7 +171,7 @@ Not used in current implementation
 
 #### Arithmetic and Logical Instructions
 
-Remember arithmetic operands are registers or immediates, not memory!
+**Remember arithmetic operands are registers or immediates, not memory!**
 
 `addi  rd, rs, imm`  `addi  rd, rs, 1000` means _rd = rs + 1000_
 
@@ -195,7 +195,7 @@ Remember arithmetic operands are registers or immediates, not memory!
          `sc` does *not check* what that value at the address is, it onlychecks if it has changed.
 
 In pseudo code:
-```
+```C
 MIPSTestAndSet(addr, value) {
   tmp = ll addr            // load value
   result = sc addr, value  // store conditionally
@@ -206,10 +206,10 @@ MIPSTestAndSet(addr, value) {
   return TRUE
 }
 
-Acquire(bool *lock) {
+Acquire(bool* lock) {
   while( MIPSTestAndSet(lock, true) == true ) {};
 }
-
+```
 ### Example code
 
 #### Labels
